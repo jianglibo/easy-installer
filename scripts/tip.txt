@@ -1,0 +1,51 @@
+mysql-cluster:
+gradlew -Dhost=192.168.33.50 -Dtcl.profile=local-profile.yml mysqlCluster [install | config | start | stop | restart]
+
+test in windows:
+
+tclsh scripts\launcher.tcl --runFolder=mysql-cluster --profile=local-profile.yml --action=config
+
+rmt|
+rmt|
+rmt|
+rmt|A RANDOM PASSWORD HAS BEEN SET FOR THE MySQL root USER !
+rmt|You will find that password in '/root/.mysql_secret'.
+rmt|
+rmt|You must change that password on your first connect,
+rmt|no other statement but 'SET PASSWORD' will be accepted.
+rmt|See the manual for the semantics of the 'password expired' flag.
+rmt|
+rmt|Also, the account for the anonymous user has been removed.
+rmt|
+rmt|In addition, you can run:
+rmt|
+rmt|  /usr/bin/mysql_secure_installation
+rmt|
+rmt|which will also give you the option of removing the test database.
+rmt|This is strongly recommended for production servers.
+rmt|
+rmt|See the manual for more instructions.
+rmt|
+rmt|Please report any problems at http://bugs.mysql.com/
+rmt|
+rmt|The latest information about MySQL is available on the web at
+rmt|
+rmt|  http://www.mysql.com
+rmt|
+rmt|Support MySQL by buying support/licenses at http://shop.mysql.com
+rmt|
+rmt|New default config file was created as /usr/my.cnf and
+rmt|will be used by default by the server when you start it.
+rmt|You may edit this file to change server settings
+rmt|
+rmt|  Verifying  : MySQL-Cluster-server-gpl-7.4.10-1.el7.x86_64                 1/2
+rmt|  Verifying  : net-tools-2.0-0.17.20131004git.el7.x86_64                    2/2
+rmt|
+rmt|Installed:
+rmt|  MySQL-Cluster-server-gpl.x86_64 0:7.4.10-1.el7
+rmt|
+rmt|Dependency Installed:
+rmt|  net-tools.x86_64 0:2.0-0.17.20131004git.el7
+rmt|
+rmt|Complete!"
+rmt|skipping MySQL-Cluster-shared-compat-gpl-7.4.10-1.el7.x86_64.rpm
