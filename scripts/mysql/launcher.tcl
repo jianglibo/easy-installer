@@ -1,19 +1,6 @@
 package require AppDetecter
 package require CommonUtil
 
-if {! [dict exists $::rawParamDict profile]} {
-  puts stderr "parameter --profile doesn't exists!"
-  exit 1
-}
-
-set cfgFile [file join $::baseDir mysql [dict get $::rawParamDict profile]]
-
-if {! [string match *.yml $cfgFile]} {
-  set cfgFile "$cfgFile.yml"
-}
-
-set ::ymlDict [::CommonUtil::loadYaml $cfgFile]
-
 set allIps [list]
 
 lappend allIps [dict get $::ymlDict MASTER HostName]

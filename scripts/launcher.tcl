@@ -32,3 +32,19 @@ if {[dict exists $::rawParamDict runFolder] } {
   puts stderr "paramter -runFolder does not exists!"
   exit 1
 }
+
+set profile local-profile.yml
+
+if {[dict exists $::rawParamDict profile]} {
+  set profile [dict get $::rawParamDict profile]
+}
+
+set cfgFile [file join $::baseDir [dict get $::rawParamDict runFolder] $profile]
+
+if {! [string match *.yml $cfgFile]} {
+  set cfgFile "$cfgFile.yml"
+}
+
+if {[file exists $cfgFile]} {
+  set ::ymlDict [::CommonUtil::loadYaml $cfgFile]  
+}

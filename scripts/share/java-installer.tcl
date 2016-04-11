@@ -2,10 +2,6 @@ package provide JavaInstaller 1.0
 package require AppDetecter
 
 namespace eval JavaInstaller {
-	variable javaFolder /opt/java
-	variable jdkFile jdk-8u73-linux-x64.tar.gz
-	variable jdkFolder jdk1.8.0_73
-	variable fileHost http://www.fh.gov.cn
 }
 
 
@@ -13,10 +9,10 @@ proc ::JavaInstaller::install {} {
 	if {[::AppDetecter::isInstalled java]} {
 		puts stdout "java already installed, skip installing."
 	} else {
-		variable javaFolder
-		variable jdkFile
-		variable jdkFolder
-		variable fileHost
+		set javaFolder [dict get $::ymlDict JavaFolder]
+		set jdkFile [dict get $::ymlDict TarFile]
+		set jdkFolder [dict get $::ymlDict ExtractFolder]
+		set fileHost [dict get $::ymlDict ServeHost]
 
 		if {! [file exists $javaFolder]} {
 			exec mkdir -p $javaFolder

@@ -1,0 +1,6 @@
+INSTALL:
+  JavaFolder: /opt/java
+  TarFile: jdk-8u73-linux-x64.tar.gz
+  ExtractFolder: jdk1.8.0_73
+  ServeHost: http://www.fh.gov.cn
+# tarFile will download from http://www.fh.gov.cn/jdk-8u73-linux-x64.tar.gz
