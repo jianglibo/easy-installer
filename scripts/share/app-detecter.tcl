@@ -5,8 +5,8 @@ namespace eval ::AppDetecter {
 }
 
 proc ::AppDetecter::isInstalled {execName} {
-  catch {[exec which $execName]} msg o
-  if {[dict get $o -errorcode] eq {NONE}} {
+  catch {exec which $execName} msg o
+  if {[dict get $o -code] == 0} {
     return 1
   }
   return 0
