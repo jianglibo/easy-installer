@@ -107,11 +107,6 @@ proc ::CommonUtil::getMachineIps {} {
     return $thisMachineIps
 }
 
-proc ::CommonUtil::killYum {} {
-  killByName yum
-  catch {exec rm /var/run/yum.pid} msg o
-}
-
 proc ::CommonUtil::normalizeYmlCfg {dic} {
   set newnodes [list]
   set mysqldSeg [dict get $dic MYSQLD]

@@ -35,12 +35,12 @@ proc ::MysqlInstaller::install {} {
 		puts stdout "download done."
 	}
 
-	::CommonUtil::killYum
+	::AppDetecter::killByName yum
 
 	exec yum localinstall -y $rs
 
 	catch {exec yum install -y mysql-community-server} msg o
 	puts stdout $msg
-	
+
 	exec systemctl start mysqld
 }
