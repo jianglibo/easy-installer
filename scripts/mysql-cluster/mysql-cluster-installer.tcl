@@ -3,8 +3,6 @@ package provide MysqlClusterInstaller 1.0
 package require AppDetecter
 
 namespace eval ::MysqlClusterInstaller {
-	variable rs MySQL-Cluster-gpl-7.4.10-1.el7.x86_64.rpm-bundle.tar
-	variable host http://www.fh.gov.cn
 }
 
 #http://dev.mysql.com/get/Downloads/MySQL-Cluster-7.4
@@ -24,12 +22,11 @@ proc ::MysqlClusterInstaller::install {tmpFolder} {
 
 	cd $tmpFolder
 
-	variable rs
-	variable host
+	set rs [lindex [split [dict get $::ymlDict DownFrom] /] end]
 
 	if {! [file exists $rs]} {
-		puts stdout "start downloading $host/$rs"
-		exec curl -OL $host/$rs >& curloptout.log
+		puts stdout "start downloading $::ymlDict"
+		exec curl -OL [dict get $::ymlDict DownFrom] >& curloptout.log
 		puts stdout "downloading done."
 		puts stdout "extracting $rs"
 		exec tar -xvf $rs

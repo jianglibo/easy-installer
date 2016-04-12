@@ -40,3 +40,4 @@ MYSQLD:
           Port: 41510
         - NodeId: 103
           Port: 41511
+DownFrom: http://www.fh.gov.cn/MySQL-Cluster-gpl-7.4.10-1.el7.x86_64.rpm-bundle.tar

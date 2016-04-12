@@ -29,7 +29,7 @@ namespace eval ::example::test {
         lappend ll [llength $v]
       }
       return $ll
-    } -cleanup $CLEANUP -match exact -result {8 6 32 7 4 14}
+    } -cleanup $CLEANUP -match exact -result {8 6 32 7 2 3}
 
     ::confini::substitute
 
@@ -43,7 +43,7 @@ namespace eval ::example::test {
         lappend ll [llength $v]
       }
       return $ll
-    } -cleanup $CLEANUP -match exact -result {8 12 32 14 4 56}
+    } -cleanup $CLEANUP -match exact -result {8 12 32 14 2 12}
 
     ::confini::writeToDisk [file join $::baseDir test fixturesout config.ini]
 

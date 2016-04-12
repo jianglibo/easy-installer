@@ -30,6 +30,14 @@ proc ::MysqldRole::run {} {
           puts stdout $msg
         }
 
+        set pids [glob -directory $dd -- *.pid]
+        puts $pids
+        foreach pid $pids {
+          puts ^^^^^^^^^^^^^^^^^^^
+          puts $pid
+        }
+
+
         set execCmd "mysqld_safe --user=mysql --ndb-nodeid=[dict get $nodeYml NodeId] --datadir=$dd --port=[dict get $nodeYml Port] >/dev/null &"
         puts stdout "starting mysql: $execCmd"
         exec {*}$execCmd

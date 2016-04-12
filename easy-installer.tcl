@@ -74,7 +74,7 @@ if {! [isAppName $::appname]} {
 }
 
 proc prepareRunFolder {host an} {
-  puts "start prepare run folder on server...."
+  puts "start prepare run folder on server $host...."
   puts [exec ssh root@$host "mkdir -p ~/easy-install/scripts"]
   puts [exec scp -r [file join $::baseDir scripts $an]  root@$host:~/easy-install/scripts/]
   puts [exec scp -r [file join $::baseDir scripts share]  root@$host:~/easy-install/scripts/]
@@ -87,8 +87,8 @@ proc prepareRunFolder {host an} {
 }
 
 proc cleanupRunFolder {host} {
-  puts "start cleanup run folder on server...."
-  puts [exec ssh root@$host "rm -rvf ~/easy-install"]
+  puts "start cleanup run folder on server $host...."
+  exec ssh root@$host "rm -rvf ~/easy-install"
   puts done!
 }
 
@@ -116,8 +116,9 @@ foreach h [parseHosts [dict get $::rawParamDict host]] {
   set actions [lrange $::nameAction 1 end]
   foreach ac $actions {
     set execCmd "tclsh ~/easy-install/scripts/launcher.tcl [prepareLauncherParams $ac]"
-    puts "start run: $execCmd"
-    puts [exec ssh root@$h $execCmd]
+    puts "start run: $execCmd on $h"
+    catch {exec ssh root@$h $execCmd} msg o
+    puts $msg
   }
   cleanupRunFolder $h
 }
