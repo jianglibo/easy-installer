@@ -21,3 +21,5 @@ ALLOWED_USERS:
     DbName: firstdb
     Password: ux131415N!
 DownFrom: http://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm
+SLAVE_PASSWORD: sdio@98Y23dd
+SLAVE_USER: slvuser

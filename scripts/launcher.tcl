@@ -38,8 +38,8 @@ if {! [string match *.yml $cfgFile]} {
   set cfgFile "$cfgFile.yml"
 }
 
-puts stdout "...................."
-puts stdout $cfgFile
+#puts stdout "...................."
+#puts stdout $cfgFile
 
 if {[file exists $cfgFile]} {
   set ::ymlDict [::CommonUtil::mergeConfig $::rawParamDict [::CommonUtil::loadYaml $cfgFile]]

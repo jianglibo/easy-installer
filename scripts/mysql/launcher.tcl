@@ -34,6 +34,7 @@ proc getBoxConfig {} {
 package require MysqlInstaller
 package require MysqlInit
 
+set boxConfig [getBoxConfig]
 
 set action [dict get $::rawParamDict action]
 
@@ -42,6 +43,11 @@ switch $action {
 		::MysqlInstaller::install {*}[getBoxConfig]
 	}
   init {
-    ::MysqlInit::init
+    ::MysqlInit::init {*}$boxConfig
   }
+	setupRepl {
+		if {! [lindex $boxConfig 0]} {
+			puts stdout "this is not master server, skiping........."
+		}
+	}
 }

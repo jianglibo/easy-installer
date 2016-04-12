@@ -110,6 +110,13 @@ proc ::MysqlInit::init {isMaster nodeYml} {
 	 	lappend sqls [string map $hu "grant all privileges on DbName.* to 'UserName'@'HostName' identified by 'Password';\r"]
 	}
 
+	if {$isMaster} {
+		foreach slv [dict get $::ymlDict SLAVES] {
+			lappend sqls "CREATE USER '[dict get $::ymlDict SLAVE_USER]'@'[dict get $slv HostName]' IDENTIFIED BY '[dict get $::ymlDict SLAVE_PASSWORD]';"
+			lappend sqls "GRANT REPLICATION SLAVE ON *.* TO 'repl'@'[dict get $slv HostName]';"
+		}
+	}
+
 	lappend sqls "flush privileges;\r"
 	lappend sqls "exit\r"
 
