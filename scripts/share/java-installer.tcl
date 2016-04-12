@@ -4,46 +4,44 @@ package require AppDetecter
 namespace eval JavaInstaller {
 }
 
-
 proc ::JavaInstaller::install {} {
 	if {[::AppDetecter::isInstalled java]} {
 		puts stdout "java already installed, skip installing."
 	} else {
-		set javaFolder [dict get $::ymlDict JavaFolder]
-		set jdkFile [dict get $::ymlDict TarFile]
-		set jdkFolder [dict get $::ymlDict ExtractFolder]
-		set fileHost [dict get $::ymlDict ServeHost]
+		set DstFolder [dict get $::ymlDict DstFolder]
+		set DownFrom [dict get $::ymlDict DownFrom]
 
-		if {! [file exists $javaFolder]} {
-			exec mkdir -p $javaFolder
+		set jdkFile [lindex [split $DownFrom /] end]
+
+		if {! [file exists $DstFolder]} {
+			exec mkdir -p $DstFolder
 		}
 
-		cd $javaFolder
+		cd $DstFolder
 
-		if {! [file exists $javaFolder/$jdkFile]} {
-			puts stdout "start downloading $fileHost/$jdkFile....\n"
-			exec curl -O $fileHost/$jdkFile >&  curloutput.log
+		if {! [file exists $DstFolder/$jdkFile]} {
+			puts stdout "start downloading $DownFrom....\n"
+			exec curl -O $DownFrom >&  curloutput.log
 			puts stdout "download finished.\n"
 		}
 
-		if {! [file exists $javaFolder/$jdkFile]} {
-			puts stdout "download $javaFolder/$jdkFile failed."
+		if {! [file exists $DstFolder/$jdkFile]} {
+			puts stdout "download $DstFolder/$jdkFile failed."
 			exit 2
 		}
 
-		if {[file size $javaFolder/$jdkFile] < 10000} {
-			puts stdout "download $javaFolder/$jdkFile failed.deleting partial file..."
-			file delete $javaFolder/$jdkFile
+		if {[file size $DstFolder/$jdkFile] < 10000} {
+			puts stdout "download $DstFolder/$jdkFile failed.  deleting partial file..."
+			file delete $DstFolder/$jdkFile
 			exit 2
 		}
 
 		exec tar -zxf $jdkFile
+		set binFolder [file dirname [lindex [split [exec find $DstFolder -name javah] \n] 0]]
 
-		exec alternatives --install "/usr/bin/java" "java" "$javaFolder/$jdkFolder/bin/java" 1
-		exec alternatives --install "/usr/bin/javac" "javac" "$javaFolder/$jdkFolder/bin/javac" 1
-		exec alternatives --install "/usr/bin/jar" "jar" "$javaFolder/$jdkFolder/bin/jar" 1
-		exec alternatives --install "/usr/bin/javah" "javah" "$javaFolder/$jdkFolder/bin/javah" 1
-		exec alternatives --install "/usr/bin/javadoc" "javadoc" "$javaFolder/$jdkFolder/bin/javadoc" 1
+		foreach jexec {java javac jar javah javadoc} {
+			exec alternatives --install "/usr/bin/$jexec" "$jexec" [file join $binFolder $jexec] 1
+		}
 
 		puts stdout "checking java install..."
 

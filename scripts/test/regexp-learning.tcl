@@ -17,6 +17,11 @@ namespace eval ::example::test {
       return $m
     } -cleanup $CLEANUP -match exact -result {aab}
 
+    test split-url {} -constraints X -setup $SETUP -body {
+      set url http://www.fh.gov.cn/aa/bb/cc.z
+      return [lindex [split $url /] end]
+    } -cleanup $CLEANUP -match exact -result {cc.z}
+
     # match regexp, glob, exact
     cleanupTests
 }

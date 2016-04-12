@@ -11,13 +11,35 @@
 ### Java
 ```
 easy-installer --host=192.168.33.50 java install
+easy-installer --host=192.168.33.50 --profile=local-profile.yml java install
+easy-installer --host=192.168.33.50 --DstFolder=/opt/myjava --DownFrom=http://somewhere/jdk.tar.gz java install
+# --DstFolder override config in local-profile.yml
 ```
 
 ### MySql
 
+content in local-profile.yml
+```
+MASTER:
+  HostName: 192.168.33.53
+
+SLAVES:
+  - HostName: 192.168.33.52
+    EnableBinLog: 0
+  - HostName: 192.168.33.51
+    EnableBinLog: 0
+
+ALLOWED_USERS:
+  - HostName: 192.168.33.1
+    UserName: firstuser
+    DbName: firstdb
+    Password: ux131415N!
+```
+
 ```
 easy-installer --host=192.168.33.50 -profile=local-profile.yml mysql install
 ```
+
 
 ### MySql Cluster
 
