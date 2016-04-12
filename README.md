@@ -23,7 +23,9 @@ Now there are 5 virtualBox running, 192.168.33.49,50,51,52,53. We use 49 as a co
 Let's install java to 50.
 
 ./easy-installer.tcl --host=192.168.33.50 java install
+
 or
+
 ./easy-installer.tcl --host=192.168.33.50 --DownFrom=http://www.fh.gov.cn/jdk-8u73-linux-x64.tar.gz java install
 
 please change --DownFrom to a faster place.
@@ -33,6 +35,7 @@ If it works, We are begin to install a more complex mysql cluster.
 ## Install Mysql Cluster.
 
 Look into mysql-cluster in scripts folder, there have many tcl files, let's look at local-profile.yml.
+
 local-profile.yml
 ```
 NDB_MGMD_DEFAULT:
@@ -86,6 +89,8 @@ We run:
 Invoke this command to complete Mysql Cluster install:
 
 * ./easy-installer.tcl --host=192.168.33.50,51,52,53 --profile=local-profile.yml mysql-cluster install config mgmstart ndbdstart mysqldstart
+
+*** the pattern is: parameters appFolderName action...actions ***
 
 It take long time to install, If account any error, you can reinvoke command again, It will continue from where broken.
 
