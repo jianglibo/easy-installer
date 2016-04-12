@@ -4,6 +4,7 @@ package require AppDetecter
 package require CommonUtil
 package require MysqlInstaller
 package require Expect
+package require Mycnf
 
 namespace eval ::MysqlInit {
 	variable tmpDir /opt/install-tmp
@@ -17,15 +18,27 @@ namespace eval ::MysqlInit {
 	}
 }
 
-proc ::MysqlInit::init {} {
+proc ::MysqlInit::init {isMaster nodeYml} {
 	if {! [::AppDetecter::isInstalled {mysqld}]} {
-		puts stdout "mysql has not been installed, start install..."
-		::MysqlInstaller::install
+		puts stdout "mysql has not been installed, skip config..."
+		exit 0
 	}
 
 	variable tmpDir
-	variable mysqlLog
-	variable rs
+	set mysqlLog [dict get $nodeYml  log-error]
+	set DownFrom [dict get $::ymlDict DownFrom]
+	set rs [lindex [split $DownFrom /] end]
+
+	# mysql not initialized
+	if {! [file exists $mysqlLog]} {
+		::Mycnf::writeToDisk /etc/my.cnf $nodeYml 1
+		set dd [dict get $nodeYml datadir]
+		if {! [file exists $dd]} {
+			exec mkdir -p $dd
+			exec chown -R mysql:mysql $dd
+		}
+		exec systemctl start mysqld
+	}
 
 	if {[catch {open $mysqlLog} fid o]} {
 		puts stdout $fid

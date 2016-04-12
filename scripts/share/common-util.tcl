@@ -33,6 +33,7 @@ proc ::CommonUtil::replaceItem {contentDic contentKey kvDic} {
   return $contentDic
 }
 
+# leading lines are tripped.
 proc ::CommonUtil::splitSeg {lines matcher} {
   set rd [dict create]
   set lastMatch {}
@@ -157,4 +158,13 @@ proc ::CommonUtil::mergeConfig {rawParamDict ymlDict} {
       }
   }
   return $ymlDict
+}
+
+proc ::CommonUtil::backupOrigin {fn} {
+  if {[file exists $fn]} {
+    set of "$fn.origin"
+    if {! [file exists $of]} {
+      exec cp $fn $of
+    }
+  }
 }

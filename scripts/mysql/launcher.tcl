@@ -1,17 +1,34 @@
 package require AppDetecter
 package require CommonUtil
 
-set allIps [list]
 
-lappend allIps [dict get $::ymlDict MASTER HostName]
+proc getBoxConfig {} {
+	set allIps [list]
 
-foreach slv [dict get $::ymlDict SLAVES] {
-	lappend allIps [dict get $slv HostName]
-}
+	set MASTER [dict get $::ymlDict MASTER]
 
-if {[string length [::CommonUtil::getThisMachineIp $allIps]] == 0} {
-	puts stdout "target machie ip not in $cfgFile"
-	exit 1
+	lappend allIps [dict get $MASTER HostName]
+
+	foreach slv [dict get $::ymlDict SLAVES] {
+		lappend allIps [dict get $slv HostName]
+	}
+
+	set thisMachineIp [::CommonUtil::getThisMachineIp $allIps]
+
+	if {[string length $thisMachineIp] == 0} {
+		puts stdout "target machie ip not in $cfgFile"
+		exit 1
+	}
+
+	if {[string equal $thisMachineIp [dict get $MASTER HostName]]} {
+		return [list 1 $MASTER]
+	} else {
+		foreach slvn [dict get $::ymlDict SLAVES] {
+			if {[string equal $thisMachineIp [dict get $slvn HostName]]} {
+				return [list 0 [dict merge $MASTER $slvn]]
+			}
+		}
+	}
 }
 
 package require MysqlInstaller
@@ -19,11 +36,10 @@ package require MysqlInit
 
 
 set action [dict get $::rawParamDict action]
-puts "$action........................................."
 
 switch $action {
 	install {
-		::MysqlInstaller::install
+		::MysqlInstaller::install {*}[getBoxConfig]
 	}
   init {
     ::MysqlInit::init
