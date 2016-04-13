@@ -10,7 +10,7 @@ proc ::CommonUtil::dictItemExists {} {
 
 }
 
-proc ::CommonUtil::replace {lines kvDic} {
+proc ::CommonUtil::replaceLines {lines kvDic} {
   set keys [dict keys $kvDic]
   set result [list]
 
@@ -26,7 +26,21 @@ proc ::CommonUtil::replace {lines kvDic} {
   return $result
 }
 
-proc ::CommonUtil::replaceItem {contentDic contentKey kvDic} {
+proc ::CommonUtil::replaceFileContent {fn kvDic} {
+  if {[catch {open $fn} fid o]} {
+    puts stderr $fid
+    exit 1
+  } else {
+    set lines [list]
+    while {[gets $fid line] >= 0} {
+      lappend lines $line
+    }
+    close $fid
+    return [replaceLines $lines $kvDic]
+  }
+}
+
+proc ::CommonUtil::replaceContentDic {contentDic contentKey kvDic} {
   set lines [dict get $contentDic $contentKey]
   set lines [replace $lines $kvDic]
   dict set contentDic $contentKey $lines

@@ -8,8 +8,6 @@ package require Mycnf
 
 namespace eval ::MysqlInit {
 	variable tmpDir /opt/install-tmp
-	variable mysqlLog /var/log/mysqld.log
-	variable rs mysql57-community-release-el7-7.noarch.rpm
 	if {[catch {
 		exec mkdir -p $tmpDir
 		} msg o]} {

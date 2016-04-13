@@ -3,24 +3,26 @@
 exec tclsh "$0" ${1+"$@"}
 
 set ::baseDir [file dirname [info script]]
-lappend auto_path $::baseDir
+lappend auto_path [file join $::baseDir share]
 
 set ::rawParamDict [dict create]
-
-package require CommonUtil
-package require AppDetecter
-
-if {! [::AppDetecter::isInstalled expect]} {
-  puts stdout "expect not installed, start to install...."
-  catch {exec yum install -y expect} msg o
-}
-
 foreach a $::argv {
   set pair [split $a =]
   if {[llength $pair] == 2} {
     dict set ::rawParamDict [string trimleft [lindex $pair 0] -] [lindex $pair 1]
   }
 }
+
+if {! [dict exists $::rawParamDict runFolder] } {
+  puts stderr "paramter -runFolder does not exists!"
+  exit 1
+}
+
+lappend auto_path [file join $::baseDir [dict get $::rawParamDict runFolder]]
+
+# now start
+package require CommonUtil
+package require AppDetecter
 
 if {! [dict exists $::rawParamDict action]} {
   dict set rawParamDict action install
@@ -43,11 +45,9 @@ if {! [string match *.yml $cfgFile]} {
 
 if {[file exists $cfgFile]} {
   set ::ymlDict [::CommonUtil::mergeConfig $::rawParamDict [::CommonUtil::loadYaml $cfgFile]]
-}
-
-if {[dict exists $::rawParamDict runFolder] } {
-  source [file join $::baseDir [dict get $::rawParamDict runFolder] launcher.tcl]
 } else {
-  puts stderr "paramter -runFolder does not exists!"
+  puts stdout "profile are mandatory. or replace a local-profile.yml in your app script folder."
   exit 1
 }
+
+source [file join $::baseDir [dict get $::rawParamDict runFolder] launcher.tcl]

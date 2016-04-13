@@ -63,7 +63,7 @@ proc ::ClusterMycnf::substitute {} {
             catch {exec mkdir -p $DataDir} msg o
             catch {exec chown -R mysql:mysql $DataDir}
             set kvDict [dict create {ndb-connectstring}  "nodeid=$nodeid,$mgmHosts" datadir $DataDir]
-            variable mycnfDic [::CommonUtil::replaceItem $mycnfDic $k $kvDict]
+            variable mycnfDic [::CommonUtil::replaceContentDic $mycnfDic $k $kvDict]
           }
         }
       }
@@ -71,20 +71,20 @@ proc ::ClusterMycnf::substitute {} {
         set nodeid [::confutil::getNodeId {NDBD}]
         if {[string length $nodeid] > 0} {
           set kvDict [dict create {connect-string}  "nodeid=$nodeid,$mgmHosts"]
-          variable mycnfDic [::CommonUtil::replaceItem $mycnfDic $k $kvDict]
+          variable mycnfDic [::CommonUtil::replaceContentDic $mycnfDic $k $kvDict]
         }
       }
       {[ndb_mgm]} {
         set nodeid [::confutil::getNodeId {NDB_MGMD}]
         if {[string length $nodeid] > 0} {
           set kvDict [dict create {connect-string}  "nodeid=$nodeid,$mgmHosts"]
-          variable mycnfDic [::CommonUtil::replaceItem $mycnfDic $k $kvDict]
+          variable mycnfDic [::CommonUtil::replaceContentDic $mycnfDic $k $kvDict]
         }
       }
       {[ndb_mgmd]} {
           set kvDict [dict get $::ymlDict NDB_MGMD_DEFAULT]
           puts $kvDict
-          variable mycnfDic [::CommonUtil::replaceItem $mycnfDic $k $kvDict]
+          variable mycnfDic [::CommonUtil::replaceContentDic $mycnfDic $k $kvDict]
       }
     }
   }
