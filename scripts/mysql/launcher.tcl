@@ -3,6 +3,7 @@ package require CommonUtil
 
 package require MysqlInstaller
 package require MysqlInit
+package require SecureMe
 
 if {! [::AppDetecter::isInstalled expect]} {
   puts stdout "expect not installed, start to install...."
@@ -16,6 +17,9 @@ switch $action {
 	install {
 		::MysqlInstaller::install {*}[getBoxConfig]
 	}
+  secureInstallation {
+    ::SecureMe::doSecure $::ymlDict
+  }
   init {
     ::MysqlInit::init $::ymlDict
   }

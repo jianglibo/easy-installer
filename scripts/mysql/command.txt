@@ -1,2 +1,5 @@
 create a master server:
 ./easy-installer.tcl --host=xxx --profile=local-master-profile.yml install
+
+
+tmp password: 8s&(2222)Ak0

@@ -6,8 +6,9 @@ namespace eval ::CommonUtil {
 
 }
 
-proc ::CommonUtil::dictItemExists {} {
-
+proc ::CommonUtil::endEasyInstall {} {
+  puts stdout "end_of_easy_install\n"
+  exit 0
 }
 
 proc ::CommonUtil::replaceLines {lines kvDic} {

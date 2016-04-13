@@ -6,4 +6,6 @@ sync_binlog: 1
 log-error: /var/log/mysqld.log
 pid-file: /var/run/mysqld/mysqld.pid
 DownFrom: http://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm
+# relative to "scripts" folder.
+MyCnfTpl: mysql/my.cnf
 IsMaster: 1

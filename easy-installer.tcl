@@ -6,6 +6,7 @@ exec tclsh "$0" ${1+"$@"}
 set ::nameAction [list]
 
 set ::baseDir [file dirname [info script]]
+package require Expect
 
 proc printHelp {} {
   puts "command style is:"
@@ -115,10 +116,38 @@ foreach h [parseHosts [dict get $::rawParamDict host]] {
 
   set actions [lrange $::nameAction 1 end]
   foreach ac $actions {
-    set execCmd "tclsh ~/easy-install/scripts/launcher.tcl [prepareLauncherParams $ac]"
-    puts "start run: $execCmd on $h"
-    catch {exec ssh root@$h $execCmd} msg o
-    puts $msg
+    spawn -noecho ssh root@$h
+    exp_send "tclsh ~/easy-install/scripts/launcher.tcl [prepareLauncherParams $ac]\n"
+    set timeout 100000
+    expect {
+      "new_password:" {
+        expect_user -re "(.*)\n"
+        exp_send "$expect_out(1,string)\n"
+        exp_continue
+      }
+      "password_again:" {
+        expect_user -re "(.*)\n"
+        exp_send "$expect_out(1,string)\n"
+        exp_continue
+      }
+      "end_of_easy_install" {
+        close
+        break
+      }
+      -re "(.*)\n" {
+        exp_continue
+      }
+      eof {
+        puts "done!"
+      }
+      timeout {
+        puts "timeout"
+      }
+    }
+#    set execCmd "tclsh ~/easy-install/scripts/launcher.tcl [prepareLauncherParams $ac]"
+#    puts "start run: $execCmd on $h"
+#    catch {exec ssh root@$h $execCmd} msg o
+#    puts $msg
   }
   cleanupRunFolder $h
 }

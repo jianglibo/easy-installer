@@ -11,3 +11,5 @@
 package ifneeded Mycnf 1.0 [list source [file join $dir mycnf.tcl]]
 package ifneeded MysqlInstaller 1.0 [list source [file join $dir mysql-installer.tcl]]
 package ifneeded MysqlInit 1.0 [list source [file join $dir mysql-init.tcl]]
+package ifneeded SecureMe 1.0 [list source [file join $dir secure-me.tcl]]
+package ifneeded SqlRunner 1.0 [list source [file join $dir sql-runner.tcl]]
