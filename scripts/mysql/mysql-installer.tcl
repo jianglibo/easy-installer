@@ -16,7 +16,7 @@ namespace eval ::MysqlInstaller {
 proc ::MysqlInstaller::install {isMaster nodeYml} {
 	if {[::AppDetecter::isInstalled {mysqld}]} {
 		puts stdout "mysql already isInstalled, skip install."
-		exit 0
+		::CommonUtil::endEasyInstall
 	}
 	variable tmpDir
 	set mysqlLog [dict get $nodeYml  log-error]
@@ -29,7 +29,7 @@ proc ::MysqlInstaller::install {isMaster nodeYml} {
 			exec curl -OL $DownFrom >& /dev/null
 		} msg o]} {
 		puts $msg
-		exit 1
+		::CommonUtil::endEasyInstall
 	} else {
 		puts stdout "download done."
 	}
@@ -40,5 +40,6 @@ proc ::MysqlInstaller::install {isMaster nodeYml} {
 
 	catch {exec yum install -y mysql-community-server} msg o
 	puts stdout $msg
+	::CommonUtil::endEasyInstall
 #	exec systemctl start mysqld
 }

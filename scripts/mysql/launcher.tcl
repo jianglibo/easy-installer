@@ -15,7 +15,7 @@ set action [dict get $::rawParamDict action]
 
 switch $action {
 	install {
-		::MysqlInstaller::install {*}[getBoxConfig]
+		::MysqlInstaller::install [dict get $::ymlDict IsMaster] $::ymlDict
 	}
   secureInstallation {
     ::SecureMe::doSecure $::ymlDict

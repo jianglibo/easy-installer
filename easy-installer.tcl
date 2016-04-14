@@ -84,7 +84,6 @@ proc prepareRunFolder {host an} {
   foreach f $tmp {
     exec scp $f root@$host:~/easy-install/scripts/
   }
-  puts done!
 }
 
 proc cleanupRunFolder {host} {
