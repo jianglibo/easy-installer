@@ -4,7 +4,6 @@ package require MysqlInstaller
 package require SecureMe
 package require Expect
 package require AddUser
-package require FreezeReplca
 
 proc checkIp {} {
   if {[string length [::CommonUtil::getThisMachineIp [dict get $::ymlDict HostName]]] == 0} {
@@ -55,8 +54,14 @@ catch {
         puts $msg
       }
     }
-  	freezeReplicaPoint {
-      ::FreezeReplca::freeze $::ymlDict [acquireDbRootPassword]
+  	dump {
+      set rpass [acquireDbRootPassword]
+      set replStarter [file join [file dirname [dict get $::ymlDict datadir]] forMysqlReplica]
+			set replDumpFile [file join $replStarter dump.db]
+      puts "\nstart execute mysqldump\n"
+      [exec mysqldump -uroot -p$rpass -h localhost --all-databases --master-data > $replDumpFile]
+
+#      ::FreezeReplca::freeze $::ymlDict
   	}
   }
 } msg o

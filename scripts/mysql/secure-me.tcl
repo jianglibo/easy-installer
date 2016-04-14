@@ -111,5 +111,4 @@ proc ::SecureMe::doSecure {ymlDict} {
 		eof {}
 		timeout
 	}
-	::CommonUtil::endEasyInstall
 }
