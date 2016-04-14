@@ -9,7 +9,7 @@ mysql> GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%.mydomain.com';
 3、FLUSH TABLES WITH READ LOCK;锁定主服务。（保持）FLUSH TABLES WITH READ LOCK acquires a global read lock and not table locks
 4、SHOW MASTER STATUS; 记录bin-log的file 和position
 5、 mysqldump --all-databases --master-data > dbdump.db，将主服务器已有的数据导出
-6、可以UNlock table
+6、可以UNlock tables
 
 从机：
 1、在master上面，解除lock，UNLOCK TABLES

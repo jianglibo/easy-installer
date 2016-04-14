@@ -6,30 +6,30 @@ namespace eval ::SecureMe {
 }
 
 proc ::SecureMe::doSecure {ymlDict} {
-	set timeout 30
-	set c 0
-	set retryCount 0
-	while {1} {
-		if {$retryCount > 3} {
-			::CommonUtil::endEasyInstall
-		}
-		if {$c} {
-			send_user "new_password_again:\n"
-			expect_user -re "(.*)\n"
-			if {[string equal $password $expect_out(1,string)]} {
-				break;
-			} else {
-				send_user "password not match!\n"
-				incr retryCount
-				set c 0
-			}
-		} else {
-			send_user "please_enter_new_password:\n"
-			expect_user -re "(.*)\n"
-			set password $expect_out(1,string)
-			set c 1
-		}
-	}
+#	set timeout 30
+#	set c 0
+#	set retryCount 0
+#	while {1} {
+#		if {$retryCount > 3} {
+#			::CommonUtil::endEasyInstall
+#		}
+#		if {$c} {
+#			send_user "new_password_again:\n"
+#			expect_user -re "(.*)\n"
+#			if {[string equal $password $expect_out(1,string)]} {
+#				break;
+#			} else {
+#				send_user "password not match!\n"
+#				incr retryCount
+#				set c 0
+#			}
+#		} else {
+#			send_user "please_enter_new_password:\n"
+#			expect_user -re "(.*)\n"
+#			set password $expect_out(1,string)
+#			set c 1
+#		}
+#	}
 
 	set mysqlLog [dict get $ymlDict  log-error]
 	set tpl [file join $::baseDir [dict get $ymlDict MyCnfTpl]]
@@ -65,8 +65,10 @@ proc ::SecureMe::doSecure {ymlDict} {
 
 	spawn -noecho mysql_secure_installation
 
+	set expired 0
+
 	expect {
-		"Enter password for user root:" {
+		"Enter password for user root: $" {
 			 exp_send "$tmppsd\r"
 			 exp_continue
 		 }
@@ -74,37 +76,40 @@ proc ::SecureMe::doSecure {ymlDict} {
 			puts stdout "\nmysql already be initialized. skipped."
 			::CommonUtil::endEasyInstall
 		}
-		"*Change the password for*" {
-			puts stdout "\nmysql already be initialized. skipped."
+		"Change the password for root ? ((Press y|Y for Yes, any other key for No) : $" {
+			if {$expired} {
+				exp_send "n\r"
+				exp_continue
+			} else {
+				puts stdout "\nmysql already be initialized. skipped."
+				::CommonUtil::endEasyInstall
+			}
+		}
+		"The existing password for the user account root has expired*New password: $" {
+				set expired 1
+				send_user "_enter_password:"
+				expect_user -re "(.*)\n"
+  			exp_send "$expect_out(1,string)\r"
+				exp_continue
+			}
+		"Re-enter new password: $" {
+			send_user "_enter_password:"
+			expect_user -re "(.*)\n"
+			exp_send "$expect_out(1,string)\r"
+			exp_continue
+		}
+		"Sorry, passwords do not match.*New password: $" {
+			exp_continue
+		}
+		"satisfy the current policy requirements*New password: $" {
 			::CommonUtil::endEasyInstall
 		}
+		"Remove anonymous users?*any other key for No) : $" {exp_send "y\r" ; exp_continue}
+		"Disallow root login remotely?* any other key for No) : $" {exp_send "y\r" ; exp_continue}
+		"Remove test database and access to it?* any other key for No) : $" {exp_send "y\r"; exp_continue}
+		"Reload privilege tables now?* any other key for No) : $" {exp_send "y\r"}
 		eof {}
-		timeout {
-			puts stdout "let timeout."
-		}
+		timeout
 	}
-	expect {
-		"The existing password for the user account root has expired*New password:" {
-  			exp_send "$password\r"
-				exp_continue
-			}
-			"Re-enter new password:" {
-				exp_send "$password\r"
-				exp_continue
-			}
-			"any other key for No)" {
-				exp_send "n\r"
-			}
-			eof {}
-			timeout {}
-		}
-		
-	expect {
-		"Remove anonymous users?*any other key for No)" {exp_send "y\r" ; exp_continue}
-		"Disallow root login remotely?* any other key for No)" {exp_send "y\r" ; exp_continue}
-		"Remove test database and access to it?* any other key for No)" {exp_send "y\r"; exp_continue}
-		"Reload privilege tables now?* any other key for No)" {exp_send "y\r"; exp_continue}
-		eof {}
-		timeout {}
-	}
+	::CommonUtil::endEasyInstall
 }

@@ -1,11 +1,11 @@
 package provide SqlRunner 1.0
+package require Expect
 
 namespace eval ::SqlRunner {
 }
 
 proc ::SqlRunner::run {sqls, password} {
   spawn -noecho mysql -uroot -p
-
 	set sqls [list]
 
 	foreach hu [dict get $::ymlDict ALLOWED_USERS] {

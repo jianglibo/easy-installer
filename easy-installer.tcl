@@ -118,30 +118,21 @@ foreach h [parseHosts [dict get $::rawParamDict host]] {
     spawn -noecho ssh root@$h
     exp_send "tclsh ~/easy-install/scripts/launcher.tcl [prepareLauncherParams $ac]\n"
     set timeout 100000
+    # all we need is to keep sensitive password out of command history.
     expect {
-      "new_password:" {
-        expect_user -re "(.*)\n"
-        exp_send "$expect_out(1,string)\n"
-        exp_continue
-      }
-      "password_again:" {
+      "_enter_password:$" {
         expect_user -re "(.*)\n"
         exp_send "$expect_out(1,string)\n"
         exp_continue
       }
       "end_of_easy_install" {
         close
-        break
       }
       -re "(.*)\n" {
         exp_continue
       }
-      eof {
-        puts "done!"
-      }
-      timeout {
-        puts "timeout"
-      }
+      eof {}
+      timeout
     }
 #    set execCmd "tclsh ~/easy-install/scripts/launcher.tcl [prepareLauncherParams $ac]"
 #    puts "start run: $execCmd on $h"

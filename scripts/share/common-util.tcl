@@ -7,7 +7,7 @@ namespace eval ::CommonUtil {
 }
 
 proc ::CommonUtil::endEasyInstall {} {
-  puts stdout "end_of_easy_install\n"
+  puts stdout "\nend_of_easy_install\n"
   exit 0
 }
 

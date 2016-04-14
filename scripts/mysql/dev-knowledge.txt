@@ -1,0 +1,9 @@
+ mysql_secure_installation
+
+simulation fresh new installation:
+
+ALTER USER 'root'@'localhost' PASSWORD EXPIRE;
+SET PASSWORD [FOR user] = password('tmpPasswordInLog')
+
+tmp password: 8s&(2222)Ak0 (for myself test only)
+office tmp log pass: #9a>=sjiAtuc
