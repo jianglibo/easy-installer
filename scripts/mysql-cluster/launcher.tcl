@@ -71,3 +71,4 @@ switch [dict get $::rawParamDict action] {
 
   }
 }
+::CommonUtil::endEasyInstall

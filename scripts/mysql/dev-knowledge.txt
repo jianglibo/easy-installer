@@ -7,3 +7,9 @@ SET PASSWORD [FOR user] = password('tmpPasswordInLog')
 
 tmp password: 8s&(2222)Ak0 (for myself test only)
 office tmp log pass: #9a>=sjiAtuc
+repl password: A923^co9s999
+
+controller skip-slave-start:
+第一次启动的时候，添加：
+skip-slave-start=TRUE
+然后就不用了。

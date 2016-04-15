@@ -5,46 +5,52 @@ package require CommonUtil
 package require MysqlInstaller
 package require Expect
 package require Mycnf
+package require SqlRunner
 
 namespace eval ::AddUser {
+}
+
+proc ::AddUser::queryPassword {mpt} {
+	set timeout 1000
+	send_user "$mpt"
+	expect_user -re "(.*)\n"
+	return $expect_out(1,string)
 }
 
 proc ::AddUser::add {paramsDict rpass} {
 	if {[catch {
 		set UserName [dict get $paramsDict UserName]
-		set HostName [dict get $paramsDict HostName]
+		set FromHost [dict get $paramsDict FromHost]
 		set DbName [dict get $paramsDict DbName]
 		} msg o]} {
 			puts "parameter 'ip, name, dbName' are mandatory."
 			::CommonUtil::endEasyInstall
 	}
-	set timeout 1000
-	send_user "please enter password for '$UserName'@'$HostName' _enter_password:"
-	expect_user -re "(.*)\n"
-	set upass $expect_out(1,string)
-	dict set paramsDict Password $upass
+
+	dict set paramsDict Password [queryPassword "please enter password for '$UserName'@'$FromHost' _enter_password:"]
 
 	set sqls [list]
 	lappend sqls [string map $paramsDict "create database DbName charset utf8;\r"]
-	lappend sqls [string map $paramsDict "grant all privileges on DbName.* to 'UserName'@'HostName' identified by 'Password';\r"]
+	lappend sqls [string map $paramsDict "grant all privileges on DbName.* to 'UserName'@'FromHost' identified by 'Password';\r"]
 	lappend sqls "flush privileges;\r"
-	lappend sqls "exit\r"
+	::SqlRunner::run $sqls $rpass
+}
 
-  spawn -noecho mysql -uroot -p
-	set count 0
-	expect {
-		"Enter password: $" {
-			exp_send "$rpass\r"
-			exp_continue
-		}
-		"mysql> $" {
-			exp_send [lindex $sqls $count]
-			incr count
-			exp_continue
-		}
-		eof {}
-		timeout {
+proc ::AddUser::addReplica {paramsDict rpass} {
+	if {[catch {
+		set UserName [dict get $paramsDict UserName]
+		set FromHost [dict get $paramsDict FromHost]
+		} msg o]} {
+			puts "parameter 'ip, name, dbName' are mandatory."
 			::CommonUtil::endEasyInstall
-		}
 	}
+
+	dict set paramsDict Password [queryPassword "please enter password for '$UserName'@'$FromHost' _enter_password:"]
+
+	set sqls [list]
+	lappend sqls [string map $paramsDict "CREATE USER 'UserName'@'FromHost' IDENTIFIED BY 'Password';\r"]
+	lappend sqls [string map $paramsDict "GRANT REPLICATION SLAVE ON *.* TO 'UserName'@'FromHost';\r"]
+	lappend sqls "flush privileges;\r"
+	puts "....[llength $sqls]........."
+	::SqlRunner::run $sqls $rpass
 }

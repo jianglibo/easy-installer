@@ -5,17 +5,15 @@ package require SecureMe
 package require Expect
 package require AddUser
 
-proc checkIp {} {
-  if {[string length [::CommonUtil::getThisMachineIp [dict get $::ymlDict HostName]]] == 0} {
-    puts stdout "machine ip doesn't match HostName item in [dict get $::rawParamDict profile]"
-    ::CommonUtil::endEasyInstall
-  }
-}
-
 if {! [::AppDetecter::isInstalled expect]} {
   puts stdout "expect not installed, start to install...."
   catch {exec yum install -y expect} msg o
 }
+
+#if {[string length [::CommonUtil::getThisMachineIp [dict get $::ymlDict HostName]]] == 0} {
+#  puts stdout "machine ip doesn't match HostName item in [dict get $::rawParamDict profile]"
+#  ::CommonUtil::endEasyInstall
+#}
 
 proc acquireDbRootPassword {} {
   set timeout 1000
@@ -43,13 +41,23 @@ catch {
 
   switch $action {
   	install {
-  		::MysqlInstaller::install [dict get $::ymlDict IsMaster] $::ymlDict
+  		::MysqlInstaller::install $::ymlDict
   	}
     secureInstallation {
-      ::SecureMe::doSecure $::ymlDict
+      if {[dict get $::ymlDict server-id] eq "x"} {
+        puts "must pass an unique server-id parameter."
+      } else {
+        ::SecureMe::doSecure $::ymlDict
+      }
     }
     createUser {
       catch {::AddUser::add $::rawParamDict [acquireDbRootPassword]} msg o
+      if {[dict get $o -code] > 0} {
+        puts $msg
+      }
+    }
+    createReplicaUser {
+      catch {::AddUser::addReplica $::rawParamDict [acquireDbRootPassword]} msg o
       if {[dict get $o -code] > 0} {
         puts $msg
       }
@@ -63,6 +71,15 @@ catch {
 
 #      ::FreezeReplca::freeze $::ymlDict
   	}
+    importDump {
+      exec systemctl stop mysqld
+      # start with skip-slave-start=TRUE
+      # modify /etc/my.cnf #add line skip-slave-start=TRUE
+      exec systemctl start mysqld
+      # download dump.db from server.
+      exec mysql -uroot -p < dump.db
+      # run START SLAVE
+    }
   }
 } msg o
 

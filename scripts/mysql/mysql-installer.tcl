@@ -13,7 +13,7 @@ namespace eval ::MysqlInstaller {
 	}
 }
 
-proc ::MysqlInstaller::install {isMaster nodeYml} {
+proc ::MysqlInstaller::install {nodeYml} {
 	if {[::AppDetecter::isInstalled {mysqld}]} {
 		puts stdout "mysql already isInstalled, skip install."
 		::CommonUtil::endEasyInstall
@@ -40,6 +40,5 @@ proc ::MysqlInstaller::install {isMaster nodeYml} {
 
 	catch {exec yum install -y mysql-community-server} msg o
 	puts stdout $msg
-	::CommonUtil::endEasyInstall
 #	exec systemctl start mysqld
 }

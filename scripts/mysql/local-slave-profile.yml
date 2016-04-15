@@ -1,8 +1,0 @@
-HostName: 192.168.33.50
-datadir: /opt/mysql-slave
-server-id: 2
-innodb_flush_log_at_trx_commit: 1
-sync_binlog: 1
-log-error: /var/log/mysqld-slave.log
-pid-file: /var/run/mysqld/mysqld-slave.pid
-IsMaster: 0

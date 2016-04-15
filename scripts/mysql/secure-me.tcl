@@ -6,30 +6,6 @@ namespace eval ::SecureMe {
 }
 
 proc ::SecureMe::doSecure {ymlDict} {
-#	set timeout 30
-#	set c 0
-#	set retryCount 0
-#	while {1} {
-#		if {$retryCount > 3} {
-#			::CommonUtil::endEasyInstall
-#		}
-#		if {$c} {
-#			send_user "new_password_again:\n"
-#			expect_user -re "(.*)\n"
-#			if {[string equal $password $expect_out(1,string)]} {
-#				break;
-#			} else {
-#				send_user "password not match!\n"
-#				incr retryCount
-#				set c 0
-#			}
-#		} else {
-#			send_user "please_enter_new_password:\n"
-#			expect_user -re "(.*)\n"
-#			set password $expect_out(1,string)
-#			set c 1
-#		}
-#	}
 
 	set mysqlLog [dict get $ymlDict  log-error]
 	set tpl [file join $::baseDir [dict get $ymlDict MyCnfTpl]]
@@ -59,9 +35,6 @@ proc ::SecureMe::doSecure {ymlDict} {
 
 	#if you successly run this code, password should not match.So it is harmless.
 	puts stdout "temporary password is $tmppsd"
-
-
-	#set password [dict get $::rawParamDict password]
 
 	spawn -noecho mysql_secure_installation
 
