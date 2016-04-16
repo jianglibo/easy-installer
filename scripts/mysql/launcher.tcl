@@ -4,6 +4,7 @@ package require MysqlInstaller
 package require SecureMe
 package require Expect
 package require AddUser
+package require SlaveFirstRun
 
 if {! [::AppDetecter::isInstalled expect]} {
   puts stdout "expect not installed, start to install...."
@@ -65,20 +66,15 @@ catch {
   	dump {
       set rpass [acquireDbRootPassword]
       set replStarter [file join [file dirname [dict get $::ymlDict datadir]] forMysqlReplica]
+      if {! [file exists $replStarter]} {
+        exec mkdir -p $replStarter
+      }
 			set replDumpFile [file join $replStarter dump.db]
       puts "\nstart execute mysqldump\n"
       [exec mysqldump -uroot -p$rpass -h localhost --all-databases --master-data > $replDumpFile]
-
-#      ::FreezeReplca::freeze $::ymlDict
   	}
-    importDump {
-      exec systemctl stop mysqld
-      # start with skip-slave-start=TRUE
-      # modify /etc/my.cnf #add line skip-slave-start=TRUE
-      exec systemctl start mysqld
-      # download dump.db from server.
-      exec mysql -uroot -p < dump.db
-      # run START SLAVE
+    firstStartSlave {
+      ::SlaveFirstRun:run $::rawParamDict $::ymlDict
     }
   }
 } msg o

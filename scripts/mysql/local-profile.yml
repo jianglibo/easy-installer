@@ -7,3 +7,4 @@ pid-file: /var/run/mysqld/mysqld.pid
 DownFrom: http://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm
 # relative to "scripts" folder.
 MyCnfTpl: mysql/my.cnf
+DumpFileOnMaster: /opt/forMysqlReplica/dump.db
