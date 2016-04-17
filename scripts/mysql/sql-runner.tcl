@@ -19,7 +19,11 @@ proc ::SqlRunner::run {sqls password} {
 		}
 		"mysql> $" {
 			if {$count < $num} {
-				exp_send [lindex $sqls $count]
+        set sq [string trim [lindex $sqls $count]]
+        if {[string last \; $sq] == -1} {
+          set sq "${sq};"
+        }
+				exp_send "$sq\r"
 				incr count
 				exp_continue
 			}

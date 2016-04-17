@@ -51,6 +51,5 @@ proc ::AddUser::addReplica {paramsDict rpass} {
 	lappend sqls [string map $paramsDict "CREATE USER 'UserName'@'FromHost' IDENTIFIED BY 'Password';\r"]
 	lappend sqls [string map $paramsDict "GRANT REPLICATION SLAVE ON *.* TO 'UserName'@'FromHost';\r"]
 	lappend sqls "flush privileges;\r"
-	puts "....[llength $sqls]........."
 	::SqlRunner::run $sqls $rpass
 }

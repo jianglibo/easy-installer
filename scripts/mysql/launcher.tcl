@@ -9,7 +9,7 @@ package require Mirror
 
 if {! [::AppDetecter::isInstalled expect]} {
   puts stdout "expect not installed, start to install...."
-  catch {exec yum install -y expect} msg o
+  ::CommonUtil::spawnCommand yum install -y expect
 }
 
 #if {[string length [::CommonUtil::getThisMachineIp [dict get $::ymlDict HostName]]] == 0} {
@@ -48,10 +48,11 @@ catch {
     secureInstallation {
       ::SecureMe::doSecure $::ymlDict
     }
-    enableBinLog: {
+    startMaster {
       ::SecureMe::enableBinLog
     }
     startSlave {
+      ::SecureMe::enableBinLog
       ::SlaveFirstRun::startSlave
     }
     mirror {

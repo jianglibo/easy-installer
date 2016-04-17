@@ -17,6 +17,10 @@ tmp password: 8s&(2222)Ak0 (for myself test only)
 office tmp log pass: #9a>=sjiAtuc
 repl password: A923^co9s999
 
+CHANGE MASTER TO MASTER_HOST='192.168.33.50'; #FOR CHANNEL channelName
+START SLAVE USER='repl' PASSWORD='A923^co9s999';
+
+RESET SLAVE ALL;
 controller skip-slave-start:
 第一次启动的时候，添加：
 skip-slave-start=TRUE

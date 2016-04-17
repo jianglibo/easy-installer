@@ -2,6 +2,8 @@ package provide CommonUtil 1.0
 
 package require yaml
 
+package require Expect
+
 namespace eval ::CommonUtil {
 
 }
@@ -9,6 +11,19 @@ namespace eval ::CommonUtil {
 proc ::CommonUtil::endEasyInstall {} {
   puts stdout "\nend_of_easy_install\n"
   exit 0
+}
+
+proc ::CommonUtil::spawnCommand {args} {
+  set timeout 10000
+  spawn {*}$args
+  expect {
+    eof {
+      puts done
+    }
+    timeout {
+      puts timeout
+    }
+  }
 }
 
 

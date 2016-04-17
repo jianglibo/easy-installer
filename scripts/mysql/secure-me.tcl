@@ -10,6 +10,7 @@ namespace eval ::SecureMe {
 proc ::SecureMe::enableBinLog {} {
   if {! [dict exists $::rawParamDict server-id]} {
     puts "\nserver-id is mandatory.\n"
+    ::CommonUtil::endEasyInstall
   }
   set scripts {
     if {[string first #log-bin= $line] == 0} {
@@ -25,7 +26,7 @@ proc ::SecureMe::enableBinLog {} {
     }
 	}
   ::CommonUtil::substFileLineByLine /etc/my.cnf $scripts
-  exec systemctl restart mysqld
+  ::CommonUtil::spawnCommand systemctl restart mysqld
 }
 
 proc ::SecureMe::doSecure {ymlDict} {
@@ -44,7 +45,7 @@ proc ::SecureMe::doSecure {ymlDict} {
 			exec mkdir -p $dd
 			exec chown -R mysql:mysql $dd
 		}
-		exec systemctl start mysqld
+		::CommonUtil::spawnCommand systemctl start mysqld
 	}
 
 	if {[catch {open $mysqlLog} fid o]} {
@@ -62,7 +63,7 @@ proc ::SecureMe::doSecure {ymlDict} {
 
 	#if you successly run this code, password should not match.So it is harmless.
 	puts stdout "temporary password is $tmppsd"
-
+  set timeout 10000
 	spawn -noecho mysql_secure_installation
 
 	set expired 0

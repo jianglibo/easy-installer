@@ -19,7 +19,7 @@ namespace eval ::SlaveFirstRun {
 
 proc ::SlaveFirstRun::startSlave {} {
   set timeout 10000
-  send_user "Please Enter root password to continue. _enter_password:"
+  send_user "Please Enter slave's db root password to continue. _enter_password:"
   expect_user -re "(.*)\n"
   set rpass $expect_out(1,string)
 
@@ -36,7 +36,8 @@ proc ::SlaveFirstRun::startSlave {} {
   set pas $expect_out(1,string)
 
   set sqls [list]
-  lappend sqls [format "CHANGE MASTER TO MASTER_HOST='%s',MASTER_USER='%s',MASTER_PASSWORD='%s'" $masterHost $masterUser $pas]
+  lappend sqls "CHANGE MASTER TO MASTER_HOST='$masterHost'"
+  lappend sqls "START SLAVE USER='$masterUser' PASSWORD='$pas'"
   ::SqlRunner::run $sqls $rpass
 }
 
