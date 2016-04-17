@@ -13,11 +13,17 @@ namespace eval ::MysqlInstaller {
 	}
 }
 
-proc ::MysqlInstaller::install {nodeYml} {
+proc ::MysqlInstaller::install {nodeYml rawParamDict} {
 	if {[::AppDetecter::isInstalled {mysqld}]} {
 		puts stdout "mysql already isInstalled, skip install."
 		::CommonUtil::endEasyInstall
 	}
+
+	if {! [dict exists $rawParamDict server-id]} {
+		puts stdout "\nparameter server-id is mandantory.\n"
+		::CommonUtil::endEasyInstall
+	}
+
 	variable tmpDir
 	set mysqlLog [dict get $nodeYml  log-error]
 	set DownFrom [dict get $::ymlDict DownFrom]

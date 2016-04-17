@@ -9,3 +9,6 @@
 * ./easy-installer.tcl --host=xxx server-id=2 mysql install
 * ./easy-installer.tcl --host=xxx server-id=2 mysql secureInstallation
 * ./easy-installer.tcl --host=xxx --MasterHost=xxxx mysql firstStartSlave
+
+## create a dev mysql mirror
+* ./easy-installer.tcl --host=xxx --at=8:15 mysql mirror

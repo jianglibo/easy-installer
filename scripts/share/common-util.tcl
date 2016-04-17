@@ -11,6 +11,28 @@ proc ::CommonUtil::endEasyInstall {} {
   exit 0
 }
 
+
+proc ::CommonUtil::substFileLineByLine {fn scripts} {
+  set lines [list]
+  if {[catch {open $fn} fid o]} {
+    puts stdout $fid
+  } else {
+    while {[gets $fid line] >= 0} {
+      eval $scripts
+    }
+    close $fid
+  }
+
+  if {[catch {open $fn w} fid o]} {
+    puts stdout $fid
+  } else {
+    foreach line $lines {
+      puts $fid $line
+    }
+    close $fid
+  }
+}
+
 proc ::CommonUtil::replaceLines {lines kvDic} {
   set keys [dict keys $kvDic]
   set result [list]

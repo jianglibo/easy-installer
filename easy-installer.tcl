@@ -24,10 +24,18 @@ proc isAppName {an} {
   return 0
 }
 
+proc changeMirrors {host} {
+  exec ssh root@$host "sed -i -e 's/#include_only.*/include_only=aliyun.com,.cn/' /etc/yum/pluginconf.d/fastestmirror.conf"
+}
+
 proc installTclIfNeed {host} {
   catch {exec ssh root@$host "which tclsh"} msg o
   if {[string match "which: no*" $msg]} {
-    exec ssh root@$host "yum install -y tcl tcllib expect"
+    set timeout 10000
+    spawn ssh root@$host "yum install -y tcl tcllib expect"
+    expect {
+      eof {}
+    }
   }
 }
 
@@ -109,7 +117,11 @@ proc prepareLauncherParams {ac} {
   return [join $params { }]
 }
 
+# start of app
+
 foreach h [parseHosts [dict get $::rawParamDict host]] {
+  #if you not living main land of china, comment line below.
+  changeMirrors $h
   installTclIfNeed $h
   prepareRunFolder $h [lindex $::nameAction 0]
 

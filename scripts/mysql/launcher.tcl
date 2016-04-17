@@ -5,6 +5,7 @@ package require SecureMe
 package require Expect
 package require AddUser
 package require SlaveFirstRun
+package require Mirror
 
 if {! [::AppDetecter::isInstalled expect]} {
   puts stdout "expect not installed, start to install...."
@@ -42,7 +43,7 @@ catch {
 
   switch $action {
   	install {
-  		::MysqlInstaller::install $::ymlDict
+  		::MysqlInstaller::install $::ymlDict $::rawParamDict
   	}
     secureInstallation {
       if {[dict get $::ymlDict server-id] eq "x"} {
@@ -50,6 +51,9 @@ catch {
       } else {
         ::SecureMe::doSecure $::ymlDict
       }
+    }
+    mirror {
+      ::Mirror::mirror $::rawParamDict
     }
     createUser {
       catch {::AddUser::add $::rawParamDict [acquireDbRootPassword]} msg o

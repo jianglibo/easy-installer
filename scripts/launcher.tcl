@@ -51,3 +51,7 @@ if {[file exists $cfgFile]} {
 }
 
 source [file join $::baseDir [dict get $::rawParamDict runFolder] launcher.tcl]
+
+package require CommonUtil
+
+::CommonUtil::endEasyInstall

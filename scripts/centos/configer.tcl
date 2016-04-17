@@ -1,6 +1,8 @@
 package provide Configer 1.0
 
 namespace eval ::Configer {
+  variable urlDic [dict create]
+  dict set urlDic aliyun http://mirrors.aliyun.com
 }
 
 proc ::Configer::disableIpv6 {} {
@@ -17,57 +19,39 @@ proc ::Configer::disableIpv6 {} {
   exec sysctl -w net.ipv6.conf.default.disable_ipv6=1
 }
 
-proc ::Configer::fixOne {cfgFile url} {
-  puts "${cfgFile}----$url"
-  set lines [list]
-  if {[catch {open $cfgFile} fid o]} {
-    puts stdout $fid
-  } else {
-    while {[gets $fid line] >= 0} {
+proc ::Configer::fixCentOsBase {cfgFile url} {
+  set scripts {
       if {[string first mirrorlist= $line] == 0} {
         lappend lines "#$line"
-        lappend lines [join [list "baseurl=$url/centos/" {$releasever/updates/$basearch/}] {}]
+      } elseif {[string first #baseurl= $line] == 0} {
+        lappend lines [string map "#baseurl= baseurl= http://mirror.centos.org %s" $line]
       } else {
         lappend lines $line
       }
-    }
-    close $fid
   }
+  set scripts [format $scripts $url]
+  ::CommonUtil::substFileLineByLine $cfgFile $scripts
+}
 
-  if {[catch {open $cfgFile w} fid o]} {
-    puts stdout $fid
-  } else {
-    foreach line $lines {
-      puts $fid $line
+proc ::Configer::fixAliEpel {cfgFile} {
+  set scripts {
+      if {! [string match *aliyuncs* $line]} {
+        lappend lines $line
+      }
     }
-    close $fid
-  }
+  ::CommonUtil::substFileLineByLine $cfgFile $scripts
 }
 
 proc ::Configer::disableFastMirror {} {
   set cfgFile /etc/yum/pluginconf.d/fastestmirror.conf
-  set lines [list]
-  if {[catch {open $cfgFile} fid o]} {
-    puts stdout $fid
-  } else {
-    while {[gets $fid line] >= 0} {
-      if {[string first enabled= $line] == 0} {
-        lappend lines enabled=0
-      } else {
-        lappend lines $line
-      }
+  set scripts {
+    if {[string first enabled= $line] == 0} {
+      lappend lines enabled=0
+    } else {
+      lappend lines $line
     }
-    close $fid
   }
-
-  if {[catch {open $cfgFile w} fid o]} {
-    puts stdout $fid
-  } else {
-    foreach line $lines {
-      puts $fid $line
-    }
-    close $fid
-  }
+  ::CommonUtil::substFileLineByLine $cfgFile $scripts
 }
 
 proc ::Configer::backupRepo {} {
@@ -86,24 +70,13 @@ proc ::Configer::backupRepo {} {
 # http://mirrors.aliyun.com/centos/
 # CentOS-Base.repo  CentOS-CR.repo CentOS-Debuginfo.repo  CentOS-fasttrack.repo  CentOS-Media.repo CentOS-Sources.repo CentOS-Vault.repo
 proc ::Configer::fixRepoTo {src} {
+  variable urlDic
+
   backupRepo
   disableFastMirror
 
-  set files {/etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Sources.repo}
-  set url {}
-  switch $src {
-    aliyun {
-      set url "http://mirrors.aliyun.com"
-    }
-  }
-
   catch {exec curl -o /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo} msg o
 
-  if {[string length url] == 0} {
-    puts "Known src: $src"
-  } else {
-    foreach f $files {
-      fixOne $f $url
-    }
-  }
+  fixCentOsBase /etc/yum.repos.d/CentOS-Base.repo [dict get $urlDic $src]
+  fixAliEpel /etc/yum.repos.d/epel.repo
 }

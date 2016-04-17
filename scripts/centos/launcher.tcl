@@ -8,6 +8,9 @@ catch {
     disableIpv6 {
       ::Configer::disableIpv6
     }
+    noop {
+      puts "noop"
+    }
     fixRepo {
       set paExists [dict exists $::rawParamDict fixRepoTo]
       if {$paExists} {

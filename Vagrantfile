@@ -75,16 +75,16 @@ Vagrant.configure(2) do |config|
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
 
-  config.vm.provision "shell", inline: <<-SHELL
-	yum install -y tcl tcllib dos2unix cpan expect
-  SHELL
+#  config.vm.provision "shell", inline: <<-SHELL
+#	yum install -y tcl tcllib dos2unix cpan expect
+#  SHELL
 
-  config.vm.define "desktop" do |desktop|
-    desktop.vm.network "private_network", ip: "192.168.33.49"
-    desktop.vm.provision "shell", inline: <<-SHELL
-      yum install -y git
-    SHELL
-  end
+#  config.vm.define "desktop" do |desktop|
+#    desktop.vm.network "private_network", ip: "192.168.33.49"
+#    desktop.vm.provision "shell", inline: <<-SHELL
+#      yum install -y git
+#    SHELL
+#  end
 
   config.vm.define "config-server" do |configServer|
 	  configServer.vm.network "private_network", ip: "192.168.33.50"
