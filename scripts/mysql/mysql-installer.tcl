@@ -31,20 +31,38 @@ proc ::MysqlInstaller::install {nodeYml rawParamDict} {
 
 	cd $tmpDir
 	puts stdout "start download from $DownFrom"
-	if {[catch {
-			exec curl -OL $DownFrom >& /dev/null
-		} msg o]} {
-		puts $msg
-		::CommonUtil::endEasyInstall
-	} else {
-		puts stdout "download done."
+	set timeout 10000
+	spawn curl -OL $DownFrom
+	expect {
+		eof {
+			puts "done."
+		}
+		timeout {
+			puts "timeout"
+		}
 	}
+#	if {[catch {
+
+#		} msg o]} {
+#		puts $msg
+#		::CommonUtil::endEasyInstall
+#	} else {
+#		puts stdout "download done."
+#	}
 
 	::AppDetecter::killByName yum
 
 	exec yum localinstall -y $rs
+	spawn yum install -y mysql-community-server
+	expect {
+		eof {
+			puts "done."
+		}
+		timeout {
+			puts "timeout"
+		}
+	}
 
-	catch {exec yum install -y mysql-community-server} msg o
-	puts stdout $msg
+
 #	exec systemctl start mysqld
 }
