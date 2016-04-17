@@ -19,10 +19,10 @@ proc ::MysqlInstaller::install {nodeYml rawParamDict} {
 		::CommonUtil::endEasyInstall
 	}
 
-	if {! [dict exists $rawParamDict server-id]} {
-		puts stdout "\nparameter server-id is mandantory.\n"
-		::CommonUtil::endEasyInstall
-	}
+#	if {! [dict exists $rawParamDict server-id]} {
+#		puts stdout "\nparameter server-id is mandantory.\n"
+#		::CommonUtil::endEasyInstall
+#	}
 
 	variable tmpDir
 	set mysqlLog [dict get $nodeYml  log-error]

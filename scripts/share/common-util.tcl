@@ -12,7 +12,7 @@ proc ::CommonUtil::endEasyInstall {} {
 }
 
 
-proc ::CommonUtil::substFileLineByLine {fn scripts} {
+proc ::CommonUtil::substFileLineByLine {fn scripts {toAppends {}}} {
   set lines [list]
   if {[catch {open $fn} fid o]} {
     puts stdout $fid
@@ -28,6 +28,9 @@ proc ::CommonUtil::substFileLineByLine {fn scripts} {
   } else {
     foreach line $lines {
       puts $fid $line
+    }
+    foreach toapp $toAppends {
+      puts $fid $toapp
     }
     close $fid
   }

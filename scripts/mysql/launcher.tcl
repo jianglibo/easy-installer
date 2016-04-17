@@ -46,11 +46,13 @@ catch {
   		::MysqlInstaller::install $::ymlDict $::rawParamDict
   	}
     secureInstallation {
-      if {[dict get $::ymlDict server-id] eq "x"} {
-        puts "must pass an unique server-id parameter."
-      } else {
-        ::SecureMe::doSecure $::ymlDict
-      }
+      ::SecureMe::doSecure $::ymlDict
+    }
+    enableBinLog: {
+      ::SecureMe::enableBinLog
+    }
+    startSlave {
+      ::SlaveFirstRun::startSlave
     }
     mirror {
       ::Mirror::mirror $::rawParamDict
@@ -77,8 +79,8 @@ catch {
       puts "\nstart execute mysqldump\n"
       [exec mysqldump -uroot -p$rpass -h localhost --all-databases --master-data > $replDumpFile]
   	}
-    firstStartSlave {
-      ::SlaveFirstRun:run $::rawParamDict $::ymlDict
+    default {
+      puts "\n******unrecoganized action: $action , please check again.******\n"
     }
   }
 } msg o

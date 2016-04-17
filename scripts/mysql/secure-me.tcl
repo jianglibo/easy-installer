@@ -5,6 +5,29 @@ package require Expect
 namespace eval ::SecureMe {
 }
 
+# when first start, bin-log not enabled.
+
+proc ::SecureMe::enableBinLog {} {
+  if {! [dict exists $::rawParamDict server-id]} {
+    puts "\nserver-id is mandatory.\n"
+  }
+  set scripts {
+    if {[string first #log-bin= $line] == 0} {
+      lappend lines "log-bin=mysql-bin"
+    } elseif {[string first #server-id= $line] == 0} {
+      lappend lines "server-id=[dict get $::rawParamDict server-id]"
+    } elseif {[string first #innodb_flush_log_at_trx_commit= $line] == 0} {
+      lappend lines "innodb_flush_log_at_trx_commit=1"
+    } elseif {[string first #sync_binlog= $line] == 0} {
+      lappend lines "sync_binlog=1"
+    } else {
+      lappend lines $line
+    }
+	}
+  ::CommonUtil::substFileLineByLine /etc/my.cnf $scripts
+  exec systemctl restart mysqld
+}
+
 proc ::SecureMe::doSecure {ymlDict} {
 
 	set mysqlLog [dict get $ymlDict  log-error]
@@ -13,6 +36,10 @@ proc ::SecureMe::doSecure {ymlDict} {
 	if {(! [file exists $mysqlLog]) || ([file size $mysqlLog] < 10)} {
 		::Mycnf::substituteAndWrite $tpl $ymlDict /etc/my.cnf
 		set dd [dict get $ymlDict datadir]
+		if {[string length [exec grep -Ei "^mysql:" /etc/passwd]] == 0} {
+			exec groupadd mysql
+			exec useradd -r -g mysql -s /bin/false mysql
+		}
 		if {! [file exists $dd]} {
 			exec mkdir -p $dd
 			exec chown -R mysql:mysql $dd

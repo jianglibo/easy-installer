@@ -25,6 +25,7 @@ proc isAppName {an} {
 }
 
 proc changeMirrors {host} {
+  puts "modify yum repo."
   exec ssh root@$host "sed -i -e 's/#include_only.*/include_only=aliyun.com,.cn/' /etc/yum/pluginconf.d/fastestmirror.conf"
 }
 
@@ -114,6 +115,7 @@ proc prepareLauncherParams {ac} {
   }
   lappend params "--runFolder=$::appname"
   lappend params "--action=$ac"
+  puts "copy scrits done."
   return [join $params { }]
 }
 
@@ -133,6 +135,11 @@ foreach h [parseHosts [dict get $::rawParamDict host]] {
     # all we need is to keep sensitive password out of command history.
     expect {
       "_enter_password:$" {
+        expect_user -re "(.*)\n"
+        exp_send "$expect_out(1,string)\n"
+        exp_continue
+      }
+      "_enter_value:$" {
         expect_user -re "(.*)\n"
         exp_send "$expect_out(1,string)\n"
         exp_continue
