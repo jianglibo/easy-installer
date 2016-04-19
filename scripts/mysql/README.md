@@ -11,6 +11,5 @@
 * ./easy-installer.tcl --host=xxx mysql secureInstallation
 * ./easy-installer.tcl --host=xxx server-id=2 mysql startSlave
 
-
 ## create a dev mysql mirror
-* ./easy-installer.tcl --host=xxx --at=8:15 mysql mirror
+* ./easy-installer.tcl --host=xxx [--at=4:15] [--src=xxx] [disk-path=xxxxxx] mysql mirror

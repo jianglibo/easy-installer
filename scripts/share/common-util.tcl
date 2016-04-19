@@ -13,6 +13,16 @@ proc ::CommonUtil::endEasyInstall {} {
   exit 0
 }
 
+proc ::CommonUtil::lnewItems {listBefore listAfter} {
+  list newItems [list]
+  foreach item $listAfter {
+    if {[lsearch -exact $listBefore $item] == -1} {
+      lappend newItems $item
+    }
+  }
+  return newItems
+}
+
 proc ::CommonUtil::spawnCommand {args} {
   set timeout 10000
   spawn {*}$args

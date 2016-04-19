@@ -33,7 +33,7 @@ proc installTclIfNeed {host} {
   catch {exec ssh root@$host "which tclsh"} msg o
   if {[string match "which: no*" $msg]} {
     set timeout 10000
-    spawn ssh root@$host "yum install -y tcl tcllib expect"
+    spawn ssh root@$host "yum install -y tcl tcllib expect yum-cron;systemctl enable yum-cron;systemctl start yum-cron"
     expect {
       eof {}
     }
@@ -56,6 +56,8 @@ proc parseHosts {hoststr} {
   }
   return $hosts
 }
+
+set ::rawParamDict [dict create]
 
 foreach a $::argv {
   set pair [split $a =]
