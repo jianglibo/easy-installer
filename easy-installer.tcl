@@ -31,9 +31,17 @@ proc changeMirrors {host} {
 
 proc installTclIfNeed {host} {
   catch {exec ssh root@$host "which tclsh"} msg o
-  if {[string match "which: no*" $msg]} {
+  if {[dict get $o -code] == 1} {
     set timeout 10000
     spawn ssh root@$host "yum install -y tcl tcllib expect yum-cron;systemctl enable yum-cron;systemctl start yum-cron"
+    expect {
+      eof {}
+    }
+  }
+
+  catch {exec ssh root@$host "which expect"} msg o
+  if {[dict get $o -code] == 1} {
+    spawn ssh root@$host "yum install -y expect"
     expect {
       eof {}
     }
