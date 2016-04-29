@@ -37,7 +37,7 @@ proc ::SecureMe::doSecure {ymlDict} {
 	if {(! [file exists $mysqlLog]) || ([file size $mysqlLog] < 10)} {
 		::Mycnf::substituteAndWrite $tpl $ymlDict /etc/my.cnf
 		set dd [dict get $ymlDict datadir]
-		if {[string length [exec grep -Ei "^mysql:" /etc/passwd]] == 0} {
+    if {[catch {exec grep -Ei "^mysql:" /etc/passwd} msg o]}
 			exec groupadd mysql
 			exec useradd -r -g mysql -s /bin/false mysql
 		}

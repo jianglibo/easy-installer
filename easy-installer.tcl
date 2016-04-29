@@ -8,6 +8,8 @@ set ::nameAction [list]
 set ::baseDir [file dirname [info script]]
 package require Expect
 
+set ::serverSideDir ~/easy-install/scripts
+
 proc printHelp {} {
   puts "command style is:"
   puts "easy-install.tcl -host=xxx --otherparams=xxx appname action...action."
@@ -96,12 +98,12 @@ if {! [isAppName $::appname]} {
 proc prepareRunFolder {host an} {
   puts "start prepare run folder on server $host...."
   puts [exec ssh root@$host "mkdir -p ~/easy-install/scripts"]
-  puts [exec scp -r [file join $::baseDir scripts $an]  root@$host:~/easy-install/scripts/]
-  puts [exec scp -r [file join $::baseDir scripts share]  root@$host:~/easy-install/scripts/]
+  puts [exec scp -r [file join $::baseDir scripts $an]  root@$host:$::serverSideDir]
+  puts [exec scp -r [file join $::baseDir scripts share]  root@$host:$::serverSideDir]
   set tmp [glob -types f -directory [file join $::baseDir scripts] -- *.tcl]
 
   foreach f $tmp {
-    exec scp $f root@$host:~/easy-install/scripts/
+    exec scp $f root@$host:$::serverSideDir
   }
 }
 
@@ -140,7 +142,7 @@ foreach h [parseHosts [dict get $::rawParamDict host]] {
   set actions [lrange $::nameAction 1 end]
   foreach ac $actions {
     spawn -noecho ssh root@$h
-    exp_send "tclsh ~/easy-install/scripts/launcher.tcl [prepareLauncherParams $ac]\n"
+    exp_send "tclsh [file join $::serverSideDir launcher.tcl] [prepareLauncherParams $ac]\n"
     set timeout 100000
     # all we need is to keep sensitive password out of command history.
     expect {
@@ -163,7 +165,7 @@ foreach h [parseHosts [dict get $::rawParamDict host]] {
       eof {}
       timeout
     }
-#    set execCmd "tclsh ~/easy-install/scripts/launcher.tcl [prepareLauncherParams $ac]"
+#    set execCmd "tclsh $::serverSideDirlauncher.tcl [prepareLauncherParams $ac]"
 #    puts "start run: $execCmd on $h"
 #    catch {exec ssh root@$h $execCmd} msg o
 #    puts $msg
