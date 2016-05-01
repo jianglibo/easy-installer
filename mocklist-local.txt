@@ -1,0 +1,7 @@
+#mock host add to /etc/hosts
+
+mirrorlist.centos.org=192.168.33.1
+www.fh.gov.cn=192.168.33.1
+mysql.fh.gov.cn=192.168.33.1
+repo.mysql.com=192.168.33.1
+mirrors.aliyun.com=192.168.33.1

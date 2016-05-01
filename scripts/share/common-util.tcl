@@ -36,7 +36,6 @@ proc ::CommonUtil::spawnCommand {args} {
   }
 }
 
-
 proc ::CommonUtil::substFileLineByLine {fn scripts {toAppends {}}} {
   set lines [list]
   if {[catch {open $fn} fid o]} {
@@ -140,12 +139,12 @@ proc ::CommonUtil::loadNormalizedYmlDic {fn} {
 }
 
 proc ::CommonUtil::loadYaml {fn} {
-  catch {[set dt [::yaml::yaml2dict -file $fn]]} msg o
-  if {! ([dict get $o -errorcode] eq {NONE})} {
-    puts stderr $msg
-    exit 1
+  if {[catch {set dt [::yaml::yaml2dict -file $fn]} msg o]} {
+    puts $msg
+    endEasyInstall
+  } else {
+    return $dt
   }
-  return $dt
 }
 
 

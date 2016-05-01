@@ -30,7 +30,6 @@ proc ::SecureMe::enableBinLog {} {
 }
 
 proc ::SecureMe::doSecure {ymlDict} {
-
 	set mysqlLog [dict get $ymlDict  log-error]
 	set tpl [file join $::baseDir [dict get $ymlDict MyCnfTpl]]
 	# mysql not initialized
@@ -41,16 +40,15 @@ proc ::SecureMe::doSecure {ymlDict} {
 			exec groupadd mysql
 			exec useradd -r -g mysql -s /bin/false mysql
 		}
-		if {! [file exists $dd]} {
-			exec mkdir -p $dd
-			exec chown -R mysql:mysql $dd
-		}
-		::CommonUtil::spawnCommand systemctl start mysqld
+	if {! [file exists $dd]} {
+		exec mkdir -p $dd
+		exec chown -R mysql:mysql $dd
 	}
+	::CommonUtil::spawnCommand systemctl start mysqld
 
 	if {[catch {open $mysqlLog} fid o]} {
 		puts stdout $fid
-		exit 1
+		::CommonUtil::endEasyInstall
 	} else {
 		while {[gets $fid line] >= 0} {
 			if {[string match "*temporary password*:*" $line]} {

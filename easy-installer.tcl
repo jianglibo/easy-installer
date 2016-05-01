@@ -2,6 +2,10 @@
 # install-java.tcl \
 exec tclsh "$0" ${1+"$@"}
 
+
+#set favoriteMirror aliyun.com,.cn
+set ::favoriteMirror aliyun.com
+
 # paramter format: --name=value
 set ::nameAction [list]
 
@@ -28,7 +32,7 @@ proc isAppName {an} {
 
 proc changeMirrors {host} {
   puts "modify yum repo."
-  exec ssh root@$host "sed -i -e 's/#include_only.*/include_only=aliyun.com,.cn/' /etc/yum/pluginconf.d/fastestmirror.conf"
+  exec ssh root@$host "sed -i -e 's/#include_only.*/include_only=$::favoriteMirror/' /etc/yum/pluginconf.d/fastestmirror.conf"
 }
 
 proc installTclIfNeed {host} {
@@ -95,15 +99,24 @@ if {! [isAppName $::appname]} {
   exit 0
 }
 
+set ::mocklistExists [dict exists $::rawParamDict mocklist]
+
+if {$::mocklistExists} {
+  set ::mocklist [dict get $::rawParamDict mocklist]
+}
+
 proc prepareRunFolder {host an} {
   puts "start prepare run folder on server $host...."
   puts [exec ssh root@$host "mkdir -p ~/easy-install/scripts"]
   puts [exec scp -r [file join $::baseDir scripts $an]  root@$host:$::serverSideDir]
   puts [exec scp -r [file join $::baseDir scripts share]  root@$host:$::serverSideDir]
-  set tmp [glob -types f -directory [file join $::baseDir scripts] -- *.tcl]
-
+  set tmp [glob -types f -directory [file join $::baseDir scripts] -- *.*]
   foreach f $tmp {
     exec scp $f root@$host:$::serverSideDir
+  }
+
+  if {$::mocklistExists} {
+    exec scp [file join $::baseDir $::mocklist] root@$host:$::serverSideDir
   }
 }
 
@@ -138,6 +151,9 @@ foreach h [parseHosts [dict get $::rawParamDict host]] {
   changeMirrors $h
   installTclIfNeed $h
   prepareRunFolder $h [lindex $::nameAction 0]
+  if {$::mocklistExists} {
+    puts [exec ssh root@$h "tclsh [file join $::serverSideDir before-install.tcl] --mocklist=$::mocklist"]
+  }
 
   set actions [lrange $::nameAction 1 end]
   foreach ac $actions {

@@ -9,7 +9,7 @@ namespace eval ::MysqlInstaller {
 		exec mkdir -p $tmpDir
 		} msg o]} {
 		puts $msg
-		exit 1
+		::CommonUtil::endEasyInstall
 	}
 }
 

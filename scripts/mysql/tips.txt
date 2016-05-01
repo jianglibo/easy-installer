@@ -1,0 +1,57 @@
+gradlew -Dhost=xxx -Dprofile=local-profile -Dtcl.action=xxx doAction
+服务器安装过程中，已经启动过一次，所以这时的bin-log并未开启。这时修改密码，创建用户等行为并没有记录到log。
+
+1,设置my.cnf，可复制状态，可以在安装过程中开启。
+2，创建用户。
+mysql> CREATE USER 'repl'@'%.mydomain.com' IDENTIFIED BY 'slavepass';
+mysql> GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%.mydomain.com';
+
+3、FLUSH TABLES WITH READ LOCK;锁定主服务。（保持）FLUSH TABLES WITH READ LOCK acquires a global read lock and not table locks
+4、SHOW MASTER STATUS; 记录bin-log的file 和position
+5、 mysqldump --all-databases --master-data > dbdump.db，将主服务器已有的数据导出
+6、可以UNlock tables
+
+从机：
+1、在master上面，解除lock，UNLOCK TABLES
+2、设置slave的[mysqld]
+server-id=xx
+从机可以不启动bin-log，也可以启用
+
+3、启动slave，--skip-slave-start.
+4 mysql < fulldb.dump
+5、执行CHANGE MASTER TO MASTER_HOST='master_host_name', MASTER_USER='replication_user_name', MASTER_PASSWORD='replication_password', MASTER_LOG_FILE='recorded_log_file_name', MASTER_LOG_POS=recorded_log_position;
+6、START SLAVE
+
+
+
+#增加slave，不用停止master，将slave复制一下即可。
+
+1、mysqladmin shutdown
+2、复制数据目录
+
+
+#bind-address or skip-networking
+#CREATE USER 'repl'@'%.mydomain.com' IDENTIFIED BY 'slavepass';
+#GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%.mydomain.com';
+
+#If the master has been running previously without binary logging enabled, the log file name and position values displayed by SHOW MASTER STATUS or mysqldump --master-data are empty. In that case, the values that you need to use later when specifying the slave's log file and position are the empty string ('') and 4.
+
+#FLUSH TABLES WITH READ LOCK; client must keep open.
+#SHOW MASTER STATUS; mysql -uroot -pxxx -e 'SHOW MASTER STATUS', then stop mysql.
+#
+
+
+#open a new session, exec SHOW MASTER STATUS
+
+#mysqldump --all-databases --master-data > dbdump.db
+
+# --- on slave--
+
+#mysql> CHANGE MASTER TO
+#    ->     MASTER_HOST='master_host_name',
+#    ->     MASTER_USER='replication_user_name',
+#    ->     MASTER_PASSWORD='replication_password',
+#    ->     MASTER_LOG_FILE='recorded_log_file_name',
+#    ->     MASTER_LOG_POS=recorded_log_position;
+
+Start the slave, using the --skip-slave-start option so that replication does not start.

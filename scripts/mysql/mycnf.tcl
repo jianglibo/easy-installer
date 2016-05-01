@@ -10,7 +10,7 @@ proc ::Mycnf::substituteAndWrite {tpl nodeYml dst} {
 
   if {[catch {open $dst w} fid o]} {
     puts stdout $fid
-    exit 1
+    ::CommonUtil::endEasyInstall
   } else {
     foreach line [::CommonUtil::replaceFileContent $tpl $nodeYml] {
       puts $fid $line
