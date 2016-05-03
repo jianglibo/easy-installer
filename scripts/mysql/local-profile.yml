@@ -8,4 +8,4 @@ DownFrom: http://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm
 # relative to "scripts" folder.
 MyCnfTpl: mysql/my.cnf
 #DumpFileOnMaster: /opt/forMysqlReplica/dump.db
-BundleDownFrom: http://mysql.fh.gov.cn/mysql-5.7.12-1.el7.x86_64.rpm-bundle.tar
+BundleDownFrom: http://software.fh.gov.cn/mysql/mysql-5.7.12-1.el7.x86_64.rpm-bundle.tar

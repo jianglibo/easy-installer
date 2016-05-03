@@ -15,7 +15,10 @@ foreach a $::argv {
 
 if {! [file exists /etc/hosts.origin]} {
   exec cp /etc/hosts /etc/hosts.origin
+} else {
+  exec cp /etc/hosts.origin /etc/hosts
 }
+
 
 set mocklist [dict get $::rawParamDict mocklist]
 
@@ -77,4 +80,4 @@ if {[catch {open /etc/hosts} fid o]} {
   }
 }
 
-puts [exec rm -rvf /var/cache/yum]
+#puts [exec rm -rvf /var/cache/yum]
