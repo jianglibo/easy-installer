@@ -30,29 +30,29 @@ proc isAppName {an} {
   return 0
 }
 
-proc changeMirrors {host} {
-  puts "modify yum repo."
-  exec ssh root@$host "sed -i -e 's/#include_only.*/include_only=$::favoriteMirror/' /etc/yum/pluginconf.d/fastestmirror.conf"
-}
+#proc changeMirrors {host} {
+#  puts "modify yum repo."
+#  exec ssh root@$host "sed -i -e 's/#include_only.*/include_only=$::favoriteMirror/' /etc/yum/pluginconf.d/fastestmirror.conf"
+#}
 
-proc installTclIfNeed {host} {
-  catch {exec ssh root@$host "which tclsh"} msg o
-  if {[dict get $o -code] == 1} {
-    set timeout 10000
-    spawn ssh root@$host "yum install -y tcl tcllib expect dos2unix yum-cron;systemctl enable yum-cron;systemctl start yum-cron"
-    expect {
-      eof {}
-    }
-  }
+#proc installTclIfNeed {host} {
+#  catch {exec ssh root@$host "which tclsh"} msg o
+#  if {[dict get $o -code] == 1} {
+#    set timeout 10000
+#    spawn ssh root@$host "yum install -y tcl tcllib expect dos2unix yum-cron;systemctl enable yum-cron;systemctl start yum-cron"
+#    expect {
+#      eof {}
+#    }
+#  }
 
-  catch {exec ssh root@$host "which expect"} msg o
-  if {[dict get $o -code] == 1} {
-    spawn ssh root@$host "yum install -y expect"
-    expect {
-      eof {}
-    }
-  }
-}
+#  catch {exec ssh root@$host "which expect"} msg o
+#  if {[dict get $o -code] == 1} {
+#    spawn ssh root@$host "yum install -y expect"
+#    expect {
+#      eof {}
+#    }
+#  }
+#}
 
 proc parseHosts {hoststr} {
   set hosts [list]
@@ -114,7 +114,6 @@ proc prepareRunFolder {host an} {
   foreach f $tmp {
     exec scp $f root@$host:$::serverSideDir
   }
-
   if {$::mocklistExists} {
     exec scp [file join $::baseDir $::mocklist] root@$host:$::serverSideDir
   }
@@ -148,13 +147,23 @@ proc prepareLauncherParams {ac} {
 
 foreach h [parseHosts [dict get $::rawParamDict host]] {
   #if you not living main land of china, comment line below.
-  changeMirrors $h
-  installTclIfNeed $h
   prepareRunFolder $h [lindex $::nameAction 0]
+  set timeout 100000
   if {$::mocklistExists} {
-    puts [exec ssh root@$h "tclsh [file join $::serverSideDir before-install.tcl] --mocklist=$::mocklist"]
+    spawn ssh root@$h "cd ${serverSideDir};sed -i 's/\r//' very-early.bash;bash very-early.bash $::mocklist"
+  } else {
+    spawn ssh root@$h "cd ${serverSideDir};sed -i 's/\r//' very-early.bash;bash very-early.bash"
   }
-
+  expect {
+    eof {}
+  }
+#  exit 0
+#  changeMirrors $h
+#  installTclIfNeed $h
+#  prepareRunFolder $h [lindex $::nameAction 0]
+#  if {$::mocklistExists} {
+#    puts [exec ssh root@$h "tclsh [file join $::serverSideDir before-install.tcl] --mocklist=$::mocklist"]
+#  }
   set actions [lrange $::nameAction 1 end]
   foreach ac $actions {
     spawn -noecho ssh root@$h
@@ -181,10 +190,9 @@ foreach h [parseHosts [dict get $::rawParamDict host]] {
       eof {}
       timeout
     }
-#    set execCmd "tclsh $::serverSideDirlauncher.tcl [prepareLauncherParams $ac]"
-#    puts "start run: $execCmd on $h"
-#    catch {exec ssh root@$h $execCmd} msg o
-#    puts $msg
   }
-  cleanupRunFolder $h
+  spawn ssh root@$h "tclsh [file join $::serverSideDir after-install.tcl]"
+  expect {
+    eof {}
+  }
 }

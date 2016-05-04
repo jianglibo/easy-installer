@@ -2,6 +2,7 @@
 # install-java.tcl \
 exec tclsh "$0" ${1+"$@"}
 
+# not used yet.
 set ::baseDir [file dirname [info script]]
 
 foreach a $::argv {
@@ -13,6 +14,7 @@ foreach a $::argv {
   }
 }
 
+# modify hosts file.
 if {! [file exists /etc/hosts.origin]} {
   exec cp /etc/hosts /etc/hosts.origin
 } else {
@@ -80,4 +82,4 @@ if {[catch {open /etc/hosts} fid o]} {
   }
 }
 
-#puts [exec rm -rvf /var/cache/yum]
+# resotore hosts file.
