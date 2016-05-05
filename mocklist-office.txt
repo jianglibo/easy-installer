@@ -4,3 +4,5 @@
 10.74.111.61 repo.mysql.com
 10.74.111.61 dev.mysql.com
 10.74.111.61 mirrors.aliyun.com
+10.74.111.61 mirrors.aliyun.com
+10.74.111.61 www.rabbitmq.com

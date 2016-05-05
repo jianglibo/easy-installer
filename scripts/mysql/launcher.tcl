@@ -89,4 +89,5 @@ catch {
 if {[dict get $o -code] > 0} {
   puts $msg
 }
+
 ::CommonUtil::endEasyInstall

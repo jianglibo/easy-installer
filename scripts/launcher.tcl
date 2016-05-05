@@ -15,7 +15,8 @@ foreach a $::argv {
 
 if {! [dict exists $::rawParamDict runFolder] } {
   puts stderr "paramter -runFolder does not exists!"
-  exit 1
+  puts stdout "\nend_of_easy_install\n"
+  exit 0
 }
 
 lappend auto_path [file join $::baseDir [dict get $::rawParamDict runFolder]]
@@ -46,8 +47,8 @@ if {! [string match *.yml $cfgFile]} {
 if {[file exists $cfgFile]} {
   set ::ymlDict [::CommonUtil::mergeConfig $::rawParamDict [::CommonUtil::loadYaml $cfgFile]]
 } else {
-  puts stdout "profile are mandatory. or replace a local-profile.yml in your app script folder."
-  exit 1
+  puts stdout "profile are mandatory. or replace a local-profile.yml in your app script folder!!!!"
+  ::CommonUtil::endEasyInstall
 }
 
 source [file join $::baseDir [dict get $::rawParamDict runFolder] launcher.tcl]
