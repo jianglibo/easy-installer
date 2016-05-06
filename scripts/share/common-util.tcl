@@ -36,6 +36,18 @@ proc ::CommonUtil::spawnCommand {args} {
   }
 }
 
+proc ::CommonUtil::sysRunning {serviceName} {
+  if {[catch {exec systemctl status $serviceName} msg o]} {
+    return 0
+  } else {
+    if {[string match *(running)* $msg]} {
+      return 1
+    } else {
+      return 0
+    }
+  }
+}
+
 proc ::CommonUtil::substFileLineByLine {fn scripts {toAppends {}}} {
   set lines [list]
   if {[catch {open $fn} fid o]} {

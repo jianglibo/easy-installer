@@ -41,5 +41,6 @@ proc ::RabbitmqInstaller::install {ymlDict rawParamDict} {
   exec rabbitmqctl add_user $firstUser [dict get $ymlDict password]
   exec rabbitmqctl delete_user guest
   exec rabbitmqctl set_user_tags $firstUser administrator
+  exec rabbitmqctl set_permissions -p / firstUser ".*" ".*" ".*"
   exec rm $tmpDir/$rpmName
 }
