@@ -2,7 +2,8 @@
 echo "start running very-early.bash"
 epelHost="mirrors.fedoraproject.org"
 epelRepo="/etc/yum.repos.d/epel.repo"
-epelRepoOrigin="/etc/yum.repos.d/epel.repo.origin"
+
+centosBaseRepo="/etc/yum.repos.d/CentOS-Base.repo"
 
 origin="/etc/hosts.origin"
 yumPid="/var/run/yum.pid"
@@ -23,14 +24,28 @@ then
 	then
 		yum install -y epel-release
 	fi
-	if [ -f $epelRepoOrigin ]
+
+	if [ -f "${epelRepo}.origin" ]
 	then
-		cp $epelRepoOrigin $epelRepo
+		cp "${epelRepo}.origin" $epelRepo
 	else
-		cp $epelRepo $epelRepoOrigin
+		cp $epelRepo "${epelRepo}.origin"
 	fi
+
+	if [ -f "${centosBaseRepo}.origin" ]
+	then
+		cp "${centosBaseRepo}.origin" $centosBaseRepo
+	else
+		cp $centosBaseRepo "${centosBaseRepo}.origin"
+	fi
+
+
 	sed -i 's!^#baseurl=http://download.fedoraproject.org/pub\(.*\)$!baseurl=http://mirrors.aliyun.com\1!' $epelRepo
 	sed -i 's!^mirrorlist=\(.*\)$!#mirrorlist=\1!' $epelRepo
+
+	sed -i 's!^#baseurl=http://mirror.centos.org\(.*\)$!baseurl=http://mirrors.aliyun.com\1!' $centosBaseRepo
+	sed -i 's!^mirrorlist=\(.*\)$!#mirrorlist=\1!' $centosBaseRepo
+
 fi
 
 if [ -f "$yumPid" ]
@@ -40,12 +55,3 @@ then
 fi
 
 yum install -y tcl tcllib expect dos2unix epel-release
-
-#if [ $mocklist ]
-#then
-#  epelInFile=$(grep $epelHost $1)
-#  if [ $epelInFile ]
-#  then
-#    sed -i 's!https://!http://!' $epelRepo
-#  fi
-#fi

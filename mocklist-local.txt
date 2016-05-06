@@ -1,6 +1,7 @@
 
-192.168.33.50 mirrorlist.centos.org
-192.168.33.50 software.fh.gov.cn
-192.168.33.50 repo.mysql.com
-192.168.33.50 dev.mysql.com
-192.168.33.50 mirrors.aliyun.com
+192.168.33.53 mirrorlist.centos.org
+192.168.33.53 software.fh.gov.cn
+192.168.33.53 repo.mysql.com
+192.168.33.53 dev.mysql.com
+192.168.33.53 mirrors.aliyun.com
+192.168.33.53 www.rabbitmq.com

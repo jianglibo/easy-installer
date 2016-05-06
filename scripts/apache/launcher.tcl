@@ -5,14 +5,17 @@ package require CommonUtil
 ::CommonUtil::spawnCommand yum install -y httpd
 ::CommonUtil::spawnCommand systemctl enable httpd
 
+set conf /etc/httpd/conf/httpd.conf
 
-::CommonUtil::spawnCommand mv /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd.conf.origin
+if {! [file exists "${conf}.origin"]} {
+    ::CommonUtil::spawnCommand cp /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd.conf.origin
+}
 
-::CommonUtil::spawnCommand cp [file join $::baseDir apache httpd.conf] /etc/httpd/conf
+set configConf [dict get $::ymlDict httpdConf]
 
-set DocumentRoot [dict get $::ymlDict DocumentRoot]
+::CommonUtil::spawnCommand cp [file join $::baseDir apache $configConf] $conf
 
-
+::CommonUtil::spawnCommand systemctl start httpd
 
 
 #systemctl start httpd

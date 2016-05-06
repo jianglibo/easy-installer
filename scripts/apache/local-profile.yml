@@ -1,1 +1,1 @@
-DocumentRoot: /opt/webproxy/cache
+httpdConf: httpd-vagrant.conf

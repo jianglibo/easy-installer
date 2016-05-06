@@ -17,7 +17,9 @@ foreach a $::argv {
 exec cp /etc/hosts.origin /etc/hosts
 
 set epelRepo /etc/yum.repos.d/epel.repo
-exec cp "${epelRepo}.origin" $epelRepo
+if {[file exists "${epelRepo}.origin"]} {
+  exec cp "${epelRepo}.origin" $epelRepo
+}
 
 set scriptDir [file normalize [file join $::baseDir ..]]
 puts "start cleanup $scriptDir ......"
