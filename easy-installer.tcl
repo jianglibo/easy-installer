@@ -28,15 +28,10 @@ foreach a $::argv {
 
 ::ParamsValidator::validate rawParamDict $nameActions
 
-if {[dict get $rawParamDict appname] eq {boot}} {
-  ::ParamsValidator::validateBoot rawParamDict
-
-}
-
 foreach h [::CcommonUtil::parseHosts [dict get $rawParamDict host]] {
   #if you not living main land of china, comment line below.
   ::CcommonUtil::prepareRunFolder $h $serverSideDir $rawParamDict
-  if {[dict exists $rawParamDict runbash]} {
+  if {! [dict exists $rawParamDict notRunbash]} {
     ::CcommonUtil::runVeryEarlyBash $h $rawParamDict
   }
   set actions [lrange $nameActions 1 end]
@@ -66,10 +61,7 @@ foreach h [::CcommonUtil::parseHosts [dict get $rawParamDict host]] {
       timeout
     }
   }
-  spawn ssh root@$h "tclsh [file join $serverSideDir after-install.tcl]"
-  expect {
-    eof {}
-  }
+  ::CcommonUtil::cleanup $h
 }
 
 #proc changeMirrors {host} {

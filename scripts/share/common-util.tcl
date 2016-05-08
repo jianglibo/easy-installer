@@ -48,6 +48,7 @@ proc ::CommonUtil::sysRunning {serviceName} {
   }
 }
 
+
 proc ::CommonUtil::substFileLineByLine {fn scripts {toAppends {}}} {
   set lines [list]
   if {[catch {open $fn} fid o]} {
@@ -88,10 +89,11 @@ proc ::CommonUtil::replaceLines {lines kvDic} {
   return $result
 }
 
+
 proc ::CommonUtil::replaceFileContent {fn kvDic} {
   if {[catch {open $fn} fid o]} {
-    puts stderr $fid
-    exit 1
+    puts $fid
+    ::CommonUtil::endEasyInstall
   } else {
     set lines [list]
     while {[gets $fid line] >= 0} {
@@ -99,6 +101,19 @@ proc ::CommonUtil::replaceFileContent {fn kvDic} {
     }
     close $fid
     return [replaceLines $lines $kvDic]
+  }
+}
+
+proc ::CommonUtil::replaceFileContentInLine {fn kvDic} {
+  set lines [replaceFileContent $fn $kvDic]
+  if {[catch {open $fn w} fid o]} {
+    puts $fid
+    ::CommonUtil::endEasyInstall
+  } else {
+    foreach line $lines {
+      puts $fid $line
+    }
+    close $fid
   }
 }
 

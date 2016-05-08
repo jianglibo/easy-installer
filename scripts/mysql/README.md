@@ -1,5 +1,5 @@
 ## install a master server:
-* ./easy-installer.tcl --host=xxx mysql install
+* tclsh easy-installer.tcl --host=192.168.33.50 --profile=local-profile.secret.yml --mocklist=mocklist-local.txt mysql install
 * ./easy-installer.tcl --host=xxx mysql secureInstallation
 * ***Do Something you don't want to be replica here***
 * ./easy-installer.tcl --host=xxx server-id=1 mysql startMaster
@@ -14,4 +14,12 @@
 ## create a dev mysql mirror
 * ./easy-installer.tcl --host=xxx [--at=4:15] [--src=xxx] [disk-path=xxxxxx] mysql mirror
 
- http://218.108.192.216:80/1Q2W3E4R5T6Y7U8I9O0P1Z2X3C4V5B/repo.mysql.com/yum/mysql-tools-community/el/7/x86_64/repodata/9f06a0cf97c4368f78e237811e6b9fb324362a64-primary.sqlite.bz2
+
+## debug
+install mysql server.comment out socket.works.stop it.
+
+## these file always exists.
+/var/lib/mysql-files
+/var/lib/mysql-keyring
+
+必须先按照默认启动一次，然后再修my.cnf，再次重新启动即可。

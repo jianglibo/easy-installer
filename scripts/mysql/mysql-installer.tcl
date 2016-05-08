@@ -15,7 +15,7 @@ namespace eval ::MysqlInstaller {
 
 proc ::MysqlInstaller::yumInstall {nodeYml rawParamDict} {
 	variable tmpDir
-	set mysqlLog [dict get $nodeYml  log-error]
+#	set mysqlLog [dict get $nodeYml  log-error]
 	set DownFrom [dict get $::ymlDict DownFrom]
 	set rs [lindex [split $DownFrom /] end]
 
@@ -28,6 +28,9 @@ proc ::MysqlInstaller::yumInstall {nodeYml rawParamDict} {
 	::CommonUtil::spawnCommand yum localinstall -y $rs
 
 	::CommonUtil::spawnCommand yum install -y mysql-community-server
+
+	::CommonUtil::spawnCommand systemctl start mysqld
+	::CommonUtil::spawnCommand systemctl stop mysqld
 }
 
 proc ::MysqlInstaller::bundleInstall {nodeYml rawParamDict} {

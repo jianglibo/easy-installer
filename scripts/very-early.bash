@@ -8,6 +8,29 @@ centosBaseRepo="/etc/yum.repos.d/CentOS-Base.repo"
 origin="/etc/hosts.origin"
 yumPid="/var/run/yum.pid"
 
+if [ -f "${epelRepo}.origin" ]
+then
+	cp "${epelRepo}.origin" $epelRepo
+else
+	cp $epelRepo "${epelRepo}.origin"
+fi
+
+if [ -f "${centosBaseRepo}.origin" ]
+then
+	cp "${centosBaseRepo}.origin" $centosBaseRepo
+else
+	cp $centosBaseRepo "${centosBaseRepo}.origin"
+fi
+
+if [ -f "$yumPid" ]
+then
+	echo "killing running yum."
+	cat $yumPid |xargs kill -s 9
+fi
+
+echo "execute yum install -y curl"
+yum install -y curl
+
 mocklist=$1
 if [ -f "$origin" ]
 then
@@ -25,21 +48,6 @@ then
 		yum install -y epel-release
 	fi
 
-	if [ -f "${epelRepo}.origin" ]
-	then
-		cp "${epelRepo}.origin" $epelRepo
-	else
-		cp $epelRepo "${epelRepo}.origin"
-	fi
-
-	if [ -f "${centosBaseRepo}.origin" ]
-	then
-		cp "${centosBaseRepo}.origin" $centosBaseRepo
-	else
-		cp $centosBaseRepo "${centosBaseRepo}.origin"
-	fi
-
-
 	sed -i 's!^#baseurl=http://download.fedoraproject.org/pub\(.*\)$!baseurl=http://mirrors.aliyun.com\1!' $epelRepo
 	sed -i 's!^mirrorlist=\(.*\)$!#mirrorlist=\1!' $epelRepo
 
@@ -54,4 +62,4 @@ then
 	cat $yumPid |xargs kill -s 9
 fi
 
-yum install -y tcl tcllib expect dos2unix epel-release
+yum install -y tcl tcllib expect dos2unix epel-release || echo "end_of_easy_install"

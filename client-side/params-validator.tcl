@@ -29,6 +29,17 @@ proc ::ParamsValidator::validate {rawParamDict nameActions} {
   if {! [dict exists $rpd mocklist]} {
     dict set rpd mocklist {}
   }
+
+  switch -exact -- $appname {
+    boot {
+      validateBoot rpd
+    }
+    mysql {
+      validateMysql rpd
+    }
+    default {}
+  }
+
 }
 
 proc ::ParamsValidator::validateBoot {rawParamDict} {
@@ -40,6 +51,14 @@ proc ::ParamsValidator::validateBoot {rawParamDict} {
 
   if {! [dict exists $rpd springprofile]} {
     puts "parameter 'springprofile' is mandatory, which point to a boot application jar."
+    exit 0
+  }
+}
+
+proc ::ParamsValidator::validateMysql {rawParamDict} {
+  upvar $rawParamDict rpd
+  if {! [dict exists $rpd profile]} {
+    puts "parameter 'profile' is mandatory, which point to a xxx.secret.yml file."
     exit 0
   }
 }

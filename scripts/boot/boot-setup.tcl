@@ -9,7 +9,7 @@ proc ::BootSetup::init {ymlDict rawParamDict} {
   set bootjar [dict get $rawParamDict bootjar]
   regexp {(.*)-\d+\.} $bootjar m serviceName
   set runUser [string map {- {}} $serviceName]
-  set runGroup runUser
+  set runGroup $runUser
   set bootRunFolder /opt/$serviceName
 
   set unitFile /etc/systemd/system/${serviceName}.service

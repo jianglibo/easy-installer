@@ -1,0 +1,6 @@
+server-id: 1
+RootPassword: Y2ue&292ud
+DownFrom: http://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm
+mycnf: my.master.cnf
+# for accidentaily run script to wrong machine.
+hostIp: 192.168.33.51

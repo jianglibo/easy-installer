@@ -49,9 +49,6 @@ proc ::CcommonUtil::prepareLauncherParams {rawParamDict action} {
   set params [list]
   dict for {k v} $rawParamDict {
     switch -exact -- $k {
-      host {
-        puts "skip host parameter."
-      }
       bootjar {
         lappend params "--$k=[file tail $v]"
       }
@@ -74,6 +71,13 @@ proc ::CcommonUtil::prepareLauncherParams {rawParamDict action} {
   return [join $params { }]
 }
 
+proc ::CcommonUtil::cleanup {host} {
+  spawn ssh root@$host "tclsh [file join $::serverSideDir after-install.tcl]"
+  expect {
+    eof {}
+  }
+}
+
 proc ::CcommonUtil::runVeryEarlyBash {host rawParamDict} {
   set mocklist [dict get $rawParamDict mocklist]
   set timeout 100000
@@ -82,8 +86,14 @@ proc ::CcommonUtil::runVeryEarlyBash {host rawParamDict} {
   } else {
     set ml {}
   }
+
   spawn ssh root@$host "cd ${::serverSideDir};sed -i 's/\r//' very-early.bash;bash very-early.bash$ml"
   expect {
+    "end_of_easy_install" {
+      close
+      cleanup $host
+      exit 0
+    }
     eof {}
   }
 }

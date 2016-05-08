@@ -7,50 +7,19 @@ package require AddUser
 package require SlaveFirstRun
 package require Mirror
 
-if {! [::AppDetecter::isInstalled expect]} {
-  puts stdout "expect not installed, start to install...."
-  ::CommonUtil::spawnCommand yum install -y expect
-}
-
-#if {[string length [::CommonUtil::getThisMachineIp [dict get $::ymlDict HostName]]] == 0} {
-#  puts stdout "machine ip doesn't match HostName item in [dict get $::rawParamDict profile]"
-#  ::CommonUtil::endEasyInstall
-#}
-
-proc acquireDbRootPassword {} {
-  set timeout 1000
-  send_user "I need db root password to continue. _enter_password:"
-	expect_user -re "(.*)\n"
-	set pass $expect_out(1,string)
-  spawn mysqladmin ping -p
-  expect {
-    "Enter password: $" {
-      exp_send "$pass\r"
-      exp_continue
-    }
-    "Access denied" {
-      ::CommonUtil::endEasyInstall
-    }
-    "mysqld is alive" {
-      return $pass
-    }
-    timeout {::CommonUtil::endEasyInstall}
-  }
-}
 
 catch {
   set action [dict get $::rawParamDict action]
 
+  if {! ([dict get $::rawParamDict host] eq [dict get $::ymlDict hostIp])} {
+    puts "parameter host value is [dict get $::rawParamDict host], but yml profile hostIp is [dict get $::ymlDict hostIp] !!!!"
+    ::CommonUtil::endEasyInstall
+  }
   switch $action {
   	install {
   		::MysqlInstaller::install $::ymlDict $::rawParamDict
+      ::SecureMe::doSecure $::ymlDict $::rawParamDict
   	}
-    secureInstallation {
-      ::SecureMe::doSecure $::ymlDict
-    }
-    startMaster {
-      ::SecureMe::enableBinLog
-    }
     startSlave {
       ::SecureMe::enableBinLog
       ::SlaveFirstRun::startSlave
@@ -91,3 +60,26 @@ if {[dict get $o -code] > 0} {
 }
 
 ::CommonUtil::endEasyInstall
+
+if {0} {
+  proc acquireDbRootPassword {} {
+    set timeout 1000
+    send_user "I need db root password to continue. _enter_password:"
+  	expect_user -re "(.*)\n"
+  	set pass $expect_out(1,string)
+    spawn mysqladmin ping -p
+    expect {
+      "Enter password: $" {
+        exp_send "$pass\r"
+        exp_continue
+      }
+      "Access denied" {
+        ::CommonUtil::endEasyInstall
+      }
+      "mysqld is alive" {
+        return $pass
+      }
+      timeout {::CommonUtil::endEasyInstall}
+    }
+  }
+}
