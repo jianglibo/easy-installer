@@ -28,9 +28,3 @@ pid-file=/var/run/mysqld/mysqld.pid
 
 log-bin=mysql-bin
 server-id=x
-innodb_flush_log_at_trx_commit=1
-sync_binlog=1
-
-#master-info-repository=TABLE
-#relay-log-info-repository=TABLE
-#relay-log-recovery=TRUE

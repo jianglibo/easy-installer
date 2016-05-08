@@ -45,7 +45,7 @@ proc ::SecureMe::doSecure {ymlDict rawParamDict} {
 #		exec chown -R mysql:mysql $datadir
 #  }
 
-  set toCommentOut [list log-bin server-id innodb_flush_log_at_trx_commit sync_binlog master-info-repository relay-log-info-repository relay-log-recovery]
+  set toCommentOut [dict get $ymlDict commentOut]
 
   ::PropertyUtil::commentLines /etc/my.cnf $toCommentOut
 
@@ -122,8 +122,7 @@ proc ::SecureMe::doSecure {ymlDict rawParamDict} {
 	}
 
   ::CommonUtil::spawnCommand systemctl stop mysqld
-  ::PropertyUtil::unCommentLines /etc/my.cnf $toCommentOut
-  ::PropertyUtil::commentLines /etc/my.cnf [list socket]
+  ::PropertyUtil::unCommentLines /etc/my.cnf [dict get $ymlDict unCommentOut]
   ::CommonUtil::spawnCommand systemctl start mysqld
 }
 

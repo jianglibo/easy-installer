@@ -41,13 +41,6 @@ if {! [string match *.yml $cfgFile]} {
   set cfgFile "$cfgFile.yml"
 }
 
-#puts stdout "...................."
-#puts stdout $cfgFile
-
-dict for {k v} $::rawParamDict {
-  puts "$k=$v"
-}
-
 if {[file exists $cfgFile]} {
   set ::ymlDict [::CommonUtil::mergeConfig $::rawParamDict [::CommonUtil::loadYaml $cfgFile]]
 } else {
