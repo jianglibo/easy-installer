@@ -25,7 +25,7 @@ proc ::SecureMe::doSecure {ymlDict rawParamDict} {
 	set mysqlLog [dict get $propertiesDict log-error]
 
 	# mysql not initialized
-#	if {(! [file exists $mysqlLog]) || ([file size $mysqlLog] < 10)} {
+  #	if {(! [file exists $mysqlLog]) || ([file size $mysqlLog] < 10)} {
 
   if {! [file exists /etc/my.cnf.origin]} {
     exec mv /etc/my.cnf /etc/my.cnf.origin
@@ -45,22 +45,20 @@ proc ::SecureMe::doSecure {ymlDict rawParamDict} {
 #		exec chown -R mysql:mysql $datadir
 #  }
 
-  set toCommentOut [dict get $ymlDict commentOut]
+#  set toCommentOut [dict get $ymlDict commentOut]
 
-  ::PropertyUtil::commentLines /etc/my.cnf $toCommentOut
-
+#  ::PropertyUtil::commentLines /etc/my.cnf $toCommentOut
+  puts [exec cat /etc/my.cnf]
 	::CommonUtil::spawnCommand systemctl start mysqld
-
 
 	if {[catch {open $mysqlLog} fid o]} {
 		puts stdout $fid
 		::CommonUtil::endEasyInstall
 	} else {
 		while {[gets $fid line] >= 0} {
-			if {[string match "*temporary password*:*" $line]} {
-				set tmppsd [string trim [lindex [split [string trim $line] :] end]]
-        break
-			}
+      if {[regexp {.*temporary password.*?:\s*(.*)} $line mh tmppsd]} {
+        break;
+      }
 		}
 		close $fid
 	}
@@ -121,9 +119,9 @@ proc ::SecureMe::doSecure {ymlDict rawParamDict} {
 		timeout
 	}
 
-  ::CommonUtil::spawnCommand systemctl stop mysqld
-  ::PropertyUtil::unCommentLines /etc/my.cnf [dict get $ymlDict unCommentOut]
-  ::CommonUtil::spawnCommand systemctl start mysqld
+#  ::CommonUtil::spawnCommand systemctl stop mysqld
+#  ::PropertyUtil::unCommentLines /etc/my.cnf [dict get $ymlDict unCommentOut]
+#  ::CommonUtil::spawnCommand systemctl start mysqld
 }
 
 

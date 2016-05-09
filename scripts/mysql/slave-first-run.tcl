@@ -16,30 +16,15 @@ namespace eval ::SlaveFirstRun {
 #    ->     MASTER_LOG_FILE='recorded_log_file_name',
 #    ->     MASTER_LOG_POS=recorded_log_position;
 
-
-proc ::SlaveFirstRun::startSlave {} {
-  set timeout 10000
-  send_user "Please Enter slave's db root password to continue. _enter_password:"
-  expect_user -re "(.*)\n"
-  set rpass $expect_out(1,string)
-
-  send_user "Please Enter master's address. _enter_value:"
-  expect_user -re "(.*)\n"
-  set masterHost $expect_out(1,string)
-
-  send_user "Please Enter replica username. _enter_value:"
-  expect_user -re "(.*)\n"
-  set masterUser $expect_out(1,string)
-
-  send_user "Please Enter replica's password. _enter_value:"
-  expect_user -re "(.*)\n"
-  set pas $expect_out(1,string)
-
+proc ::SlaveFirstRun::startSlave {ymlDict} {
   set sqls [list]
-  lappend sqls "CHANGE MASTER TO MASTER_HOST='$masterHost'"
-  lappend sqls "START SLAVE USER='$masterUser' PASSWORD='$pas'"
-  ::SqlRunner::run $sqls $rpass
+  set replicaUser [dict get $ymlDict replicaUser]
+#  dict for {k v} $replicaUser
+  lappend sqls "CHANGE MASTER TO MASTER_HOST='[dict get $replicaUser MasterHost]'"
+  lappend sqls "START SLAVE USER='[dict get $replicaUser UserName]' PASSWORD='[dict get $replicaUser Password]'"
+  ::SqlRunner::run $sqls [dict get $ymlDict RootPassword]
 }
+
 
 # ----------------------unused code---------------------------
 proc ::SlaveFirstRun::getMasterHostRootPassword {} {

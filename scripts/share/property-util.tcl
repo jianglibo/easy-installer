@@ -44,6 +44,42 @@ proc ::PropertyUtil::isCommentLine {line} {
   }
 }
 
+proc ::PropertyUtil::changeOrAdd {fn dic} {
+  set lines [list]
+  if {[catch {open $fn} fid o]} {
+    puts $fid
+    ::CommonUtil::endEasyInstall
+  } else {
+    while {[gets $fid line] >= 0} {
+      set pair [split2pair $line]
+      if {[llength $pair] == 2} {
+        set pk [lindex $pair 0]
+        if {[dict exists $dic $pk]} {
+          lappend lines "$pk=[dict get $dic $pk]"
+          dict remove $dic $pk
+        } else {
+          lappend lines $line
+        }
+      } else {
+        lappend lines $line
+      }
+    }
+    close $fid
+    dict for {k v} $dic {
+      lappend lines "$k=$v"
+    }
+  }
+  if {[catch {open $fn w} fid o]} {
+    puts $fid
+    endEasyInstall
+  } else {
+    foreach line $lines {
+      puts $fid $line
+    }
+    close $fid
+  }
+}
+
 proc ::PropertyUtil::commentLines {fn keylist} {
   set lines [list]
   if {[catch {open $fn} fid o]} {

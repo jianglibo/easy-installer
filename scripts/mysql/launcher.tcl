@@ -7,6 +7,23 @@ package require AddUser
 package require SlaveFirstRun
 package require Mirror
 
+proc checkSlaveRequirement {ymlDict} {
+  if {[dict get $ymlDict Master]} {
+    puts "the 'Master' value in [dict get $::rawParamDict profile] is 1.It is a profile for master server."
+    ::CommonUtil::endEasyInstall
+  }
+  if {[string match *master* [dict get $ymlDict mycnf]]} {
+    puts "mycnf item in [dict get $::rawParamDict profile] contains 'master'!!"
+    ::CommonUtil::endEasyInstall
+  }
+}
+
+proc checkMasterRequirement {ymlDict} {
+  if {! [dict get $ymlDict Master]} {
+    puts "the 'Master' value in [dict get $::rawParamDict profile] is 0.It is a profile for repliaction server."
+    ::CommonUtil::endEasyInstall
+  }
+}
 
 catch {
   set action [dict get $::rawParamDict action]
@@ -17,27 +34,35 @@ catch {
   }
   switch $action {
   	install {
-  		::MysqlInstaller::install $::ymlDict $::rawParamDict
+      checkMasterRequirement $::ymlDict
+  		::MysqlInstaller::install $::ymlDict $::rawParamDict]
       ::SecureMe::doSecure $::ymlDict $::rawParamDict
+      ::AddUser::add $::rawParamDict $::ymlDict
+      ::AddUser::addReplica $::rawParamDict $::ymlDict
   	}
+    installOnly {
+      checkMasterRequirement $::ymlDict
+      ::MysqlInstaller::install $::ymlDict $::rawParamDict 0
+    }
+    installSlave {
+      checkSlaveRequirement $::ymlDict
+      ::MysqlInstaller::install $::ymlDict $::rawParamDict
+      ::SecureMe::doSecure $::ymlDict $::rawParamDict
+      ::SlaveFirstRun::startSlave $::ymlDict
+    }
     startSlave {
-      ::SecureMe::enableBinLog
-      ::SlaveFirstRun::startSlave
+      checkSlaveRequirement $::ymlDict
+      ::SlaveFirstRun::startSlave $::ymlDict
+    }
+    secureMe {
+      ::SecureMe::doSecure $::ymlDict $::rawParamDict
     }
     mirror {
       ::Mirror::mirror $::rawParamDict
     }
-    createUser {
-      catch {::AddUser::add $::rawParamDict [acquireDbRootPassword]} msg o
-      if {[dict get $o -code] > 0} {
-        puts $msg
-      }
-    }
-    createReplicaUser {
-      catch {::AddUser::addReplica $::rawParamDict [acquireDbRootPassword]} msg o
-      if {[dict get $o -code] > 0} {
-        puts $msg
-      }
+    updateUser {
+      ::AddUser::add $::rawParamDict $::ymlDict
+      ::AddUser::addReplica $::rawParamDict $::ymlDict
     }
   	dump {
       set rpass [acquireDbRootPassword]

@@ -10,46 +10,32 @@ package require SqlRunner
 namespace eval ::AddUser {
 }
 
+proc ::AddUser::add {paramsDict ymlDict} {
+	set sqls [list]
+	set dbUsers [dict get $ymlDict dbUsers]
+	foreach u $dbUsers {
+		lappend sqls [string map $u "create database DbName charset utf8;\r"]
+		lappend sqls [string map $u "grant all privileges on DbName.* to 'UserName'@'FromHost' identified by 'Password';\r"]
+	}
+	lappend sqls "flush privileges;\r"
+	::SqlRunner::run $sqls [dict get $ymlDict RootPassword]
+}
+
+proc ::AddUser::addReplica {paramsDict ymlDict} {
+	set sqls [list]
+	set replicaUsers [dict get $ymlDict replicaUsers]
+	foreach u $replicaUsers {
+		lappend sqls [string map $u "CREATE USER 'UserName'@'FromHost' IDENTIFIED BY 'Password';\r"]
+		lappend sqls [string map $u "GRANT REPLICATION SLAVE ON *.* TO 'UserName'@'FromHost';\r"]
+	}
+	lappend sqls "flush privileges;\r"
+	::SqlRunner::run $sqls [dict get $ymlDict RootPassword]
+}
+
+
 proc ::AddUser::queryPassword {mpt} {
 	set timeout 1000
 	send_user "$mpt"
 	expect_user -re "(.*)\n"
 	return $expect_out(1,string)
-}
-
-proc ::AddUser::add {paramsDict rpass} {
-	if {[catch {
-		set UserName [dict get $paramsDict UserName]
-		set FromHost [dict get $paramsDict FromHost]
-		set DbName [dict get $paramsDict DbName]
-		} msg o]} {
-			puts "parameter 'ip, name, dbName' are mandatory."
-			::CommonUtil::endEasyInstall
-	}
-
-	dict set paramsDict Password [queryPassword "please enter password for '$UserName'@'$FromHost' _enter_password:"]
-
-	set sqls [list]
-	lappend sqls [string map $paramsDict "create database DbName charset utf8;\r"]
-	lappend sqls [string map $paramsDict "grant all privileges on DbName.* to 'UserName'@'FromHost' identified by 'Password';\r"]
-	lappend sqls "flush privileges;\r"
-	::SqlRunner::run $sqls $rpass
-}
-
-proc ::AddUser::addReplica {paramsDict rpass} {
-	if {[catch {
-		set UserName [dict get $paramsDict UserName]
-		set FromHost [dict get $paramsDict FromHost]
-		} msg o]} {
-			puts "parameter 'ip, name, dbName' are mandatory."
-			::CommonUtil::endEasyInstall
-	}
-
-	dict set paramsDict Password [queryPassword "please enter password for '$UserName'@'$FromHost' _enter_password:"]
-
-	set sqls [list]
-	lappend sqls [string map $paramsDict "CREATE USER 'UserName'@'FromHost' IDENTIFIED BY 'Password';\r"]
-	lappend sqls [string map $paramsDict "GRANT REPLICATION SLAVE ON *.* TO 'UserName'@'FromHost';\r"]
-	lappend sqls "flush privileges;\r"
-	::SqlRunner::run $sqls $rpass
 }
