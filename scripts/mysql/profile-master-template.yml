@@ -1,5 +1,5 @@
 server-id: 1
-RootPassword: Y2ue&292udus
+RootPassword: adkkss&292udus
 DownFrom: http://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm
 mycnf: my.master.cnf
 # for accidentaily run script to wrong machine.
@@ -11,18 +11,16 @@ dbUsers:
 replicaUsers:
   - UserName: firstUser
     FromHost: 192.168.33.1
+# first comment bin-log
 commentOut:
   - log-bin
-  - server-id
   - innodb_flush_log_at_trx_commit
   - sync_binlog
   - master-info-repository
   - relay-log-info-repository
   - relay-log-recovery
 unCommentOut:
-  - socket
   - log-bin
-  - server-id
   - innodb_flush_log_at_trx_commit
   - sync_binlog
   - master-info-repository

@@ -13,6 +13,7 @@ package ifneeded MysqlInstaller 1.0 [list source [file join $dir mysql-installer
 package ifneeded SecureMe 1.0 [list source [file join $dir secure-me.tcl]]
 package ifneeded SqlRunner 1.0 [list source [file join $dir sql-runner.tcl]]
 package ifneeded AddUser 1.0 [list source [file join $dir add-user.tcl]]
+package ifneeded SecureUtil 1.0 [list source [file join $dir secure-util.tcl]]
 package ifneeded FreezeReplca 1.0 [list source [file join $dir freeze-replica.tcl]]
 package ifneeded SlaveFirstRun 1.0 [list source [file join $dir slave-first-run.tcl]]
 package ifneeded Mirror 1.0 [list source [file join $dir mirror.tcl]]

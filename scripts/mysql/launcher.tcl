@@ -35,7 +35,7 @@ catch {
   switch $action {
   	install {
       checkMasterRequirement $::ymlDict
-  		::MysqlInstaller::install $::ymlDict $::rawParamDict]
+  		::MysqlInstaller::install $::ymlDict $::rawParamDict
       ::SecureMe::doSecure $::ymlDict $::rawParamDict
       ::AddUser::add $::rawParamDict $::ymlDict
       ::AddUser::addReplica $::rawParamDict $::ymlDict
@@ -43,6 +43,10 @@ catch {
     installOnly {
       checkMasterRequirement $::ymlDict
       ::MysqlInstaller::install $::ymlDict $::rawParamDict 0
+    }
+    secureOnly {
+      checkMasterRequirement $::ymlDict
+      ::SecureMe::doSecure $::ymlDict $::rawParamDict
     }
     installSlave {
       checkSlaveRequirement $::ymlDict

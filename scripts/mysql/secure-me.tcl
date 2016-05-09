@@ -2,6 +2,7 @@ package provide SecureMe 1.0
 package require CommonUtil
 package require Expect
 package require PropertyUtil
+package require SecureUtil
 
 namespace eval ::SecureMe {
 }
@@ -33,22 +34,10 @@ proc ::SecureMe::doSecure {ymlDict rawParamDict} {
 
   exec cp $mycnf /etc/my.cnf
 
-# Don't need to create datadir, mysql will do it for you!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#		set datadir [dict get $propertiesDict datadir]
-#    if {[catch {exec grep -Ei "^mysql:" /etc/passwd} msg o]} {
-#			exec groupadd mysql
-#			exec useradd -r -g mysql -s /bin/false mysql
-#		}
-#	  if {! [file exists $datadir]} {
-#		   exec mkdir -p $datadir
-#	  }
-#		exec chown -R mysql:mysql $datadir
-#  }
+  set toCommentOut [dict get $ymlDict commentOut]
 
-#  set toCommentOut [dict get $ymlDict commentOut]
+  ::PropertyUtil::commentLines /etc/my.cnf $toCommentOut
 
-#  ::PropertyUtil::commentLines /etc/my.cnf $toCommentOut
-  puts [exec cat /etc/my.cnf]
 	::CommonUtil::spawnCommand systemctl start mysqld
 
 	if {[catch {open $mysqlLog} fid o]} {
@@ -57,71 +46,19 @@ proc ::SecureMe::doSecure {ymlDict rawParamDict} {
 	} else {
 		while {[gets $fid line] >= 0} {
       if {[regexp {.*temporary password.*?:\s*(.*)} $line mh tmppsd]} {
-        break;
+        puts "found temporary password: $tmppsd"
       }
 		}
 		close $fid
 	}
 
 	#if you successly run this code, password should not match. it is harmless.
-	puts stdout "temporary password is $tmppsd"
+  SecureUtil::doSecure $tmppsd [dict get $ymlDict RootPassword]
 
-  set timeout 10000
-
-	spawn -noecho mysql_secure_installation
-
-	set expired 0
-
-	expect {
-		"Enter password for user root: $" {
-			 exp_send "$tmppsd\r"
-			 exp_continue
-		 }
-		"*Access denied for user*" {
-			puts stdout "\nmysql already be initialized. skipped."
-			::CommonUtil::endEasyInstall
-		}
-		"Change the password for root ? ((Press y|Y for Yes, any other key for No) : $" {
-			if {$expired} {
-				exp_send "n\r"
-				exp_continue
-			} else {
-				puts stdout "\nmysql already be initialized. skipped."
-				::CommonUtil::endEasyInstall
-			}
-		}
-		"The existing password for the user account root has expired*New password: $" {
-				set expired 1
-#				send_user "_enter_password:"
-#				expect_user -re "(.*)\n"
-#  			exp_send "$expect_out(1,string)\r"
-        exp_send "[dict get $ymlDict {RootPassword}]\r"
-				exp_continue
-			}
-		"Re-enter new password: $" {
-#			send_user "_enter_password:"
-#			expect_user -re "(.*)\n"
-#			exp_send "$expect_out(1,string)\r"
-      exp_send "[dict get $ymlDict {RootPassword}]\r"
-			exp_continue
-		}
-		"Sorry, passwords do not match.*New password: $" {
-			exp_continue
-		}
-		"satisfy the current policy requirements*New password: $" {
-			::CommonUtil::endEasyInstall
-		}
-		"Remove anonymous users?*any other key for No) : $" {exp_send "y\r" ; exp_continue}
-		"Disallow root login remotely?* any other key for No) : $" {exp_send "y\r" ; exp_continue}
-		"Remove test database and access to it?* any other key for No) : $" {exp_send "y\r"; exp_continue}
-		"Reload privilege tables now?* any other key for No) : $" {exp_send "y\r"}
-		eof {}
-		timeout
-	}
-
-#  ::CommonUtil::spawnCommand systemctl stop mysqld
-#  ::PropertyUtil::unCommentLines /etc/my.cnf [dict get $ymlDict unCommentOut]
-#  ::CommonUtil::spawnCommand systemctl start mysqld
+  ::CommonUtil::spawnCommand systemctl stop mysqld
+  #now enable log-bin
+  ::PropertyUtil::unCommentLines /etc/my.cnf [dict get $ymlDict unCommentOut]
+  ::CommonUtil::spawnCommand systemctl start mysqld
 }
 
 

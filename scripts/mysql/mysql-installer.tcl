@@ -3,6 +3,7 @@ package provide MysqlInstaller 1.0
 package require AppDetecter
 package require CommonUtil
 package require PropertyUtil
+package require SecureUtil
 
 namespace eval ::MysqlInstaller {
 	variable tmpDir /opt/install-tmp
@@ -32,7 +33,27 @@ proc ::MysqlInstaller::yumInstall {ymlDict rawParamDict start} {
 	if {$start} {
 		# if first start has server-id, it will has server-id. or else none.
 		::CommonUtil::spawnCommand systemctl start mysqld
+
+		set props [::PropertyUtil::properties2dict /etc/my.cnf]
+		if {[dict exists $props log-error]} {
+			set logFile [dict get $props log-error]
+		} else {
+			set logFile [dict get $props log_error]
+		}
+		if {[catch {open $logFile} fid o]} {
+			puts stdout $fid
+			::CommonUtil::endEasyInstall
+		} else {
+			while {[gets $fid line] >= 0} {
+				if {[regexp {.*temporary password.*?:\s*(.*)} $line mh tmppsd]} {
+					puts "found one $tmppsd"
+				}
+			}
+			close $fid
+		}
+		::SecureUtil::doSecure $tmppsd $::SecureUtil::TMP_PASSWORD
 		::CommonUtil::spawnCommand systemctl stop mysqld
+#		exec rm -f $logFile
 	}
 }
 
