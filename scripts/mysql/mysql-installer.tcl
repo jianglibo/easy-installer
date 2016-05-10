@@ -27,34 +27,48 @@ proc ::MysqlInstaller::yumInstall {ymlDict rawParamDict start} {
 	::AppDetecter::killByName yum
 	::CommonUtil::spawnCommand yum localinstall -y $rs
 	::CommonUtil::spawnCommand yum install -y mysql-community-server
+
 	set serverId [dict get $ymlDict server-id]
 	::PropertyUtil::changeOrAdd /etc/my.cnf [dict create server-id $serverId]
+	#must comment out.
+	::PropertyUtil::commentLines /etc/my.cnf [list socket]
 
-	if {$start} {
+
 		# if first start has server-id, it will has server-id. or else none.
-		::CommonUtil::spawnCommand systemctl start mysqld
+	::CommonUtil::spawnCommand systemctl start mysqld
 
-		set props [::PropertyUtil::properties2dict /etc/my.cnf]
-		if {[dict exists $props log-error]} {
-			set logFile [dict get $props log-error]
-		} else {
-			set logFile [dict get $props log_error]
-		}
-		if {[catch {open $logFile} fid o]} {
-			puts stdout $fid
-			::CommonUtil::endEasyInstall
-		} else {
-			while {[gets $fid line] >= 0} {
-				if {[regexp {.*temporary password.*?:\s*(.*)} $line mh tmppsd]} {
-					puts "found one $tmppsd"
-				}
-			}
-			close $fid
-		}
-		::SecureUtil::doSecure $tmppsd $::SecureUtil::TMP_PASSWORD
-		::CommonUtil::spawnCommand systemctl stop mysqld
-#		exec rm -f $logFile
+	after 1500 set state timeout
+	vwait state
+
+	set props [::PropertyUtil::properties2dict /etc/my.cnf]
+	if {[dict exists $props log-error]} {
+		set logFile [dict get $props log-error]
+	} else {
+		set logFile [dict get $props log_error]
 	}
+	if {[catch {open $logFile} fid o]} {
+		puts stdout $fid
+		::CommonUtil::endEasyInstall
+	} else {
+		while {[gets $fid line] >= 0} {
+			if {[regexp {.*temporary password.*?:\s*(.*)} $line mh tmppsd]} {
+				puts "found one $tmppsd"
+			}
+		}
+		close $fid
+	}
+
+	::SecureUtil::securInstallation $tmppsd $::SecureUtil::TMP_PASSWORD
+
+	after 2000 set state timeout
+	vwait state
+
+	::CommonUtil::spawnCommand systemctl stop mysqld
+	::CommonUtil::spawnCommand systemctl stop mysqld
+	::CommonUtil::spawnCommand systemctl stop mysqld
+
+	after 2000 set state timeout
+	vwait state
 }
 
 proc ::MysqlInstaller::install {ymlDict rawParamDict {start 1}} {
@@ -64,7 +78,6 @@ proc ::MysqlInstaller::install {ymlDict rawParamDict {start 1}} {
 	}
 	yumInstall $ymlDict $rawParamDict $start
 }
-
 
 # -------------unused code------------------------------
 proc ::MysqlInstaller::bundleInstall {ymlDict rawParamDict} {

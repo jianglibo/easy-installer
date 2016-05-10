@@ -11,7 +11,7 @@ namespace eval ::SecureUtil {
 	variable TMP_PASSWORD Ake8023i^*asd
 }
 
-proc ::SecureUtil::doSecure {curPass newPass} {
+proc ::SecureUtil::securInstallation {curPass newPass} {
   set timeout 10000
 	spawn -noecho mysql_secure_installation
 	set expired 0
@@ -35,16 +35,10 @@ proc ::SecureUtil::doSecure {curPass newPass} {
 		}
 		"The existing password for the user account root has expired*New password: $" {
 				set expired 1
-#				send_user "_enter_password:"
-#				expect_user -re "(.*)\n"
-#  			exp_send "$expect_out(1,string)\r"
         exp_send "$newPass\r"
 				exp_continue
 			}
 		"Re-enter new password: $" {
-#			send_user "_enter_password:"
-#			expect_user -re "(.*)\n"
-#			exp_send "$expect_out(1,string)\r"
       exp_send "$newPass\r"
 			exp_continue
 		}

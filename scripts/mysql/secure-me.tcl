@@ -25,20 +25,21 @@ proc ::SecureMe::doSecure {ymlDict rawParamDict} {
 
 	set mysqlLog [dict get $propertiesDict log-error]
 
-	# mysql not initialized
-  #	if {(! [file exists $mysqlLog]) || ([file size $mysqlLog] < 10)} {
-
   if {! [file exists /etc/my.cnf.origin]} {
     exec mv /etc/my.cnf /etc/my.cnf.origin
   }
 
   exec cp $mycnf /etc/my.cnf
 
-  set toCommentOut [dict get $ymlDict commentOut]
 
-  ::PropertyUtil::commentLines /etc/my.cnf $toCommentOut
+#  set toCommentOut [dict get $ymlDict commentOut]
+
+#  ::PropertyUtil::commentLines /etc/my.cnf $toCommentOut
 
 	::CommonUtil::spawnCommand systemctl start mysqld
+
+  after 1500 set state timeout
+  vwait state
 
 	if {[catch {open $mysqlLog} fid o]} {
 		puts stdout $fid
@@ -51,15 +52,16 @@ proc ::SecureMe::doSecure {ymlDict rawParamDict} {
 		}
 		close $fid
 	}
-
 	#if you successly run this code, password should not match. it is harmless.
-  SecureUtil::doSecure $tmppsd [dict get $ymlDict RootPassword]
-
-  ::CommonUtil::spawnCommand systemctl stop mysqld
-  #now enable log-bin
-  ::PropertyUtil::unCommentLines /etc/my.cnf [dict get $ymlDict unCommentOut]
-  ::CommonUtil::spawnCommand systemctl start mysqld
+  # it's wired.after change datadir, root password not change.
+  puts [exec cat /etc/my.cnf]
+  SecureUtil::securInstallation $tmppsd [dict get $ymlDict RootPassword]
 }
+
+#  ::CommonUtil::spawnCommand systemctl stop mysqld
+  #now enable log-bin
+#  ::PropertyUtil::unCommentLines /etc/my.cnf [dict get $ymlDict unCommentOut]
+#  ::CommonUtil::spawnCommand systemctl start mysqld
 
 
 proc ::SecureMe::enableBinLog {} {

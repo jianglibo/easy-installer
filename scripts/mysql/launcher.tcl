@@ -42,7 +42,7 @@ catch {
   	}
     installOnly {
       checkMasterRequirement $::ymlDict
-      ::MysqlInstaller::install $::ymlDict $::rawParamDict 0
+      ::MysqlInstaller::install $::ymlDict $::rawParamDict
     }
     secureOnly {
       checkMasterRequirement $::ymlDict
