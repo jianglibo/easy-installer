@@ -27,7 +27,7 @@ proc checkMasterRequirement {ymlDict} {
 
 catch {
   set action [dict get $::rawParamDict action]
-
+  exec yum install -y policycoreutils-python
   if {! ([dict get $::rawParamDict host] eq [dict get $::ymlDict hostIp])} {
     puts "parameter host value is [dict get $::rawParamDict host], but yml profile hostIp is [dict get $::ymlDict hostIp] !!!!"
     ::CommonUtil::endEasyInstall
@@ -36,7 +36,6 @@ catch {
   	install {
       checkMasterRequirement $::ymlDict
   		::MysqlInstaller::install $::ymlDict $::rawParamDict
-      ::SecureMe::doSecure $::ymlDict $::rawParamDict
       ::AddUser::add $::rawParamDict $::ymlDict
       ::AddUser::addReplica $::rawParamDict $::ymlDict
   	}
@@ -51,7 +50,6 @@ catch {
     installSlave {
       checkSlaveRequirement $::ymlDict
       ::MysqlInstaller::install $::ymlDict $::rawParamDict
-      ::SecureMe::doSecure $::ymlDict $::rawParamDict
       ::SlaveFirstRun::startSlave $::ymlDict
     }
     startSlave {

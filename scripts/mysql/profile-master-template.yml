@@ -11,20 +11,3 @@ dbUsers:
 replicaUsers:
   - UserName: firstUser
     FromHost: 192.168.33.1
-# first comment bin-log and server-id, or will fail start.
-commentOut:
-  - log-bin
-  - server-id
-  - innodb_flush_log_at_trx_commit
-  - sync_binlog
-  - master-info-repository
-  - relay-log-info-repository
-  - relay-log-recovery
-unCommentOut:
-  - log-bin
-  - server-id
-  - innodb_flush_log_at_trx_commit
-  - sync_binlog
-  - master-info-repository
-  - relay-log-info-repository
-  - relay-log-recovery

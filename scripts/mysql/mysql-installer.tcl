@@ -15,37 +15,25 @@ namespace eval ::MysqlInstaller {
 	}
 }
 
-proc ::MysqlInstaller::yumInstall {ymlDict rawParamDict start} {
-	variable tmpDir
-#	set mysqlLog [dict get $ymlDict  log-error]
-	set DownFrom [dict get $::ymlDict DownFrom]
-	set rs [lindex [split $DownFrom /] end]
-
-	cd $tmpDir
-	puts stdout "start download from $DownFrom"
-	::CommonUtil::spawnCommand curl -OL $DownFrom
-	::AppDetecter::killByName yum
-	::CommonUtil::spawnCommand yum localinstall -y $rs
-	::CommonUtil::spawnCommand yum install -y mysql-community-server
-
-	set serverId [dict get $ymlDict server-id]
-	::PropertyUtil::changeOrAdd /etc/my.cnf [dict create server-id $serverId]
-	#must comment out.
+# only change two properties. server-id, and datadir
+proc ::MysqlInstaller::modifyMyCnf {propertiesDict} {
+	::PropertyUtil::changeOrAdd /etc/my.cnf [dict create server-id [dict get $propertiesDict server-id]]
+	::PropertyUtil::changeOrAdd /etc/my.cnf [dict create datadir [dict get $propertiesDict datadir]]
 	::PropertyUtil::commentLines /etc/my.cnf [list socket]
+}
 
+proc ::MysqlInstaller::getPropertiesDict {ymlDict rawParamDict} {
+	set mycnf [file join $::baseDir [dict get $rawParamDict {runFolder}] [dict get $ymlDict {mycnf}]]
+	set propertiesDict [::PropertyUtil::properties2dict $mycnf]
+	# fix server-id
+	dict set propertiesDict server-id [dict get $ymlDict server-id]
+	# add mycnf key for later access.
+	dict set propertiesDict mycnfFile $mycnf
+	return $propertiesDict
+}
 
-		# if first start has server-id, it will has server-id. or else none.
-	::CommonUtil::spawnCommand systemctl start mysqld
-
-	after 1500 set state timeout
-	vwait state
-
-	set props [::PropertyUtil::properties2dict /etc/my.cnf]
-	if {[dict exists $props log-error]} {
-		set logFile [dict get $props log-error]
-	} else {
-		set logFile [dict get $props log_error]
-	}
+proc ::MysqlInstaller::extractTmpPwd {propertiesDict} {
+	set logFile [dict get $propertiesDict log-error]
 	if {[catch {open $logFile} fid o]} {
 		puts stdout $fid
 		::CommonUtil::endEasyInstall
@@ -57,18 +45,38 @@ proc ::MysqlInstaller::yumInstall {ymlDict rawParamDict start} {
 		}
 		close $fid
 	}
+	return $tmppsd
+}
 
-	::SecureUtil::securInstallation $tmppsd $::SecureUtil::TMP_PASSWORD
+proc ::MysqlInstaller::yumInstall {ymlDict rawParamDict start} {
+	variable tmpDir
+#	set mysqlLog [dict get $ymlDict  log-error]
+	set DownFrom [dict get $ymlDict DownFrom]
+	set rs [lindex [split $DownFrom /] end]
 
-	after 2000 set state timeout
-	vwait state
+	cd $tmpDir
+	puts stdout "start download from $DownFrom"
+	::CommonUtil::spawnCommand curl -OL $DownFrom
+	::AppDetecter::killByName yum
+	::CommonUtil::spawnCommand yum localinstall -y $rs
+	::CommonUtil::spawnCommand yum install -y mysql-community-server
+	exec cp /etc/my.cnf /etc/my.cnf.origin
+
+	set propertiesDict [getPropertiesDict $ymlDict $rawParamDict]
+
+	modifyMyCnf $propertiesDict
+	# log-bin not enabled.
+	::CommonUtil::spawnCommand systemctl start mysqld
+	set rpass [dict get $ymlDict RootPassword]
+	::SecureUtil::securInstallation [extractTmpPwd $propertiesDict] $rpass
 
 	::CommonUtil::spawnCommand systemctl stop mysqld
-	::CommonUtil::spawnCommand systemctl stop mysqld
-	::CommonUtil::spawnCommand systemctl stop mysqld
 
-	after 2000 set state timeout
-	vwait state
+	# change my.cnf again. this time enable log-bin
+	exec cp [dict get $propertiesDict mycnfFile] /etc/my.cnf
+	modifyMyCnf $propertiesDict
+
+	::CommonUtil::spawnCommand systemctl start mysqld
 }
 
 proc ::MysqlInstaller::install {ymlDict rawParamDict {start 1}} {

@@ -10,11 +10,3 @@ replicaUser:
   UserName: firstReplicaUser
   Password: Y2sdkosdu32ue&292ud
   MasterHost: 192.168.33.50
-commentOut:
-  - log-bin
-  - server-id
-  - innodb_flush_log_at_trx_commit
-  - sync_binlog
-unCommentOut:
-  - log-bin
-  - server-id
