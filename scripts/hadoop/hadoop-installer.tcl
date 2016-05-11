@@ -18,8 +18,17 @@ proc ::HadoopInstaller::install {ymlDict rawParamDict} {
   cd $installFolder
   ::CommonUtil::spawnCommand curl -OL $from
 
-  ::CommonUtil::spawnCommand tar -zxf $fn
+  if {[catch {exec tar -zxf $fn} msg o]} {
+    dict for {k v} $o {
+      puts "$k=$v"
+    }
 
+    puts "$fn is damaged. please try again."
+    exec rm -f $fn
+    if {[regexp {(.*)\.tar\.gz$} $fn mh m1]} {
+      exec rm -rf $m1
+    }
+    ::CommonUtil::endEasyInstall
+  }
   cd $pwd
-
 }

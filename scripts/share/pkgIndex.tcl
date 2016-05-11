@@ -11,6 +11,7 @@
 package ifneeded AppDetecter 1.0 [list source [file join $dir app-detecter.tcl]]
 package ifneeded CommonInstaller 1.0 [list source [file join $dir common-installer.tcl]]
 package ifneeded CommonUtil 1.0 [list source [file join $dir common-util.tcl]]
+package ifneeded OsUtil 1.0 [list source [file join $dir os-util.tcl]]
 package ifneeded PropertyUtil 1.0 [list source [file join $dir property-util.tcl]]
 package ifneeded JavaInstaller 1.0 [list source [file join $dir java-installer.tcl]]
 package ifneeded LauncherArgParser 1.0 [list source [file join $dir launcher-arg-parser.tcl]]

@@ -28,6 +28,8 @@ foreach a $::argv {
 
 ::ParamsValidator::validate rawParamDict $nameActions
 
+set properties [::CcommonUtil::parseClientProperties [dict get $rawParamDict appname]]
+
 foreach h [::CcommonUtil::parseHosts [dict get $rawParamDict host]] {
   #if you not living main land of china, comment line below.
   ::CcommonUtil::prepareRunFolder $h $serverSideDir $rawParamDict
@@ -37,7 +39,7 @@ foreach h [::CcommonUtil::parseHosts [dict get $rawParamDict host]] {
   set actions [lrange $nameActions 1 end]
   foreach action $actions {
     spawn -noecho ssh root@$h
-    exp_send "tclsh [file join $serverSideDir launcher.tcl] [::CcommonUtil::prepareLauncherParams $rawParamDict $action]\n"
+    exp_send "tclsh [file join $serverSideDir launcher.tcl] [::CcommonUtil::prepareLauncherParams $h $rawParamDict $action]\n"
     set timeout 100000
     # all we need is to keep sensitive password out of command history.
     expect {

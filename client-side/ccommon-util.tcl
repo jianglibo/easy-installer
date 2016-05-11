@@ -4,6 +4,25 @@ namespace eval ::CcommonUtil {
 
 }
 
+proc ::CcommonUtil::parseClientProperties {appname} {
+  set properties [dict create]
+  set pf [file join $::baseDir scripts $appname client.properties]
+  if {[file exists $pf]} {
+    if {[catch {open $pf} fid o]} {
+      puts $fid
+      exit 0
+    } else {
+      while {[gets $fid line] >= 0} {
+        if {[regexp {^([^#[:space:]]+)\s*=\s*([^#[:space:]+])} $line mh m1 m2]} {
+          dict set properties $m1 $m2
+        }
+      }
+      close $fid
+    }
+  }
+  return properties
+}
+
 proc ::CcommonUtil::printHelp {} {
   puts "command style is:"
   puts "easy-install.tcl -host=xxx --profile=xxx --otherparams=xxx appname action...action."
@@ -38,14 +57,15 @@ proc ::CcommonUtil::prepareRunFolder {host serverSideDir rawParamDict} {
   }
   set mocklist [dict get $rawParamDict mocklist]
   if {[string length $mocklist] > 0} {
-    exec scp [file join $::baseDir $mocklist] root@$host:$serverSideDir
+    exec scp [file join $::baseDir mocklist $mocklist] root@$host:$serverSideDir
   }
+  
   if {$appname eq {boot}} {
       puts [exec scp -r [dict get $rawParamDict bootjar] root@$host:$serverSideDir]
   }
 }
 
-proc ::CcommonUtil::prepareLauncherParams {rawParamDict action} {
+proc ::CcommonUtil::prepareLauncherParams {host rawParamDict action} {
   set params [list]
   dict for {k v} $rawParamDict {
     switch -exact -- $k {
@@ -65,6 +85,7 @@ proc ::CcommonUtil::prepareLauncherParams {rawParamDict action} {
       }
     }
   }
+  lappend params "--host=$host"
   lappend params "--runFolder=[dict get $rawParamDict appname]"
   lappend params "--action=$action"
   puts "copy scrits done."

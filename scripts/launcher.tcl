@@ -51,5 +51,8 @@ if {[file exists $cfgFile]} {
 source [file join $::baseDir [dict get $::rawParamDict runFolder] launcher.tcl]
 
 package require CommonUtil
+package require OsUtil
+
+::OsUtil::doCommonTasks $::ymlDict $::rawParamDict
 
 ::CommonUtil::endEasyInstall

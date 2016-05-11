@@ -24,10 +24,16 @@ proc ::ParamsValidator::validate {rawParamDict nameActions} {
     puts "'$appname' is not supported yet."
     exit 0
   }
+
   dict set rpd appname $appname
 
   if {! [dict exists $rpd mocklist]} {
     dict set rpd mocklist {}
+  } else {
+    set mocklist [dict get $rpd mocklist]
+    if {! ([string range $mocklist end-3 end] eq {.txt})} {
+      dict set rpd mocklist "${mocklist}.txt"
+    }
   }
 
   switch -exact -- $appname {
