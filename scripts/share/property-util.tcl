@@ -56,7 +56,7 @@ proc ::PropertyUtil::changeOrAdd {fn dic} {
         set pk [lindex $pair 0]
         if {[dict exists $dic $pk]} {
           lappend lines "$pk=[dict get $dic $pk]"
-          dict remove $dic $pk
+          set dic [dict remove $dic $pk]
         } else {
           lappend lines $line
         }

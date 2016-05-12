@@ -1,3 +1,9 @@
 #place holder.
-cache-size: 150
-local-ttl: 60
+dnsmasqCnf:
+  cache-size: 150
+  local-ttl: 60
+  local: /intranet.fh.gov.cn/
+  addn-hosts: /etc/dnsmasq.hosts
+etchosts:
+  nn.fh.gov.cn: 192.168.33.50
+  snn.fh.gov.cn: 192.168.33.51

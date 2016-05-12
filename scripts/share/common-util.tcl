@@ -48,6 +48,17 @@ proc ::CommonUtil::sysRunning {serviceName} {
   }
 }
 
+proc ::CommonUtil::sysInstalled {serviceName} {
+  if {[catch {exec systemctl status $serviceName} msg o]} {
+    if {[string match "*Loaded: loaded*" $msg]} {
+      return 1
+    } else {
+      return 0
+    }
+  } else {
+    return 1
+  }
+}
 
 proc ::CommonUtil::substFileLineByLine {fn scripts {toAppends {}}} {
   set lines [list]

@@ -59,7 +59,7 @@ proc ::CcommonUtil::prepareRunFolder {host serverSideDir rawParamDict} {
   if {[string length $mocklist] > 0} {
     exec scp [file join $::baseDir mocklist $mocklist] root@$host:$serverSideDir
   }
-  
+
   if {$appname eq {boot}} {
       puts [exec scp -r [dict get $rawParamDict bootjar] root@$host:$serverSideDir]
   }
@@ -76,6 +76,8 @@ proc ::CcommonUtil::prepareLauncherParams {host rawParamDict action} {
         if {[string length $v] > 0} {
           lappend params "--$k=$v"
         }
+      }
+      host {
       }
       appname {
         puts "skip appname parameter."

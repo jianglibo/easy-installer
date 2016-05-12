@@ -2,7 +2,24 @@ package provide OsUtil 1.0
 package require CommonUtil
 
 namespace eval ::OsUtil {
+  variable chars {abcdefghijklmnopqrstuvwzyzABC:;'<>?,./DEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()_+{}[]|}
+}
 
+proc ::OsUtil::createUserNotLogin {un} {
+  if {[catch {exec useradd -M -s /bin/false $un} msg o]} {
+    puts $msg
+  }
+}
+
+proc ::OsUtil::randPass {size} {
+  variable chars
+  set pchars [list]
+  set len [string length $chars]
+  for {set x 0} {$x < $size} {incr x} {
+   set idx [expr {int(rand()*$len)}]
+   lappend pchars [string index $chars $idx]
+  }
+  return [join $pchars {}]
 }
 
 proc ::OsUtil::doCommonTasks {ymlDict rawParamDict} {
