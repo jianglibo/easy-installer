@@ -23,6 +23,7 @@ lappend auto_path [file join $::baseDir [dict get $::rawParamDict runFolder]]
 
 # now start
 package require CommonUtil
+package require YamlUtil
 package require AppDetecter
 
 if {! [dict exists $::rawParamDict action]} {
@@ -42,7 +43,8 @@ if {! [string match *.yml $cfgFile]} {
 }
 
 if {[file exists $cfgFile]} {
-  set ::ymlDict [::CommonUtil::mergeConfig $::rawParamDict [::CommonUtil::loadYaml $cfgFile]]
+#  set ::ymlDict [::CommonUtil::mergeConfig $::rawParamDict [::CommonUtil::loadYaml $cfgFile]]
+  set ::ymlDict [::YamlUtil::loadHostYaml $cfgFile [dict get $::rawParamDict host]]
 } else {
   puts stdout "profile are mandatory. or replace a local-profile.yml in your app script folder!!!!"
   ::CommonUtil::endEasyInstall

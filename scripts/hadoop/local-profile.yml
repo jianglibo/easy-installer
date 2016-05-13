@@ -7,6 +7,7 @@ DownFrom: http://mirror.bit.edu.cn/apache/hadoop/common/hadoop-2.7.2/hadoop-2.7.
 nodes:
   - ip: 192.168.33.50
     HostName: nn.intranet.fh.gov.cn
+    NameServer: 10.74.111.61
     role: NameNode
     CoreSiteCfg:
       fs.defaultFS: hdfs://nn.fh.gov.cn

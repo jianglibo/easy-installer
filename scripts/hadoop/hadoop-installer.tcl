@@ -39,9 +39,11 @@ proc ::HadoopInstaller::setupEnv {isf ymlDict rawParamDict} {
     close $fid
   }
 
-  puts "start rebooting....."
-  exec shutdown -r now
-  ::CommonUtil::endEasyInstall
+  if {[llength [array names ::env -regexp {JAVA_HOME|HADOOP_PREFIX|HADOOP_PID_DIR|HADOOP_LOG_DIR}]] != 4} {
+    puts "start rebooting....."
+    exec shutdown -r now
+    ::CommonUtil::endEasyInstall
+  }
 }
 
 proc ::HadoopInstaller::install {ymlDict rawParamDict} {
