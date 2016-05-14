@@ -30,13 +30,15 @@ if {! [dict exists $::rawParamDict action]} {
   dict set rawParamDict action install
 }
 
-set profile local-profile.yml
+
 
 if {[dict exists $::rawParamDict profile]} {
   set profile [dict get $::rawParamDict profile]
+} else {
+  set profile default.yml
 }
 
-set cfgFile [file join $::baseDir [dict get $::rawParamDict runFolder] $profile]
+set cfgFile [file join $::baseDir [dict get $::rawParamDict runFolder] profiles $profile]
 
 if {! [string match *.yml $cfgFile]} {
   set cfgFile "$cfgFile.yml"
@@ -44,7 +46,7 @@ if {! [string match *.yml $cfgFile]} {
 
 if {[file exists $cfgFile]} {
 #  set ::ymlDict [::CommonUtil::mergeConfig $::rawParamDict [::CommonUtil::loadYaml $cfgFile]]
-  set ::ymlDict [::YamlUtil::loadHostYaml $cfgFile [dict get $::rawParamDict host]]
+  set ::ymlDict [::YamlUtil::loadYaml $cfgFile]
 } else {
   puts stdout "profile are mandatory. or replace a local-profile.yml in your app script folder!!!!"
   ::CommonUtil::endEasyInstall

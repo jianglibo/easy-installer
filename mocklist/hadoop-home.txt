@@ -1,3 +1,4 @@
 192.168.33.53 mirrors.hust.edu.cn
 192.168.33.53 software.fh.gov.cn
 192.168.33.53 mirrors.aliyun.com
+192.168.33.53 mirror.bit.edu.cn

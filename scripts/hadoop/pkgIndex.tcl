@@ -9,3 +9,4 @@
 # full path name of this file's directory.
 
 package ifneeded HadoopInstaller 1.0 [list source [file join $dir hadoop-installer.tcl]]
+package ifneeded XmlWriter 1.0 [list source [file join $dir xml-writer.tcl]]

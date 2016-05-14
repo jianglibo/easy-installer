@@ -6,4 +6,6 @@ dnsmasqCnf:
   addn-hosts: /etc/dnsmasq.hosts
 etchosts:
   nn.intranet.fh.gov.cn: 192.168.33.50
-  snn.intranet.fh.gov.cn: 192.168.33.51
+  dn1.intranet.fh.gov.cn: 192.168.33.51
+  dn2.intranet.fh.gov.cn: 192.168.33.52
+  snn.intranet.fh.gov.cn: 192.168.33.54

@@ -8,6 +8,18 @@ if {[catch {
   	install {
   		::HadoopInstaller::install $::ymlDict $::rawParamDict
   	}
+    formatCluster {
+      ::HadoopInstaller::formatCluster $::ymlDict $::rawParamDict
+    }
+    start {
+      ::HadoopInstaller::startStop $::ymlDict $::rawParamDict start
+    }
+    stop {
+      ::HadoopInstaller::startStop $::ymlDict $::rawParamDict stop
+    }
+    report {
+      ::HadoopInstaller::report $::ymlDict $::rawParamDict
+    }
     default {
       puts "\n******unrecoganized action: $action , please check again.******\n"
     }

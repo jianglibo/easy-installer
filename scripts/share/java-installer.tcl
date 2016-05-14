@@ -6,9 +6,7 @@ namespace eval JavaInstaller {
 }
 
 proc ::JavaInstaller::install {} {
-	if {[::AppDetecter::isInstalled java]} {
-		puts stdout "java already installed, skip installing."
-	} else {
+	if {! [::AppDetecter::isInstalled java]} {
 		set DstFolder [dict get $::ymlDict DstFolder]
 		set DownFrom [dict get $::ymlDict DownFrom]
 
@@ -44,7 +42,7 @@ proc ::JavaInstaller::install {} {
 
 		set binFolder [file dirname [lindex [split [exec find $DstFolder -name javah] \n] 0]]
 
-		foreach jexec {java javac jar javah javadoc} {
+		foreach jexec {java javac jar javah javadoc jps} {
 			exec alternatives --install "/usr/bin/$jexec" "$jexec" [file join $binFolder $jexec] 1
 		}
 
@@ -55,4 +53,5 @@ proc ::JavaInstaller::install {} {
 			::CommonUtil::endEasyInstall
 		}
 	}
+	puts stdout "java already installed, skip installing."
 }

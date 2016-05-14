@@ -1,5 +1,6 @@
 #place holder.
 DownFrom: http://mirror.bit.edu.cn/apache/hadoop/common/hadoop-2.7.2/hadoop-2.7.2.tar.gz
+ClusterName: officeCluster
 #NameNode
 #ResourceManager
 #DataNode,NodeManager
@@ -13,7 +14,7 @@ nodes:
       fs.defaultFS: hdfs://nn.fh.gov.cn
       io.file.buffer.size: 4096
     HdfsSiteCfg:
-      dfs.namenode.name.dir: ab
+      dfs.namenode.name.dir: ./dfsnnndir
       dfs.blocksize: 134217728
       dfs.datanode.handler.count: 10
       # for datanode.      dfs.datanode.data.dir: file://${hadoop.tmp.dir}/dfs/data

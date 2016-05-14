@@ -5,8 +5,8 @@ package require CommonUtil
 namespace eval ::YamlUtil {
 }
 
-proc ::YamlUtil::loadYaml {fn} {
-  if {[catch {set dt [::yaml::yaml2dict -file $fn]} msg o]} {
+proc ::YamlUtil::loadYaml {fileName} {
+  if {[catch {set dt [::yaml::yaml2dict -file $fileName]} msg o]} {
     puts $msg
     ::CommonUtil::endEasyInstall
   } else {
@@ -14,20 +14,31 @@ proc ::YamlUtil::loadYaml {fn} {
   }
 }
 
-proc ::YamlUtil::loadHostYaml {fn ip} {
-  set dic [loadYaml $fn]
-  if {[dict exists $dic nodes]} {
-    set nodes [dict get $dic nodes]
-    foreach node $nodes {
-      if {! [dict exists $node ip]} {
-        puts "node always need an ip property."
-        ::CommonUtil::endEasyInstall
-      }
-      if {[dict get $node ip] eq $ip} {
-        return [dict merge $dic $node]
-      }
-    }
-  } else {
-    return $dic
+proc ::YamlUtil::getHostYmlNodes {dic rawParamDict} {
+  set myNodes [list]
+  if {! [dict exists $dic nodes]} {
+    return $myNodes
   }
+  set nodes [dict get $dic nodes]
+  set ip [dict get $rawParamDict host]
+
+  foreach node $nodes {
+    if {[dict get $node ip] eq $ip} {
+      lappend myNodes $node
+    }
+  }
+  return $myNodes
+}
+
+proc ::YamlUtil::findValue {ymlDict key rawParamDict} {
+  if {[dict exists $ymlDict $key]} {
+    return [dict get $ymlDict $key]
+  }
+  set myNodes [getHostYmlNodes $ymlDict $rawParamDict]
+  foreach node $myNodes {
+    if {[dict exists $node $key]} {
+      return [dict get $node $key]
+    }
+  }
+  return {}
 }

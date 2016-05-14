@@ -1,3 +1,4 @@
 10.74.111.61 mirror.bit.edu.cn
 10.74.111.61 software.fh.gov.cn
 10.74.111.61 mirrors.aliyun.com
+192.168.33.53 mirror.bit.edu.cn

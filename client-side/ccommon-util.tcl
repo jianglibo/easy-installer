@@ -46,7 +46,9 @@ proc ::CcommonUtil::cleanupRunFolder {host} {
 }
 
 proc ::CcommonUtil::prepareRunFolder {host serverSideDir rawParamDict} {
-  set appname [dict get $rawParamDict appname]
+  upvar $rawParamDict rpd
+
+  set appname [dict get $rpd appname]
   puts "start prepare run folder on server $host...."
   puts [exec ssh root@$host "mkdir -p $serverSideDir"]
   puts [exec scp -r [file join $::baseDir scripts $appname]  root@$host:$serverSideDir]
@@ -55,14 +57,31 @@ proc ::CcommonUtil::prepareRunFolder {host serverSideDir rawParamDict} {
   foreach f $tmp {
     exec scp $f root@$host:$serverSideDir
   }
-  set mocklist [dict get $rawParamDict mocklist]
+  set mocklist [dict get $rpd mocklist]
   if {[string length $mocklist] > 0} {
     exec scp [file join $::baseDir mocklist $mocklist] root@$host:$serverSideDir
   }
 
   if {$appname eq {boot}} {
-      puts [exec scp -r [dict get $rawParamDict bootjar] root@$host:$serverSideDir]
+      puts [exec scp [dict get $rpd bootjar] root@$host:$serverSideDir]
   }
+
+  if {[dict exists $rpd profile]} {
+    set profile [dict get $rpd profile]
+  } else {
+    set profile default.yml
+  }
+
+  if {! [regexp {.*\.yml$} $profile mh]} {
+    set profile "${profile}.yml"
+  }
+
+  if {! [file exists [file join $::baseDir scripts $appname profiles $profile]]} {
+    puts "please browser scripts/$appname/profiles, there is no default.yml, please add a --profile=xxx.yml parameter."
+    exit 0
+  }
+#  puts [exec scp [file join $::baseDir scripts $appname profiles $profile] root@$host:$serverSideDir]
+  dict set rpd profile $profile
 }
 
 proc ::CcommonUtil::prepareLauncherParams {host rawParamDict action} {
