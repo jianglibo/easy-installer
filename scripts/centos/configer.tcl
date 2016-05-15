@@ -1,8 +1,24 @@
 package provide Configer 1.0
 
+package require CommonUtil
+
 namespace eval ::Configer {
   variable urlDic [dict create]
   dict set urlDic aliyun http://mirrors.aliyun.com
+}
+
+proc ::Configer::setupResolver {nameserver} {
+  set resolverFile /etc/resolv.conf
+  ::CommonUtil::backupOrigin $resolverFile
+
+  if {[catch {open $resolverFile w} fid o]} {
+    puts $fid
+    ::CommonUtil::endEasyInstall
+  } else {
+    puts $fid "nameserver $nameserver"
+    close $fid
+  }
+
 }
 
 proc ::Configer::disableIpv6 {} {

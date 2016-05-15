@@ -1,5 +1,6 @@
 package require Configer
 package require CommonUtil
+package require OsUtil
 
 set action [dict get $::rawParamDict action]
 
@@ -7,6 +8,10 @@ catch {
   switch $action {
     disableIpv6 {
       ::Configer::disableIpv6
+    }
+    setupResolver {
+      ::OsUtil::disableNetworkManager
+      ::Configer::setupResolver [dict get $::rawParamDict nameserver]
     }
     noop {
       puts "noop"

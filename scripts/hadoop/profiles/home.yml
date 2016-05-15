@@ -1,6 +1,7 @@
 #place holder.
 DownFrom: http://mirror.bit.edu.cn/apache/hadoop/common/hadoop-2.7.2/hadoop-2.7.2.tar.gz
 ClusterName: homeCluster
+NameServer: 192.168.33.53
 #NameNode
 #ResourceManager
 #DataNode,NodeManager
@@ -8,7 +9,6 @@ ClusterName: homeCluster
 nodes:
   - ip: 192.168.33.50
     HostName: nn.intranet.fh.gov.cn
-    NameServer: 192.168.33.53
     role: NameNode
     CoreSiteCfg:
       fs.defaultFS: hdfs://nn.intranet.fh.gov.cn
@@ -20,7 +20,6 @@ nodes:
       dfs.namenode.secondary.http-address: snn.intranet.fh.gov.cn:50090
   - ip: 192.168.33.50
     HostName: nn.intranet.fh.gov.cn
-    NameServer: 192.168.33.53
     role: ResourceManager
     CoreSiteCfg:
       fs.defaultFS: hdfs://nn.intranet.fh.gov.cn
@@ -40,7 +39,6 @@ nodes:
 #      yarn.scheduler.maximum-allocation-mb:
   - ip: 192.168.33.51
     HostName: dn1.intranet.fh.gov.cn
-    NameServer: 192.168.33.53
     role: DataNode
     CoreSiteCfg:
       fs.defaultFS: hdfs://nn.intranet.fh.gov.cn
@@ -49,7 +47,6 @@ nodes:
       dfs.datanode.data.dir: ./dfsdndd
   - ip: 192.168.33.51
     HostName: dn1.intranet.fh.gov.cn
-    NameServer: 192.168.33.53
     role: NodeManager
     CoreSiteCfg:
       fs.defaultFS: hdfs://nn.intranet.fh.gov.cn
@@ -68,7 +65,6 @@ nodes:
 #      yarn.nodemanager.aux-services:
   - ip: 192.168.33.52
     HostName: dn2.intranet.fh.gov.cn
-    NameServer: 192.168.33.53
     role: DataNode
     CoreSiteCfg:
       fs.defaultFS: hdfs://nn.intranet.fh.gov.cn
@@ -77,7 +73,6 @@ nodes:
       dfs.datanode.data.dir: ./dfsdndd
   - ip: 192.168.33.52
     HostName: dn2.intranet.fh.gov.cn
-    NameServer: 192.168.33.53
     role: NodeManager
     CoreSiteCfg:
       fs.defaultFS: hdfs://nn.intranet.fh.gov.cn
@@ -96,7 +91,6 @@ nodes:
 #      yarn.nodemanager.aux-services:
   - ip: 192.168.33.54
     HostName: snn.intranet.fh.gov.cn
-    NameServer: 192.168.33.53
     role: NameNode
     CoreSiteCfg:
       fs.defaultFS: hdfs://snn.intranet.fh.gov.cn
