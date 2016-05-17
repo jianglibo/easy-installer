@@ -1,0 +1,16 @@
+zookeeper:
+ server dn1.intranet.fh.gov.cn/10.74.111.63:2181
+ quorum.QuorumCnxManager: My election bind port: nn.intranet.fh.gov.cn/10.74.111.62:3888
+ quorum.Learner: Unexpected exception, tries=2, connecting to dn3.intranet.fh.gov.cn/10.74.111.65:2888
+
+http://www.cloudera.com/documentation/enterprise/latest/topics/cdh_ig_ports_cdh5.html
+
+Master:
+16000
+16010 web
+
+RegionServer:
+60020
+60030
+16020
+16030

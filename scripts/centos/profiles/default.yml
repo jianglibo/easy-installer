@@ -1,1 +1,5 @@
-# place holder.
+AddNewDisk:
+  MountPoint: /mount/data
+  VolumeGroup: hadoopvg
+  VolumeName: hadoopvl
+  Fs: ext4

@@ -12,6 +12,22 @@ proc ::OsUtil::createUserNotLogin {un} {
   }
 }
 
+proc ::OsUtil::getHostName {} {
+  set c [exec hostnamectl status]
+  if {[regexp {Static hostname:\s*(\S+)} $c mh m1]} {
+    return $m1
+  } else {
+    return {}
+  }
+}
+
+proc ::OsUtil::openFirewall {prot args} {
+  foreach port $args {
+    exec firewall-cmd --permanent --zone=public --add-port ${port}/$prot
+  }
+  exec firewall-cmd --reload
+}
+
 proc ::OsUtil::randPass {size} {
   variable chars
   set pchars [list]

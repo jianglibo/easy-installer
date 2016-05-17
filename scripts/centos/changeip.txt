@@ -1,0 +1,12 @@
+Configure a Static IP Address without Network Manager
+Go to the /etc/sysconfig/network-scripts directory, and locate its configuration file (ifcfg-enp0s3). Create it if not found.
+
+nmcli con
+
+nmcli con delete "Wired connection 1"
+nmcli con add type ethernet con-name ens3 ifname ens3 ip4 10.74.111.63/24 gw4 10.74.111.254
+nmcli con mod ens3 ipv4.dns "10.74.111.61"
+nmcli con up ens3
+
+nmcli con reload
+nmcli con -h

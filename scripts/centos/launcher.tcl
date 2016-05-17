@@ -1,6 +1,7 @@
 package require Configer
 package require CommonUtil
 package require OsUtil
+package require AddNewDisk
 
 set action [dict get $::rawParamDict action]
 
@@ -12,6 +13,12 @@ catch {
     setupResolver {
       ::OsUtil::disableNetworkManager
       ::Configer::setupResolver [dict get $::rawParamDict nameserver]
+    }
+    addNewDisk {
+      ::AddNewDisk::add $::ymlDict $::rawParamDict
+    }
+    jps {
+      ::CommonUtil::spawnCommand jps
     }
     noop {
       puts "noop"

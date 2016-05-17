@@ -3,6 +3,7 @@ package require CommonUtil
 package require PropertyUtil
 package require OsUtil
 package require XmlWriter
+package require XmlUtil
 
 namespace eval HbaseInstaller {
   variable installFolder /opt/hbase
@@ -70,11 +71,12 @@ proc ::HbaseInstaller::gethbaseHome {ymlDict} {
   return [file normalize [lindex $extractedFolder 0]]
 }
 
-proc ::HbaseInstaller::copyConfFile {hbaseHome runFolder args} {
+proc ::HbaseInstaller::copyConfFile {ymlDict hbaseHome runFolder args} {
   set runFolder [file join $::baseDir $runFolder]
+  set confFolder [file join $runFolder [dict get $ymlDict ConfFolder]]
   set hbaseConfFolder  [file join $hbaseHome conf]
   foreach f $args {
-    set src [file join $runFolder $f]
+    set src [file join $confFolder $f]
     set dst [file join $hbaseConfFolder $f]
     ::CommonUtil::backupOrigin $dst
     exec cp -f $src $dst
@@ -85,13 +87,34 @@ proc ::HbaseInstaller::copyConfFile {hbaseHome runFolder args} {
 proc ::HbaseInstaller::install {ymlDict rawParamDict} {
   set hbaseHome [gethbaseHome $ymlDict]
 
-  if {[catch {copyConfFile $hbaseHome [dict get $rawParamDict runFolder] hbase-site.xml regionservers backup-masters} msg o]} {
+  if {[catch {copyConfFile $ymlDict $hbaseHome [dict get $rawParamDict runFolder] hbase-site.xml regionservers backup-masters} msg o]} {
     puts $msg
     exec rm -rvf $hbaseHome
-    puts "extraced folder is not complete. please try again."
+    puts "extracted folder is not complete. please try again."
     ::CommonUtil::endEasyInstall
   }
 
+  # is master
+  if {[dict get $ymlDict MasterIp] eq [dict get $rawParamDict host]} {
+    ::OsUtil::openFirewall tcp 16000 16010
+  }
+
+  set hostname [OsUtil::getHostName]
+  set snns [::CommonUtil::readLines [file join $hbaseHome conf backup-masters]]
+  if {[lsearch $snns $hostname] != -1} {
+    ::OsUtil::openFirewall tcp 16000 16010
+  }
+  set zks [::XmlUtil::getPropertyValue [file join $hbaseHome conf hbase-site.xml] hbase.zookeeper.quorum]
+  set zks [regexp -all -inline {[^[:space:],]+} $zks]
+  if {[lsearch $zks $hostname] != -1} {
+    ::OsUtil::openFirewall tcp 2181 2888 3888
+  }
+
+  set rss [::CommonUtil::readLines [file join $hbaseHome conf regionservers]]
+
+  if {[lsearch $rss $hostname] != -1} {
+    ::OsUtil::openFirewall tcp 60020 60030 16020 16030
+  }
 
   puts "install successfully."
   puts "please login to master server, and setup passwordless login to other servers."

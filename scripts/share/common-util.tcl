@@ -262,6 +262,31 @@ proc ::CommonUtil::mergeConfig {rawParamDict ymlDict} {
   return $ymlDict
 }
 
+proc ::CommonUtil::readWholeFile {fileName} {
+  if {[catch {open $fileName} fid o]} {
+    puts $fid
+    endEasyInstall
+  } else {
+    set data [read $fileName]
+    close $fid
+  }
+  return $data
+}
+
+proc ::CommonUtil::readLines {fn} {
+  set lines [list]
+  if {[catch {open $fn} fid o]} {
+    puts $fid
+    endEasyInstall
+  } else {
+    while {[gets $fid line] >= 0} {
+      lappend lines $line
+    }
+    close $fid
+  }
+  return $lines
+}
+
 proc ::CommonUtil::backupOrigin {fn} {
   if {[file exists $fn]} {
     set of "$fn.origin"

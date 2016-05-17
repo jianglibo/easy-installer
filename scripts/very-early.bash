@@ -28,8 +28,8 @@ then
 	cat $yumPid |xargs kill -s 9
 fi
 
-echo "execute yum install -y curl"
-yum install -y curl
+#echo "execute yum install -y curl"
+#yum install -y curl
 
 mocklist=$1
 if [ -f "$origin" ]
@@ -62,4 +62,5 @@ then
 	cat $yumPid |xargs kill -s 9
 fi
 
-yum install -y tcl tcllib expect dos2unix epel-release || echo "end_of_easy_install"
+yum install -y epel-release
+yum install -y tcl tcllib expect dos2unix || echo "end_of_easy_install"

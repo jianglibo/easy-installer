@@ -9,3 +9,4 @@
 # full path name of this file's directory.
 
 package ifneeded Configer 1.0 [list source [file join $dir configer.tcl]]
+package ifneeded AddNewDisk 1.0 [list source [file join $dir add-new-disk.tcl]]

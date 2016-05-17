@@ -94,15 +94,19 @@ proc ::HadoopInstaller::install {ymlDict rawParamDict} {
     switch -exact -- $role {
       NameNode {
         ::XmlWriter::hdfsSite $hadoopHome $node
+        ::OsUtil::openFirewall tcp 8020 50070
       }
       DataNode {
         ::XmlWriter::hdfsSite $hadoopHome $node
+        ::OsUtil::openFirewall tcp 43067 50020 50010
       }
       ResourceManager {
         ::XmlWriter::yarnSite $hadoopHome $node
+        ::OsUtil::openFirewall tcp 8030 8031 8032 8033 8088
       }
       NodeManager {
         ::XmlWriter::yarnSite $hadoopHome $node
+        ::OsUtil::openFirewall tcp 57310 8040 8042
       }
       default {}
     }

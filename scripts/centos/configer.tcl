@@ -1,6 +1,7 @@
 package provide Configer 1.0
 
 package require CommonUtil
+package require OsUtil
 
 namespace eval ::Configer {
   variable urlDic [dict create]
@@ -10,7 +11,6 @@ namespace eval ::Configer {
 proc ::Configer::setupResolver {nameserver} {
   set resolverFile /etc/resolv.conf
   ::CommonUtil::backupOrigin $resolverFile
-
   if {[catch {open $resolverFile w} fid o]} {
     puts $fid
     ::CommonUtil::endEasyInstall

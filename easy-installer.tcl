@@ -33,7 +33,7 @@ set properties [::CcommonUtil::parseClientProperties [dict get $rawParamDict app
 foreach h [::CcommonUtil::parseHosts [dict get $rawParamDict host]] {
   #if you not living main land of china, comment line below.
   ::CcommonUtil::prepareRunFolder $h $serverSideDir rawParamDict
-  if {! [dict exists $rawParamDict notRunBash]} {
+  if {[dict exists $rawParamDict runBash] || ([string length [dict get $rawParamDict mocklist]] > 0)} {
     ::CcommonUtil::runVeryEarlyBash $h $rawParamDict
   }
   set actions [lrange $nameActions 1 end]

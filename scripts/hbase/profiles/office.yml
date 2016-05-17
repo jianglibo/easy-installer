@@ -1,3 +1,4 @@
 DownFrom: http://mirror.bit.edu.cn/apache/hbase/1.2.1/hbase-1.2.1-bin.tar.gz
-MasterIp: 192.168.33.50
+MasterIp: 10.74.111.62
 NameServer: 10.74.111.61
+ConfFolder: conf/office
