@@ -38,6 +38,15 @@ foreach h [::CcommonUtil::parseHosts [dict get $rawParamDict host]] {
   }
   set actions [lrange $nameActions 1 end]
   foreach action $actions {
+    if {$action eq {copyLibs}} {
+      ::CcommonUtil::copyLibs $h $serverSideDir $rawParamDict
+    }
+
+    if {$action eq {exec}} {
+      set cmd [dict get $rawParamDict cmd]
+      exec ssh root@$h $cmd
+      continue
+    }
     spawn -noecho ssh root@$h
     exp_send "tclsh [file join $serverSideDir launcher.tcl] [::CcommonUtil::prepareLauncherParams $h $rawParamDict $action]\n"
     set timeout 100000

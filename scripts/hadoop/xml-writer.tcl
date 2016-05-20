@@ -8,10 +8,11 @@ namespace eval XmlWriter {
   variable dfsDatanodeDataDir dfs.datanode.data.dir
 }
 
-proc ::XmlWriter::prepareDic {ymlDict dic} {
+proc ::XmlWriter::prepareDic {hadoopHome ymlDict dic} {
   set DataDirBase [dict get $ymlDict DataDirBase]
   set dnnd dfs.namenode.name.dir
   set dddd dfs.datanode.data.dir
+  set localDirs yarn.nodemanager.local-dirs
 
   if {[dict exists $dic $dnnd]} {
     dict set dic $dnnd [file join $DataDirBase [dict get $dic $dnnd]]
@@ -19,6 +20,10 @@ proc ::XmlWriter::prepareDic {ymlDict dic} {
 
   if {[dict exists $dic $dddd]} {
     dict set dic $dddd [file join $DataDirBase [dict get $dic $dddd]]
+  }
+
+  if {[dict exists $dic $localDirs]} {
+    dict set dic $localDirs [file join $hadoopHome [dict get $dic $localDirs]]
   }
   return $dic
 }
@@ -43,6 +48,36 @@ proc ::XmlWriter::write {fn lines} {
   }
 }
 
+proc ::XmlWriter::mapred {hadoopHome ymlDict} {
+  set mapredFile [file join $hadoopHome etc hadoop mapred-site.xml]
+  set lines [list]
+  lappend lines {<?xml version="1.0"?>}
+  lappend lines {<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>}
+  lappend lines {<configuration>}
+  lappend lines {<property>}
+  lappend lines {<name>mapreduce.framework.name</name>}
+  lappend lines {<value>yarn</value>}
+  lappend lines {</property>}
+  lappend lines {</configuration>}
+
+  write $mapredFile $lines
+}
+
+proc ::XmlWriter::slaves {hadoopHome ymlDict} {
+  set slavesFile [file join $hadoopHome etc hadoop slaves]
+  set nodes [dict get $ymlDict nodes]
+  set slavesHosts [list]
+  foreach n $nodes {
+    set hn [dict get $n HostName]
+    set role [dict get $n role]
+    if {$role eq {DataNode}} {
+      lappend slavesHosts $hn
+    }
+  }
+  set slavesHosts [lsort -unique $slavesHosts]
+  write $slavesFile $slavesHosts
+}
+
 proc ::XmlWriter::copyOrigin {fn} {
   if {[file exists "${fn}.origin"]} {
     exec cp "${fn}.origin" $fn
@@ -63,7 +98,7 @@ proc ::XmlWriter::createDir {hadoopHome cfdir} {
 
 proc ::XmlWriter::yarnSite {hadoopHome nodeYml ymlDict} {
   set yarnSiteFile [file join $hadoopHome etc hadoop yarn-site.xml]
-  set siteDic [prepareDic $ymlDict [dict get $nodeYml YarnSiteCfg]]
+  set siteDic [prepareDic $hadoopHome $ymlDict [dict get $nodeYml YarnSiteCfg]]
   copyOrigin $yarnSiteFile
   set lines [list]
   lappend lines {<?xml version="1.0"?>}
@@ -78,7 +113,7 @@ proc ::XmlWriter::yarnSite {hadoopHome nodeYml ymlDict} {
 
 proc ::XmlWriter::coreSite {hadoopHome nodeYml ymlDict} {
   set coreSiteFile [file join $hadoopHome etc hadoop core-site.xml]
-  set siteDic [prepareDic $ymlDict [dict get $nodeYml CoreSiteCfg]]
+  set siteDic [prepareDic $hadoopHome $ymlDict [dict get $nodeYml CoreSiteCfg]]
   copyOrigin $coreSiteFile
   set lines [list]
   lappend lines {<?xml version="1.0" encoding="UTF-8"?>}
@@ -98,7 +133,7 @@ proc ::XmlWriter::hdfsSite {hadoopHome nodeYml ymlDict} {
   variable dfsNamenodeNameDir
 
   set hdfsSiteFile [file join $hadoopHome etc hadoop hdfs-site.xml]
-  set siteDic [prepareDic $ymlDict [dict get $nodeYml HdfsSiteCfg]]
+  set siteDic [prepareDic $hadoopHome $ymlDict [dict get $nodeYml HdfsSiteCfg]]
   copyOrigin $hdfsSiteFile
   set lines [list]
   lappend lines {<?xml version="1.0" encoding="UTF-8"?>}

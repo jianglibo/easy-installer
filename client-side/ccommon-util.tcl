@@ -45,6 +45,14 @@ proc ::CcommonUtil::cleanupRunFolder {host} {
   puts done!
 }
 
+proc ::CcommonUtil::copyLibs {host serverSideDir rawParamDict} {
+  set appname [dict get $rawParamDict appname]
+  set libs [file join $::baseDir scripts $appname libs]
+  if {[file exists $libs]} {
+    puts [exec scp -r $libs  root@$host:$serverSideDir]
+  }
+}
+
 proc ::CcommonUtil::prepareRunFolder {host serverSideDir rawParamDict} {
   upvar $rawParamDict rpd
 

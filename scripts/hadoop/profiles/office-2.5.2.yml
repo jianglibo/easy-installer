@@ -30,12 +30,12 @@ nodes:
       yarn.acl.enable: false
       yarn.admin.acl: "*"
       yarn.log-aggregation-enable: false
-#      yarn.resourcemanager.address:
+#      yarn.resourcemanager.address: nn.intranet.fh.gov.cn
 #      yarn.resourcemanager.scheduler.address:
 #      yarn.resourcemanager.resource-tracker.address:
 #      yarn.resourcemanager.admin.address:
 #      yarn.resourcemanager.webapp.address:
-#      yarn.resourcemanager.hostname:
+      yarn.resourcemanager.hostname: nn.intranet.fh.gov.cn
 #      yarn.resourcemanager.scheduler.class:
 #      yarn.scheduler.minimum-allocation-mb:
 #      yarn.scheduler.maximum-allocation-mb:
@@ -57,9 +57,10 @@ nodes:
       yarn.acl.enable: false
       yarn.admin.acl: "*"
       yarn.log-aggregation-enable: false
+      yarn.resourcemanager.hostname: nn.intranet.fh.gov.cn
 #      yarn.nodemanager.resource.memory-mb:
 #      yarn.nodemanager.vmem-pmem-ratio:
-#      yarn.nodemanager.local-dirs:
+      yarn.nodemanager.local-dirs: local-dirs
 #      yarn.nodemanager.log-dirs:
 #      yarn.nodemanager.log.retain-seconds:
 #      yarn.nodemanager.remote-app-log-dir:
@@ -83,6 +84,8 @@ nodes:
       yarn.acl.enable: false
       yarn.admin.acl: "*"
       yarn.log-aggregation-enable: false
+      yarn.resourcemanager.hostname: nn.intranet.fh.gov.cn
+      yarn.nodemanager.local-dirs: local-dirs
   - ip: 10.74.111.65
     HostName: dn3.intranet.fh.gov.cn
     role: DataNode
@@ -101,6 +104,8 @@ nodes:
       yarn.acl.enable: false
       yarn.admin.acl: "*"
       yarn.log-aggregation-enable: false
+      yarn.resourcemanager.hostname: nn.intranet.fh.gov.cn
+      yarn.nodemanager.local-dirs: local-dirs
   - ip: 10.74.111.66
     HostName: snn.intranet.fh.gov.cn
     role: NameNode

@@ -28,10 +28,11 @@ http://192.168.33.50:50070/
 * 10.74.111.66 roles: NameNode
 
 ## Example cluster install Office
-* tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --mocklist=hadoop-office --profile=office hadoop install
-* tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --mocklist=hadoop-office --profile=office hadoop formatCluster
-* tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --profile=office hadoop start
-* tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --profile=office hadoop stop
+* tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --mocklist=hadoop-office --profile=office-2.5.2 hadoop install
+* tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --mocklist=hadoop-office --profile=office-2.5.2 hadoop formatCluster
+* tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --profile=office-2.5.2 hadoop start
+* tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --profile=office-2.5.2 hadoop stop
 
 ## web Office
 http://10.74.111.62:50070/
+http://10.74.111.62:8088/ resourcemanager.

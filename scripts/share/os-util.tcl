@@ -50,9 +50,9 @@ proc ::OsUtil::getHostName {} {
 
 proc ::OsUtil::openFirewall {prot args} {
   foreach port $args {
-    exec firewall-cmd --permanent --zone=public --add-port ${port}/$prot
+    catch {exec firewall-cmd --permanent --zone=public --add-port ${port}/$prot} msg o
   }
-  exec firewall-cmd --reload
+  catch {exec firewall-cmd --reload} msg o
 }
 
 proc ::OsUtil::randPass {size} {

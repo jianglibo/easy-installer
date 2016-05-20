@@ -80,6 +80,9 @@ proc ::HadoopInstaller::install {ymlDict rawParamDict} {
 
   set myNodes [::YamlUtil::getHostYmlNodes $ymlDict $rawParamDict]
 
+  ::XmlWriter::mapred $hadoopHome $ymlDict
+  ::XmlWriter::slaves $hadoopHome $ymlDict
+
   foreach node $myNodes {
     set role [dict get $node role]
     ::XmlWriter::coreSite $hadoopHome $node $ymlDict
@@ -98,7 +101,7 @@ proc ::HadoopInstaller::install {ymlDict rawParamDict} {
       }
       NodeManager {
         ::XmlWriter::yarnSite $hadoopHome $node $ymlDict
-        ::OsUtil::openFirewall tcp 57310 8040 8042
+        ::OsUtil::openFirewall tcp 57310 8040 8042 45467
       }
       default {}
     }
@@ -165,7 +168,26 @@ proc ::HadoopInstaller::startStop {ymlDict rawParamDict action} {
   }
 }
 
+proc ::HadoopInstaller::toggleFirewall {ymlDict rawParamDict} {
+  if {[::CommonUtil::sysRunning firewalld]} {
+    exec systemctl stop firewalld
+  } else {
+    exec systemctl start firewalld
+  }
+}
+
 proc ::HadoopInstaller::report {ymlDict rawParamDict} {
   set hadoopHome [getHadoopHome $ymlDict]
   ::CommonUtil::spawnCommand [getBinCmd $hadoopHome hdfs] dfsadmin -report
+}
+
+proc ::HadoopInstaller::copyLibs {ymlDict rawParamDict} {
+  set hadoopHome [getHadoopHome $ymlDict]
+  set runFolder [dict get $::rawParamDict runFolder]
+  set libs [file join $::baseDir $runFolder libs]
+  if {[file exists $libs]} {
+    foreach libf [glob -directory $libs  -type f *.jar] {
+      exec cp $libf [file join $hadoopHome share hadoop common lib]
+    }
+  }
 }

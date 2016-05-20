@@ -19,6 +19,12 @@ if {[catch {
     report {
       ::HadoopInstaller::report $::ymlDict $::rawParamDict
     }
+    toggleFirewall {
+      ::HadoopInstaller::toggleFirewall $::ymlDict $::rawParamDict
+    }
+    copyLibs {
+      ::HadoopInstaller::copyLibs $::ymlDict $::rawParamDict
+    }
     default {
       puts "\n******unrecoganized action: $action , please check again.******\n"
     }
