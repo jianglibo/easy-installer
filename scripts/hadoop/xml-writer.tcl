@@ -8,6 +8,21 @@ namespace eval XmlWriter {
   variable dfsDatanodeDataDir dfs.datanode.data.dir
 }
 
+proc ::XmlWriter::prepareDic {ymlDict dic} {
+  set DataDirBase [dict get $ymlDict DataDirBase]
+  set dnnd dfs.namenode.name.dir
+  set dddd dfs.datanode.data.dir
+
+  if {[dict exists $dic $dnnd]} {
+    dict set dic $dnnd [file join $DataDirBase [dict get $dic $dnnd]]
+  }
+
+  if {[dict exists $dic $dddd]} {
+    dict set dic $dddd [file join $DataDirBase [dict get $dic $dddd]]
+  }
+  return $dic
+}
+
 proc ::XmlWriter::addOneProperty {lines k v} {
   upvar $lines ln
   lappend ln "<property>"
@@ -41,14 +56,14 @@ proc ::XmlWriter::createDir {hadoopHome cfdir} {
   }
 
   if {! [file exists $cfdir]} {
-    exec mkdir $cfdir
+    exec mkdir -p $cfdir
   }
   return [file normalize $cfdir]
 }
 
-proc ::XmlWriter::yarnSite {hadoopHome nodeYml} {
+proc ::XmlWriter::yarnSite {hadoopHome nodeYml ymlDict} {
   set yarnSiteFile [file join $hadoopHome etc hadoop yarn-site.xml]
-  set siteDic [dict get $nodeYml YarnSiteCfg]
+  set siteDic [prepareDic $ymlDict [dict get $nodeYml YarnSiteCfg]]
   copyOrigin $yarnSiteFile
   set lines [list]
   lappend lines {<?xml version="1.0"?>}
@@ -61,9 +76,9 @@ proc ::XmlWriter::yarnSite {hadoopHome nodeYml} {
   write $yarnSiteFile $lines
 }
 
-proc ::XmlWriter::coreSite {hadoopHome nodeYml} {
+proc ::XmlWriter::coreSite {hadoopHome nodeYml ymlDict} {
   set coreSiteFile [file join $hadoopHome etc hadoop core-site.xml]
-  set siteDic [dict get $nodeYml CoreSiteCfg]
+  set siteDic [prepareDic $ymlDict [dict get $nodeYml CoreSiteCfg]]
   copyOrigin $coreSiteFile
   set lines [list]
   lappend lines {<?xml version="1.0" encoding="UTF-8"?>}
@@ -78,12 +93,12 @@ proc ::XmlWriter::coreSite {hadoopHome nodeYml} {
 }
 
 
-proc ::XmlWriter::hdfsSite {hadoopHome nodeYml} {
+proc ::XmlWriter::hdfsSite {hadoopHome nodeYml ymlDict} {
   variable dfsDatanodeDataDir
   variable dfsNamenodeNameDir
 
   set hdfsSiteFile [file join $hadoopHome etc hadoop hdfs-site.xml]
-  set siteDic [dict get $nodeYml HdfsSiteCfg]
+  set siteDic [prepareDic $ymlDict [dict get $nodeYml HdfsSiteCfg]]
   copyOrigin $hdfsSiteFile
   set lines [list]
   lappend lines {<?xml version="1.0" encoding="UTF-8"?>}

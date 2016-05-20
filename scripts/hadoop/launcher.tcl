@@ -3,7 +3,6 @@ package require HadoopInstaller
 
 if {[catch {
   set action [dict get $::rawParamDict action]
-
   switch $action {
   	install {
   		::HadoopInstaller::install $::ymlDict $::rawParamDict

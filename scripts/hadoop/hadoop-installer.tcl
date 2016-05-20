@@ -5,7 +5,6 @@ package require OsUtil
 package require XmlWriter
 
 namespace eval HadoopInstaller {
-  variable installFolder /opt/hadoop
   variable profiled /etc/profile.d/hadoop.sh
 }
 
@@ -42,34 +41,27 @@ proc ::HadoopInstaller::setupEnv {hadoopHome ymlDict rawParamDict} {
     }
     close $fid
   }
-#  if {[llength [array names ::env -regexp {JAVA_HOME|HADOOP_PREFIX|HADOOP_PID_DIR|HADOOP_LOG_DIR}]] != 4} {
-#    puts "start rebooting....."
-#    puts "please run command again!"
-#    exec shutdown -r now
-#    ::CommonUtil::endEasyInstall
-#  }
 }
 
 proc ::HadoopInstaller::getHadoopHome {ymlDict} {
-  variable installFolder
+  set dstFolder [dict get $ymlDict DstFolder]
 
-  if {! [file exists $installFolder]} {
-    exec mkdir -p $installFolder
+  if {! [file exists $dstFolder]} {
+    exec mkdir -p $dstFolder
   }
 
   set pwd [pwd]
   set from [dict get $ymlDict DownFrom]
   set fn [lindex [split $from /] end]
-  if {! [regexp {(.*)\.tar\.gz$} $fn mh m1]} {
-    puts "cann't parse folder name from $fn"
-    ::CommonUtil::endEasyInstall
-  }
-  cd $installFolder
+
+  cd $dstFolder
   if {! [file exists $fn]} {
     ::CommonUtil::spawnCommand curl -OL $from
   }
 
-  if {! [file exists $m1]} {
+  set extractedFolder [::CommonUtil::getOnlyFolder $dstFolder]
+
+  if {! [file exists $extractedFolder]} {
     if {[catch {exec tar -zxf $fn} msg o]} {
       puts "$fn is damaged. please try again."
       exec rm -f $fn
@@ -77,7 +69,7 @@ proc ::HadoopInstaller::getHadoopHome {ymlDict} {
       ::CommonUtil::endEasyInstall
     }
   }
-  return [file normalize $m1]
+  return [file normalize $extractedFolder]
 }
 
 proc ::HadoopInstaller::install {ymlDict rawParamDict} {
@@ -90,22 +82,22 @@ proc ::HadoopInstaller::install {ymlDict rawParamDict} {
 
   foreach node $myNodes {
     set role [dict get $node role]
-    ::XmlWriter::coreSite $hadoopHome $node
+    ::XmlWriter::coreSite $hadoopHome $node $ymlDict
     switch -exact -- $role {
       NameNode {
-        ::XmlWriter::hdfsSite $hadoopHome $node
+        ::XmlWriter::hdfsSite $hadoopHome $node $ymlDict
         ::OsUtil::openFirewall tcp 8020 50070
       }
       DataNode {
-        ::XmlWriter::hdfsSite $hadoopHome $node
+        ::XmlWriter::hdfsSite $hadoopHome $node $ymlDict
         ::OsUtil::openFirewall tcp 43067 50020 50010
       }
       ResourceManager {
-        ::XmlWriter::yarnSite $hadoopHome $node
+        ::XmlWriter::yarnSite $hadoopHome $node $ymlDict
         ::OsUtil::openFirewall tcp 8030 8031 8032 8033 8088
       }
       NodeManager {
-        ::XmlWriter::yarnSite $hadoopHome $node
+        ::XmlWriter::yarnSite $hadoopHome $node $ymlDict
         ::OsUtil::openFirewall tcp 57310 8040 8042
       }
       default {}

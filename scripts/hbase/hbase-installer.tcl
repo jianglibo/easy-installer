@@ -6,7 +6,6 @@ package require XmlWriter
 package require XmlUtil
 
 namespace eval HbaseInstaller {
-  variable installFolder /opt/hbase
   variable profiled /etc/profile.d/hbase.sh
 }
 
@@ -40,23 +39,23 @@ proc ::HbaseInstaller::setupEnv {hbaseHome ymlDict rawParamDict} {
 }
 
 proc ::HbaseInstaller::gethbaseHome {ymlDict} {
-  variable installFolder
+  set dstFolder [dict get $ymlDict DstFolder]
 
-  if {! [file exists $installFolder]} {
-    exec mkdir -p $installFolder
+  if {! [file exists $dstFolder]} {
+    exec mkdir -p $dstFolder
   }
 
   set pwd [pwd]
   set from [dict get $ymlDict DownFrom]
   set fn [lindex [split $from /] end]
 
-  cd $installFolder
+  cd $dstFolder
 
   if {! [file exists $fn]} {
     ::CommonUtil::spawnCommand curl -OL $from
   }
 
-  set extractedFolder [glob -nocomplain -directory $installFolder -type d *]
+  set extractedFolder [glob -nocomplain -directory $dstFolder -type d *]
   puts [llength $extractedFolder]
   if {[llength $extractedFolder] == 0} {
     if {[catch {exec tar -zxf $fn} msg o]} {
@@ -67,7 +66,7 @@ proc ::HbaseInstaller::gethbaseHome {ymlDict} {
     }
   }
 
-  set extractedFolder [glob -nocomplain -directory $installFolder -type d *]
+  set extractedFolder [glob -nocomplain -directory $dstFolder -type d *]
   return [file normalize [lindex $extractedFolder 0]]
 }
 
@@ -101,8 +100,10 @@ proc ::HbaseInstaller::install {ymlDict rawParamDict} {
 
   set hostname [OsUtil::getHostName]
   set snns [::CommonUtil::readLines [file join $hbaseHome conf backup-masters]]
+  # 0.98 version: port 60000 60010(web)
+  # 1.2.1 version: port 16000 16010
   if {[lsearch $snns $hostname] != -1} {
-    ::OsUtil::openFirewall tcp 16000 16010
+    ::OsUtil::openFirewall tcp 16000 16010 60000 60010
   }
   set zks [::XmlUtil::getPropertyValue [file join $hbaseHome conf hbase-site.xml] hbase.zookeeper.quorum]
   set zks [regexp -all -inline {[^[:space:],]+} $zks]

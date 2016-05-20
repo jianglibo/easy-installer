@@ -79,12 +79,27 @@ Vagrant.configure(2) do |config|
 #	yum install -y tcl tcllib dos2unix cpan expect
 #  SHELL
 
-#  config.vm.define "desktop" do |desktop|
-#    desktop.vm.network "private_network", ip: "192.168.33.49"
-#    desktop.vm.provision "shell", inline: <<-SHELL
-#      yum install -y git
-#    SHELL
-#  end
+  config.vm.define "desktop" do |desktop|
+    desktop.vm.provider "virtualbox" do |v|
+      v.gui = true
+      v.memory = 4096
+    end
+
+    desktop.vm.network "private_network", ip: "192.168.33.49"
+    desktop.vm.provision "shell", inline: <<-SHELL
+      yum group list
+      yum groupinstall -y "Development Tools"
+      yum -y groups install "GNOME Desktop"
+      yum install -y git
+      yum install -y gunzip
+      ln -sf /lib/systemd/system/runlevel5.target /etc/systemd/system/default.target
+      # export PATH=$PATH:/opt/scripts
+      # gzip -d eclipse-xx
+      # tar -xf eclipse-xx
+      #yum install dkms
+      # rcvboxadd setup
+    SHELL
+  end
 
   config.vm.define "config-server" do |configServer|
 	  configServer.vm.network "private_network", ip: "192.168.33.50"

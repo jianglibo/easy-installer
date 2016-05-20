@@ -30,9 +30,10 @@ tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --mocklist=hadoop-offic
 * 10.74.111.66 roles: backup
 
 ## Example cluster install
-* tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --mocklist=hadoop-office --profile=office hbase install
-* tclsh easy-installer.tcl --host=10.74.111.62 --mocklist=hadoop-office --profile=office hbase start
-* tclsh easy-installer.tcl --host=10.74.111.62 --mocklist=hadoop-office --profile=office hbase stop
+* tclsh easy-installer.tcl --host=10.74.111.62,63,64,65,66 --mocklist=hadoop-office --profile=office-0.98.19-hadoop2 hbase install
+* tclsh easy-installer.tcl --host=10.74.111.62 --mocklist=hadoop-office --profile=office-0.98.19-hadoop2 hbase start
+* tclsh easy-installer.tcl --host=10.74.111.62 --mocklist=hadoop-office --profile=office-0.98.19-hadoop2 hbase stop
 
 ## web
-http://10.74.111.62:16010
+1.2.1: http://10.74.111.62:16010
+0.98.19: 60010

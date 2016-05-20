@@ -8,6 +8,10 @@ namespace eval ::CommonUtil {
 
 }
 
+proc ::CommonUtil::getOnlyFolder {parentFolder} {
+  return [glob -nocomplain -directory $parentFolder -type d *]
+}
+
 proc ::CommonUtil::endEasyInstall {} {
   puts stdout "\nend_of_easy_install\n"
   exit 0

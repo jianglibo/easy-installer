@@ -1,11 +1,14 @@
 package provide JavaInstaller 1.0
 package require AppDetecter
 package require CommonUtil
+package require OsUtil
 
 namespace eval JavaInstaller {
+	variable profiled /etc/profile.d/myjava.sh
 }
 
 proc ::JavaInstaller::install {} {
+	variable profiled
 	if {! [::AppDetecter::isInstalled java]} {
 		set DstFolder [dict get $::ymlDict DstFolder]
 		set DownFrom [dict get $::ymlDict DownFrom]
@@ -53,5 +56,10 @@ proc ::JavaInstaller::install {} {
 			::CommonUtil::endEasyInstall
 		}
 	}
+
+	set lines [list]
+	lappend lines "JAVA_HOME=[::OsUtil::getAppHome java .. ..]"
+	lappend lines "export JAVA_HOME"
+	::OsUtil::writeProfiled $profiled $lines
 	puts stdout "java already installed, skip installing."
 }

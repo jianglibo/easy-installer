@@ -6,6 +6,33 @@ namespace eval ::OsUtil {
   variable chars {abcdefghijklmnopqrstuvwzyzABC:;'<>?,./DEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()_+{}[]|}
 }
 
+
+proc ::OsUtil::getAppHome {name args} {
+  if {[catch {set nameLink [exec which $name]} msg o]} {
+    puts $msg
+    ::CommonUtil::endEasyInstall
+  }
+  while {[file type $nameLink] eq {link}} {
+    set nameLink [file readlink $nameLink]
+  }
+  return [file normalize [file join $nameLink {*}$args]]
+}
+
+proc ::OsUtil::writeProfiled {profiled lines} {
+  if {[catch {open $profiled w} fid o]} {
+    puts $fid
+    ::CommonUtil::endEasyInstall
+  } else {
+    foreach line $lines {
+      if {[regexp {^(.*)=(.*)$} $line mh mk mv]} {
+        set ::env($mk) $mv
+      }
+      puts $fid $line
+    }
+    close $fid
+  }
+}
+
 proc ::OsUtil::createUserNotLogin {un} {
   if {[catch {exec useradd -M -s /bin/false $un} msg o]} {
     puts $msg
