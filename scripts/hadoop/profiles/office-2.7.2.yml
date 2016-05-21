@@ -58,6 +58,8 @@ nodes:
       yarn.admin.acl: "*"
       yarn.log-aggregation-enable: false
       yarn.resourcemanager.hostname: nn.intranet.fh.gov.cn
+      yarn.nodemanager.aux-services: mapreduce_shuffle
+      yarn.nodemanager.aux-services.mapreduce.shuffle.class: org.apache.hadoop.mapred.ShuffleHandler
 #      yarn.nodemanager.resource.memory-mb:
 #      yarn.nodemanager.vmem-pmem-ratio:
 #      yarn.nodemanager.local-dirs:
@@ -85,6 +87,8 @@ nodes:
       yarn.admin.acl: "*"
       yarn.log-aggregation-enable: false
       yarn.resourcemanager.hostname: nn.intranet.fh.gov.cn
+      yarn.nodemanager.aux-services: mapreduce_shuffle
+      yarn.nodemanager.aux-services.mapreduce.shuffle.class: org.apache.hadoop.mapred.ShuffleHandler
   - ip: 10.74.111.65
     HostName: dn3.intranet.fh.gov.cn
     role: DataNode
@@ -104,6 +108,8 @@ nodes:
       yarn.admin.acl: "*"
       yarn.log-aggregation-enable: false
       yarn.resourcemanager.hostname: nn.intranet.fh.gov.cn
+      yarn.nodemanager.aux-services: mapreduce_shuffle
+      yarn.nodemanager.aux-services.mapreduce.shuffle.class: org.apache.hadoop.mapred.ShuffleHandler
   - ip: 10.74.111.66
     HostName: snn.intranet.fh.gov.cn
     role: NameNode

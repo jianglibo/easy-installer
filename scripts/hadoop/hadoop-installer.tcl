@@ -28,6 +28,7 @@ proc ::HadoopInstaller::setupEnv {hadoopHome ymlDict rawParamDict} {
   lappend lines "export HADOOP_PID_DIR"
   lappend lines "HADOOP_LOG_DIR=[file join $hadoopHome logs]"
   lappend lines "export HADOOP_LOG_DIR"
+  lappend lines "export PATH=\$PATH:\$HADOOP_PREFIX/bin"
 
   if {[catch {open $profiled w} fid o]} {
     puts $fid
