@@ -7,9 +7,13 @@ namespace eval JavaInstaller {
 	variable profiled /etc/profile.d/myjava.sh
 }
 
-proc ::JavaInstaller::install {} {
+proc ::JavaInstaller::install {{force 0}} {
 	variable profiled
-	if {! [::AppDetecter::isInstalled java]} {
+	set toInstall [expr {! [::AppDetecter::isInstalled java]}]
+	if {$force} {
+		set toInstall 1
+	}
+	if {$toInstall} {
 		set DstFolder [dict get $::ymlDict DstFolder]
 		set DownFrom [dict get $::ymlDict DownFrom]
 
@@ -61,5 +65,5 @@ proc ::JavaInstaller::install {} {
 	lappend lines "JAVA_HOME=[::OsUtil::getAppHome java .. ..]"
 	lappend lines "export JAVA_HOME"
 	::OsUtil::writeProfiled $profiled $lines
-	puts stdout "java already installed, skip installing."
+	puts stdout "done."
 }

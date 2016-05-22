@@ -34,6 +34,7 @@ foreach h [::CcommonUtil::parseHosts [dict get $rawParamDict host]] {
   #if you not living main land of china, comment line below.
   ::CcommonUtil::prepareRunFolder $h $serverSideDir rawParamDict
   if {[dict exists $rawParamDict runBash] || ([string length [dict get $rawParamDict mocklist]] > 0)} {
+    puts "running very early bash......."
     ::CcommonUtil::runVeryEarlyBash $h $rawParamDict
   }
   set actions [lrange $nameActions 1 end]

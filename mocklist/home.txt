@@ -5,3 +5,5 @@
 192.168.33.53 dev.mysql.com
 192.168.33.53 mirrors.aliyun.com
 192.168.33.53 www.rabbitmq.com
+192.168.33.53 mirrors.yun-idc.com
+192.168.33.53 mirror.bit.edu.cn

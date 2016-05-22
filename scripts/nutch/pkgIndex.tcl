@@ -8,6 +8,5 @@
 # script is sourced, the variable $dir must contain the
 # full path name of this file's directory.
 
-package ifneeded Configer 1.0 [list source [file join $dir configer.tcl]]
-package ifneeded AddNewDisk 1.0 [list source [file join $dir add-new-disk.tcl]]
-package ifneeded DesktopInstaller 1.0 [list source [file join $dir desktop-installer.tcl]]
+package ifneeded HbaseInstaller 1.0 [list source [file join $dir hbase-installer.tcl]]
+package ifneeded XmlWriter 1.0 [list source [file join $dir xml-writer.tcl]]

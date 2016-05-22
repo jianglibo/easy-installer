@@ -299,3 +299,33 @@ proc ::CommonUtil::backupOrigin {fn} {
     }
   }
 }
+
+proc ::CommonUtil::writeLines {fn lines} {
+  if {[catch {open $fn w} fid o]} {
+    puts $fid
+    endEasyInstall
+  } else {
+    foreach line $lines {
+      puts $fid $line
+    }
+    close $fid
+  }
+}
+
+proc ::CommonUtil::downloadIfNeeded {url extractor} {
+  set fn [lindex [split $url /] end]
+  if {[file exists $fn]} {
+    puts "$fn already download, skipped."
+  } else {
+    ::CommonUtil::spawnCommand curl -OL $url
+  }
+
+  set extrated [getOnlyFolder [pwd]]
+  if {[file exists $extrated]} {
+    puts "$extrated alreay exists, skipped."
+  } else {
+    set cmd [split $extractor { }]
+    lappend cmd $fn
+    exec {*}$cmd
+  }
+}
