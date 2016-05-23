@@ -42,6 +42,13 @@ catch {
     ant {
       ::DesktopInstaller::installApp  ant $::ymlDict
     }
+    default {
+      if {[regexp {install-(.*)} $action mh m1]} {
+        ::DesktopInstaller::installApp $m1 $::ymlDict
+      } else {
+        puts "unkown action $action"
+      }
+    }
   }
 } msg o
 

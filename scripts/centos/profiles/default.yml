@@ -12,4 +12,8 @@ downloads:
     url: http://mirror.bit.edu.cn/apache//ant/binaries/apache-ant-1.9.7-bin.tar.gz
     extractor: "tar -zxf"
     binFolder: bin
+  maven:
+    url: http://mirror.bit.edu.cn/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
+    extractor: "tar -zxf"
+    binFolder: bin
 BigestDisk: /home

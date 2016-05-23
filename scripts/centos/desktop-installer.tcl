@@ -21,7 +21,7 @@ proc ::DesktopInstaller::install {ymlDict rawParamDict} {
 
 proc ::DesktopInstaller::installApp {appName ymlDict} {
   set appFolderBase [dict get $ymlDict BigestDisk]
-  set appDic [dict get $ymlDict downloads ant]
+  set appDic [dict get $ymlDict downloads $appName]
   set downFrom [dict get $appDic url]
   set extractor [dict get $appDic extractor]
 
@@ -40,4 +40,9 @@ proc ::DesktopInstaller::installApp {appName ymlDict} {
   set binFolder [file normalize [file join $extracted [dict get $appDic binFolder]]]
 
   ::CommonUtil::writeLines [file join /etc/profile.d "${appName}.sh"] [list "export PATH=\$PATH:$binFolder"]
+}
+
+proc ::DesktopInstaller::vncserver {ymlDict rawParamDict} {
+  ::CommonUtil::spawnCommand yum install -y tigervnc-server
+  ::OsUtil::openFirewall tcp 5901
 }
