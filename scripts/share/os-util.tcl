@@ -1,11 +1,34 @@
 package provide OsUtil 1.0
 package require CommonUtil
 package require YamlUtil
+package require Expect
 
 namespace eval ::OsUtil {
   variable chars {abcdefghijklmnopqrstuvwzyzABC:;'<>?,./DEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()_+{}[]|}
 }
 
+proc ::OsUtil::setAlternative {name realPathToMatch} {
+  spawn alternatives --config $name
+  expect {
+    "or type selection number: $" {
+      set lines [split $expect_out(buffer) \n]
+      foreach line $lines {
+        if {[regexp [format {\s+(\d+)\s+(.+%s)$} $name] [string trimright $line] mh m1 m2]} {
+          if {[string match *$realPathToMatch* $m2]} {
+            exp_send "$m1\n"
+            exp_continue
+          }
+        }
+      }
+    }
+    eof {
+      puts done
+    }
+    timeout {
+      puts timeout
+    }
+  }
+}
 
 proc ::OsUtil::getAppHome {name args} {
   if {[catch {set nameLink [exec which $name]} msg o]} {

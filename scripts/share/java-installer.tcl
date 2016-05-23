@@ -13,8 +13,8 @@ proc ::JavaInstaller::install {{force 0}} {
 	if {$force} {
 		set toInstall 1
 	}
+	set DstFolder [dict get $::ymlDict DstFolder]
 	if {$toInstall} {
-		set DstFolder [dict get $::ymlDict DstFolder]
 		set DownFrom [dict get $::ymlDict DownFrom]
 
 		set jdkFile [lindex [split $DownFrom /] end]
@@ -27,7 +27,6 @@ proc ::JavaInstaller::install {{force 0}} {
 
 		if {! [file exists $DstFolder/$jdkFile]} {
 			::CommonUtil::spawnCommand curl -O $DownFrom
-#			 >&  curloutput.log
 		}
 
 		if {! [file exists $DstFolder/$jdkFile]} {
@@ -40,7 +39,6 @@ proc ::JavaInstaller::install {{force 0}} {
 			file delete $DstFolder/$jdkFile
 			::CommonUtil::endEasyInstall
 		}
-
 
 		if {[catch {exec tar -zxf $jdkFile} msg o]} {
 			::CommonUtil::spawnCommand rm -rvf $jdkFile
@@ -61,6 +59,8 @@ proc ::JavaInstaller::install {{force 0}} {
 		}
 	}
 
+	set binFolder [file dirname [lindex [split [exec find $DstFolder -name javah] \n] 0]]
+	::OsUtil::setAlternative java $binFolder
 	set lines [list]
 	lappend lines "JAVA_HOME=[::OsUtil::getAppHome java .. ..]"
 	lappend lines "export JAVA_HOME"

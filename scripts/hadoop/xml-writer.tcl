@@ -8,7 +8,13 @@ namespace eval XmlWriter {
   variable dfsDatanodeDataDir dfs.datanode.data.dir
 }
 
-proc ::XmlWriter::prepareDic {hadoopHome ymlDict dic} {
+proc ::XmlWriter::prepareDic {hadoopHome ymlDict nodeYml kn} {
+  if {[dict exists $nodeYml $kn]} {
+    set dic [dict merge [dict get $ymlDict $kn] [dict get $nodeYml $kn]]
+  } else {
+    set dic [dict get $ymlDict $kn]
+  }
+
   set DataDirBase [dict get $ymlDict DataDirBase]
   set dnnd dfs.namenode.name.dir
   set dddd dfs.datanode.data.dir
@@ -54,12 +60,10 @@ proc ::XmlWriter::mapred {hadoopHome ymlDict} {
   lappend lines {<?xml version="1.0"?>}
   lappend lines {<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>}
   lappend lines {<configuration>}
-  lappend lines {<property>}
-  lappend lines {<name>mapreduce.framework.name</name>}
-  lappend lines {<value>yarn</value>}
-  lappend lines {</property>}
+  dict for {k v} [dict get $ymlDict MapRed] {
+    addOneProperty lines $k $v
+  }
   lappend lines {</configuration>}
-
   write $mapredFile $lines
 }
 
@@ -98,7 +102,7 @@ proc ::XmlWriter::createDir {hadoopHome cfdir} {
 
 proc ::XmlWriter::yarnSite {hadoopHome nodeYml ymlDict} {
   set yarnSiteFile [file join $hadoopHome etc hadoop yarn-site.xml]
-  set siteDic [prepareDic $hadoopHome $ymlDict [dict get $nodeYml YarnSiteCfg]]
+  set siteDic [prepareDic $hadoopHome $ymlDict $nodeYml YarnSiteCfg]
   copyOrigin $yarnSiteFile
   set lines [list]
   lappend lines {<?xml version="1.0"?>}
@@ -113,7 +117,7 @@ proc ::XmlWriter::yarnSite {hadoopHome nodeYml ymlDict} {
 
 proc ::XmlWriter::coreSite {hadoopHome nodeYml ymlDict} {
   set coreSiteFile [file join $hadoopHome etc hadoop core-site.xml]
-  set siteDic [prepareDic $hadoopHome $ymlDict [dict get $nodeYml CoreSiteCfg]]
+  set siteDic [prepareDic $hadoopHome $ymlDict $nodeYml CoreSiteCfg]
   copyOrigin $coreSiteFile
   set lines [list]
   lappend lines {<?xml version="1.0" encoding="UTF-8"?>}
@@ -133,7 +137,7 @@ proc ::XmlWriter::hdfsSite {hadoopHome nodeYml ymlDict} {
   variable dfsNamenodeNameDir
 
   set hdfsSiteFile [file join $hadoopHome etc hadoop hdfs-site.xml]
-  set siteDic [prepareDic $hadoopHome $ymlDict [dict get $nodeYml HdfsSiteCfg]]
+  set siteDic [prepareDic $hadoopHome $ymlDict $nodeYml HdfsSiteCfg]
   copyOrigin $hdfsSiteFile
   set lines [list]
   lappend lines {<?xml version="1.0" encoding="UTF-8"?>}

@@ -84,28 +84,35 @@ proc ::HadoopInstaller::install {ymlDict rawParamDict} {
   ::XmlWriter::mapred $hadoopHome $ymlDict
   ::XmlWriter::slaves $hadoopHome $ymlDict
 
-  foreach node $myNodes {
-    set role [dict get $node role]
-    ::XmlWriter::coreSite $hadoopHome $node $ymlDict
-    switch -exact -- $role {
-      NameNode {
-        ::XmlWriter::hdfsSite $hadoopHome $node $ymlDict
-        ::OsUtil::openFirewall tcp 8020 50070
+  if {[llength $myNodes]} {
+    foreach node $myNodes {
+      set role [dict get $node role]
+      ::XmlWriter::coreSite $hadoopHome $node $ymlDict
+      switch -exact -- $role {
+        NameNode {
+          ::XmlWriter::hdfsSite $hadoopHome $node $ymlDict
+          ::OsUtil::openFirewall tcp 8020 50070
+        }
+        DataNode {
+          ::XmlWriter::hdfsSite $hadoopHome $node $ymlDict
+          ::OsUtil::openFirewall tcp 43067 50020 50010
+        }
+        ResourceManager {
+          ::XmlWriter::yarnSite $hadoopHome $node $ymlDict
+          ::OsUtil::openFirewall tcp 8030 8031 8032 8033 8088
+        }
+        NodeManager {
+          ::XmlWriter::yarnSite $hadoopHome $node $ymlDict
+          ::OsUtil::openFirewall tcp 57310 8040 8042 45467
+        }
+        default {}
       }
-      DataNode {
-        ::XmlWriter::hdfsSite $hadoopHome $node $ymlDict
-        ::OsUtil::openFirewall tcp 43067 50020 50010
-      }
-      ResourceManager {
-        ::XmlWriter::yarnSite $hadoopHome $node $ymlDict
-        ::OsUtil::openFirewall tcp 8030 8031 8032 8033 8088
-      }
-      NodeManager {
-        ::XmlWriter::yarnSite $hadoopHome $node $ymlDict
-        ::OsUtil::openFirewall tcp 57310 8040 8042 45467
-      }
-      default {}
     }
+  } else {
+    set devNode [dict create role DataNode]
+    ::XmlWriter::hdfsSite $hadoopHome $devNode $ymlDict
+    ::XmlWriter::yarnSite $hadoopHome $devNode $ymlDict
+    ::XmlWriter::coreSite $hadoopHome $devNode $ymlDict
   }
 }
 
