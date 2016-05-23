@@ -10,3 +10,5 @@ tclsh easy-installer.tcl --host=10.74.111.62 centos jps
 
 #tclsh easy-installer.tcl --host=xxx --fixRepoTo=aliyun centos fixRepo
 # use fastestmirror instead of change it.
+
+tclsh easy-installer.tcl --host=192.168.33.49 --mocklist=home centos desktop

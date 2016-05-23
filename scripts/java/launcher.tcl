@@ -1,3 +1,7 @@
 package require JavaInstaller
 
-::JavaInstaller::install
+if {[dict exists $::rawParamDict force]} {
+  ::JavaInstaller::install 1
+} else {
+  ::JavaInstaller::install 0
+}

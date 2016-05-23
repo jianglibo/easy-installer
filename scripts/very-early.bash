@@ -28,6 +28,7 @@ then
 	cat $yumPid |xargs kill -s 9
 fi
 
+yum update -y
 #echo "execute yum install -y curl"
 #yum install -y curl
 

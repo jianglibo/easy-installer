@@ -2,6 +2,7 @@ package require Configer
 package require CommonUtil
 package require OsUtil
 package require AddNewDisk
+package require DesktopInstaller
 
 set action [dict get $::rawParamDict action]
 
@@ -31,6 +32,15 @@ catch {
         set fixRepoTo aliyun
       }
       ::Configer::fixRepoTo $fixRepoTo
+    }
+    desktop {
+      ::DesktopInstaller::install $::ymlDict $::rawParamDict
+    }
+    eclipse {
+      ::DesktopInstaller::installApp  eclipse $::ymlDict
+    }
+    ant {
+      ::DesktopInstaller::installApp  ant $::ymlDict
     }
   }
 } msg o

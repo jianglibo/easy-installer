@@ -1,0 +1,2 @@
+* parse and change hadoop config xml
+* write systemd script

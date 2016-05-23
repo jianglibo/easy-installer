@@ -82,17 +82,18 @@ Vagrant.configure(2) do |config|
   config.vm.define "desktop" do |desktop|
     desktop.vm.provider "virtualbox" do |v|
       v.gui = true
-      v.memory = 4096
+      v.memory = 8192
+      v.customize ['createmedium', '--filename',  'f:/vms/desktop', '--size', 100000]
     end
 
     desktop.vm.network "private_network", ip: "192.168.33.49"
     desktop.vm.provision "shell", inline: <<-SHELL
-      yum group list
-      yum groupinstall -y "Development Tools"
-      yum -y groups install "GNOME Desktop"
-      yum install -y git
-      yum install -y gunzip
-      ln -sf /lib/systemd/system/runlevel5.target /etc/systemd/system/default.target
+      #yum group list
+      #yum groupinstall -y "Development Tools"
+      #yum -y groups install "GNOME Desktop"
+      #yum install -y git
+      #yum install -y gunzip
+      #ln -sf /lib/systemd/system/runlevel5.target /etc/systemd/system/default.target
       # export PATH=$PATH:/opt/scripts
       # gzip -d eclipse-xx
       # tar -xf eclipse-xx
