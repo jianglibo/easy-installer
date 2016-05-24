@@ -46,7 +46,7 @@ catch {
       if {[regexp {install-(.*)} $action mh m1]} {
         ::DesktopInstaller::installApp $m1 $::ymlDict
       } else {
-        puts "unkown action $action"
+        ::DesktopInstaller::installApp $action $::ymlDict
       }
     }
   }
