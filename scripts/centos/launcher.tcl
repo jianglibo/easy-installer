@@ -43,7 +43,11 @@ catch {
       ::DesktopInstaller::installApp  ant $::ymlDict
     }
     default {
-      if {[regexp {install-(.*)} $action mh m1]} {
+      if {[regexp {hadoopPseudo.*} $action mh]} {
+        ::DesktopInstaller::hadoopPseudo $action $::ymlDict
+      } elseif {[regexp {hbase.*} $action mh]} {
+        ::DesktopInstaller::hbase $action $::ymlDict
+      } elseif {[regexp {install-(.*)} $action mh m1]} {
         ::DesktopInstaller::installApp $m1 $::ymlDict
       } else {
         ::DesktopInstaller::installApp $action $::ymlDict

@@ -16,4 +16,12 @@ downloads:
     url: http://mirror.bit.edu.cn/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz
     extractor: "tar -zxf"
     binFolder: bin
+  hadoopPseudo2.5.2:
+    url: https://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-2.5.2/hadoop-2.5.2.tar.gz
+    extractor: "tar -zxf"
+  hbase0.98.19:
+    url: http://mirror.bit.edu.cn/apache/hbase/0.98.19/hbase-0.98.19-hadoop2-bin.tar.gz
+    extractor: "tar -zxf"
+    hbase.rootdir: /home/vagrant/hbase
+    hbase.zookeeper.property.dataDir: /home/vagrant/zookeeper
 BigestDisk: /home

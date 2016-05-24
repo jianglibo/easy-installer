@@ -312,6 +312,16 @@ proc ::CommonUtil::writeLines {fn lines} {
   }
 }
 
+proc ::CommonUtil::write {fn content} {
+  if {[catch {open $fn w} fid o]} {
+    puts $fid
+    endEasyInstall
+  } else {
+    puts $fid $content
+    close $fid
+  }
+}
+
 proc ::CommonUtil::downloadIfNeeded {url extractor} {
   set fn [lindex [split $url /] end]
   if {[file exists $fn]} {
