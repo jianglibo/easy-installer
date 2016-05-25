@@ -30,6 +30,13 @@ proc ::OsUtil::setAlternative {name realPathToMatch} {
   }
 }
 
+proc ::OsUtil::installNtp {} {
+  ::CommonUtil::spawnCommand yum install -y ntp ntpdate
+  exec systemctl enable ntpd
+  ::CommonUtil::spawnCommand ntpdate pool.ntp.org
+  exec systemctl start ntpd
+}
+
 proc ::OsUtil::getAppHome {name args} {
   if {[catch {set nameLink [exec which $name]} msg o]} {
     puts $msg

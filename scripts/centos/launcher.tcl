@@ -42,6 +42,9 @@ catch {
     ant {
       ::DesktopInstaller::installApp  ant $::ymlDict
     }
+    ntpd {
+      ::OsUtil::installNtp
+    }
     default {
       if {[regexp {hadoopPseudo.*} $action mh]} {
         ::DesktopInstaller::hadoopPseudo $action $::ymlDict
