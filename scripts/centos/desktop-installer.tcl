@@ -103,6 +103,11 @@ proc ::DesktopInstaller::hadoopPseudo {appName ymlDict} {
 </configuration>
 }
 
+set lines [list]
+lappend lines "HADOOP_PREFIX=[file normalize $extracted]"
+lappend lines "export HADOOP_PREFIX"
+lappend lines "export PATH=\$PATH:$extracted/bin"
+::CommonUtil::writeLines [file join /etc/profile.d "hadoop.sh"] $lines
 #bin/hdfs namenode -format
 #sbin/start-dfs.sh
 #sbin/start-yarn.sh
@@ -141,9 +146,9 @@ proc ::DesktopInstaller::hbase {appName ymlDict} {
 </configuration>
   }
 
-  ::CommonUtil::write [file join $hbaseCfgFolder hbase-site.xml] [format $c [dict get $appDic hbase.rootdir] [dict get $appDic hbase.zookeeper.property.dataDir]]
-
+::CommonUtil::write [file join $hbaseCfgFolder hbase-site.xml] [format $c [dict get $appDic hbase.rootdir] [dict get $appDic hbase.zookeeper.property.dataDir]]
+::CommonUtil::writeLines [file join /etc/profile.d "hbase.sh"] [list "export PATH=\$PATH:$extracted/bin"]
+#http://localhost:60010/master-status
 #bin/start-hbase.sh
-  puts $extracted
-
+puts $extracted
 }
