@@ -31,8 +31,9 @@ proc ::CommonUtil::spawnCommand {args} {
   set timeout 10000
   spawn {*}$args
   expect {
-    * {
-      expect_continue
+    -re (.*\r) {
+      puts "$expect_out(buffer)"
+      exp_continue
     }
     eof {
       puts done
