@@ -39,6 +39,7 @@ proc ::SolrInstaller::install {ymlDict rawParamDict} {
   # sudo bash ./install_solr_service.sh solr-X.Y.Z.tgz -i /opt -d /var/solr -u solr -s solr -p 8983
   set dataFolder [dict get $ymlDict SolrDataFolder]
   set installFolder [dict get $ymlDict SolrInstallFolder]
+  
   if {! [file exists $installFolder]} {
     exec mkdir -p $installFolder
   }
@@ -67,11 +68,16 @@ proc ::SolrInstaller::install {ymlDict rawParamDict} {
   }
 
   set zkcli [file join $installFolder solr server scripts cloud-scripts zkcli.sh]
-  set oneZkHost [lindex [split [dict get $ymlDict Ini ZK_HOST] /] 0]
+  set oneZkHost {}
 
-  if {[catch {exec bash $zkcli -zkhost $oneZkHost  -cmd makepath /solr} msg o]} {
-    puts "catched exception."
-    puts $msg
+
+  if {[dict exists $ymlDict Ini] && [dict exists $ymlDict Ini ZK_HOST]} {
+    set oneZkHost [lindex [split [dict get $ymlDict Ini ZK_HOST] /] 0]
+
+    if {[catch {exec bash $zkcli -zkhost $oneZkHost  -cmd makepath /solr} msg o]} {
+      puts "catched exception."
+      puts $msg
+    }
   }
 
 
@@ -85,7 +91,6 @@ proc ::SolrInstaller::install {ymlDict rawParamDict} {
   ::SslSetup::setup $ymlDict $zkcli $oneZkHost
   exec service solr start
 
-  puts !!!you must copy /etc/solr-ssl.keystore.jks to every solr node, all must same.!!!
 
   # /solrapp/solr-6.1.0/server/solr/configsets/data_driven_schema_configs/conf/solrconfig.xml
   # <directoryFactory name="DirectoryFactory" class="solr.HdfsDirectoryFactory">

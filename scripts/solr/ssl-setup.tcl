@@ -33,6 +33,9 @@ proc ::SslSetup::setup {ymlDict zkcli oneZkHost} {
     set kcmd "$keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass $password -storepass $password -validity 9999 -keystore $keyStore -ext $ext -dname \"$dname\""
     puts $kcmd
     exec {*}$kcmd
-    exec bash $zkcli -zkhost $oneZkHost -cmd clusterprop -name urlScheme -val https
+    if {[string length $oneZkHost] > 0} {
+      exec bash $zkcli -zkhost $oneZkHost -cmd clusterprop -name urlScheme -val https
+      puts !!!you must copy /etc/solr-ssl.keystore.jks to every solr node, all must same.!!!
+    }
   }
 }

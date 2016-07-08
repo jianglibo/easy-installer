@@ -1,7 +1,8 @@
 ## Usage
 
-* tclsh easy-installer.tcl --host=10.74.111.70 solr install
+* tclsh easy-installer.tcl --host=10.74.111.70 --profile=standalone solr install
 * tclsh easy-installer.tcl --host=10.74.111.70 --mocklist=office.txt solr install
+* tclsh easy-installer.tcl --host=10.74.111.70 --mocklist=office.txt solr create --core=xxx --condir=yyy --profile=standardalone
 
 ## solr-cloud
 found zookeeper in hbase-site.xml,

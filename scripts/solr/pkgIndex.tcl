@@ -9,5 +9,6 @@
 # full path name of this file's directory.
 
 package ifneeded SolrInstaller 1.0 [list source [file join $dir solr-installer.tcl]]
+package ifneeded SolrCreator 1.0 [list source [file join $dir solr-creator.tcl]]
 package ifneeded SslSetup 1.0 [list source [file join $dir ssl-setup.tcl]]
 package ifneeded IniWriter 1.0 [list source [file join $dir ini-writer.tcl]]

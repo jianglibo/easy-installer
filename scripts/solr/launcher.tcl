@@ -8,6 +8,9 @@ if {[catch {
   	install {
   		::SolrInstaller::install $::ymlDict $::rawParamDict
   	}
+    create {
+  		::SolrInstaller::create $::ymlDict $::rawParamDict
+    }
     default {
       puts "\n******unrecoganized action: $action , please check again.******\n"
     }
