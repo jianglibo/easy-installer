@@ -1,2 +1,3 @@
 .vagrant
 **/*.secret.yml
+/demo-configs
