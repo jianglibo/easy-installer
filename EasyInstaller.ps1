@@ -31,7 +31,7 @@ $appfolder = ($AppName -csplit '(?<!^)(?=[A-Z])',5 |ForEach-Object {([string]$_)
 switch ($action) {
     "DemoConfigFile" {
         $democfg = $proot | Join-Path -ChildPath "scripts" | Join-Path -ChildPath $appfolder | Join-Path -ChildPath "README.md" -Resolve
-        $demofolder = $PWD | Join-Path -ChildPath "deomo-configs"
+        $demofolder = $PWD | Join-Path -ChildPath "demo-configs"
         if (-not (Test-Path -Path $demofolder)) {
             New-Item -Path $demofolder -ItemType "directory"
         }

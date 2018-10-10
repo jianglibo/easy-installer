@@ -1,5 +1,4 @@
-﻿# using module '.\SshInvoker.psm1'
-$here = Split-Path -Parent $MyInvocation.MyCommand.Path
+﻿$here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 . "$here\deploy-util.ps1"

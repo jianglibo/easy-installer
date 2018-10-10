@@ -1,3 +1,6 @@
 .vagrant
 **/*.secret.yml
-/demo-configs
+/demo-configs/**
+**/demo-config.1.json
+/downloads
+.vscode/launch.json

@@ -1,0 +1,10 @@
+{
+  "HostName": "192.168.33.110",
+  "UserName": "root",
+  "IdentityFile": "D:/cygwin64/home/admin/.ssh/id_rsa",
+  "Password": null,
+  "Softwares": [{
+    "PackageUrl": "https://cdn.mysql.com//Downloads/MySQL-5.7/mysql-community-common-5.7.23-1.el7.x86_64.rpm",
+    "LocalName": null
+  }]
+}
