@@ -3,19 +3,16 @@ param (
     [ValidateSet("Install", "GetDemoConfigFile", "DownloadPackages")]
     [string]$Action,
     [parameter(Mandatory = $false)]
-    [string]$ConfigFile
+    [string]$ConfigFile,
+    [parameter(Mandatory = $false)]
+    [ValidateSet("55", "56", "57", "80")]
+    [string]$Version
 )
 
 process { 
     $vb = $PSBoundParameters.ContainsKey('Verbose')
     if ($vb) {
         $PSDefaultParameterValues['*:Verbose'] = $true
-    }
-    $invalid = ($Action -eq "Install") -and (-not $ConfigFile)
-
-    if ($invalid) {
-        Write-ParameterWarning -wstring "If action is Install then ConfigFile is required."
-        return
     }
 
     $myself = $MyInvocation.MyCommand.Path
@@ -24,6 +21,18 @@ process {
 
     ".\SshInvoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1" | ForEach-Object {
         . "${ScriptDir}\common\$_"
+    }
+
+    $isInstall = $Action -eq "Install"
+
+    if ($isInstall -and (-not $ConfigFile)) {
+        Write-ParameterWarning -wstring "If action is Install then ConfigFile parameter is required."
+        return
+    }
+
+    if ($isInstall -and (-not $Version)) {
+        Write-ParameterWarning -wstring "If action is Install then Version parameter is required."
+        return
     }
 
 
