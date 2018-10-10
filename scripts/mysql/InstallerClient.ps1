@@ -6,6 +6,48 @@ param (
     [string]$ConfigFile
 )
 
+process { 
+    $vb = $PSBoundParameters.ContainsKey('Verbose')
+    if ($vb) {
+        $PSDefaultParameterValues['*:Verbose'] = $true
+    }
+    $invalid = ($Action -eq "Install") -and (-not $ConfigFile)
+
+    if ($invalid) {
+        Write-ParameterWarning -wstring "If action is Install then ConfigFile is required."
+        return
+    }
+
+    $myself = $MyInvocation.MyCommand.Path
+    $here = $myself | Split-Path -Parent
+    $ScriptDir = $here | Split-Path -Parent
+
+    ".\SshInvoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1" | ForEach-Object {
+        . "${ScriptDir}\common\$_"
+    }
+
+
+    if ($Action -eq "GetDemoConfigFile") {
+        Copy-DemoConfigFile -MyDir $here -ToFileName "mysql-demo-config.json"
+    }
+    else {
+        $configuration = Get-Configuration -MyDir $here -ConfigFile $ConfigFile
+        if (-not $configuration) {
+            return
+        }
+        switch ($Action) {
+            "DownloadPackages" {
+                Get-SoftwarePackages -configuration $configuration
+                break
+            }
+            Default {
+                $configuration = Get-Configuration -MyDir $here -ConfigFile $ConfigFile
+                $configuration | ConvertTo-Json
+            }
+        }
+    }
+}
+
 # DynamicParam {
 #     if (($action -eq "Install")) {
 #         $attributes = New-Object -Type `
@@ -26,44 +68,3 @@ param (
 #         return $paramDictionary
 #     }
 # }
-
-process { 
-    $vb = $PSBoundParameters.ContainsKey('Verbose')
-    if ($vb) {
-        $PSDefaultParameterValues['*:Verbose'] = $true
-    }
-    $invalid = ($Action -eq "Install") -and (-not $ConfigFile)
-
-    if ($invalid) {
-        Write-ParameterWarning -wstring "If action is Install then ConfigFile is required."
-        return
-    }
-
-    $myself = $MyInvocation.MyCommand.Path
-    $here = $myself | Split-Path -Parent
-    $ScriptsDir = $here | Split-Path -Parent
-
-    . "${ScriptsDir}\common\SshInvoker.ps1"
-    . "${ScriptsDir}\common\clientside-util.ps1"
-    . "${myself}.ps1"
-
-    if ($Action -eq "GetDemoConfigFile") {
-        Copy-DemoConfigFile -MyDir $here -ToFileName "mysql-demo-config.json"
-    }
-    else {
-        $configuration = Get-Configuration -MyDir $here -ConfigFile $ConfigFile
-        if (-not $configuration) {
-            return
-        }
-        switch ($Action) {
-            "DownloadPackages" {
-                Download-SoftwarePackages -configuration $configuration
-                break
-            }
-            Default {
-                $configuration = Get-Configuration -MyDir $here -ConfigFile $ConfigFile
-                $configuration | ConvertTo-Json
-            }
-        }
-    }
-}
