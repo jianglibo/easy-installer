@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "GetDemoConfigFile", "DownloadPackages")]
+    [ValidateSet("Install", "GetDemoConfigFile", "DownloadPackages", "Remove")]
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,
@@ -40,7 +40,7 @@ process {
         Copy-DemoConfigFile -MyDir $here -ToFileName "mysql-demo-config.json"
     }
     else {
-        $configuration = Get-Configuration -MyDir $here -ConfigFile $ConfigFile
+        $configuration = Get-Configuration -ConfigFile $ConfigFile
         if (-not $configuration) {
             return
         }
@@ -48,6 +48,13 @@ process {
             "DownloadPackages" {
                 Get-SoftwarePackages -configuration $configuration
                 break
+            }
+            "Remove" {
+                if ($PSCmdlet.ShouldContinue("Are you sure?", "")) {
+                    "removed."
+                } else {
+                    "canceled."
+                }
             }
             Default {
                 $configuration = Get-Configuration -MyDir $here -ConfigFile $ConfigFile

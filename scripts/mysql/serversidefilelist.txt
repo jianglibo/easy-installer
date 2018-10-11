@@ -1,3 +1,4 @@
 ..\..\common\common-util.ps1
 ..\..\common\SshInvoker.ps1
 ..\InstallerServer.ps1
+..\InstallerServer.Function.ps1

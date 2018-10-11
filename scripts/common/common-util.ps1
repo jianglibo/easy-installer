@@ -69,8 +69,8 @@ function Get-Configuration {
             }
         }
         
-        if (-not $c.Password) {
-            Write-ParameterWarning -wstring "Neither IdentityFile Nor Password property exists in ${vcf}."
+        if (-not $c.ServerPassword) {
+            Write-ParameterWarning -wstring "Neither IdentityFile Nor ServerPassword property exists in ${vcf}."
             return
         }
     }
@@ -157,4 +157,23 @@ function Write-ParameterWarning {
     )
     $stars = (1..$wstring.Length | ForEach-Object {'*'}) -join ''
     "`n`n{0}`n`n{1}`n`n{2}`n`n" -f $stars,$wstring,$stars | Write-Warning
+}
+
+function Test-SoftwareInstalled {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]$configuration
+    )
+
+    $idt = $configuration.ServerSide.InstallDetect
+    $idt.command | Write-Verbose
+    $idt.expect | Write-Verbose
+    $idt.unexpect | Write-Verbose
+    $r = Invoke-Expression -Command $idt.command
+    $r | Write-Verbose
+    if ($idt.expect) {
+        $idt.expect | Write-Verbose
+        $r -match $idt.expect
+    } else {
+        -not ($r -match $idt.unexpect)
+    }
 }

@@ -7,6 +7,7 @@ $scriptDir = $here | Split-Path -Parent
 
 . "${scriptDir}\common\SshInvoker.ps1"
 . "${scriptDir}\common\clientside-util.ps1"
+. "${scriptDir}\common\common-for-t.ps1"
 
 
 Describe "SshInvoker" {
@@ -23,16 +24,12 @@ Describe "SshInvoker" {
     }
 
     it "should copy script to server." {
-        $MyDir =  Join-Path -Path $scriptDir -ChildPath "mysql"
-        $ConfigFile = $MyDir | Join-Path -ChildPath "demo-config.1.json"
-        $sflf = $MyDir | Join-Path -ChildPath "serversidefilelist.txt"
-        $configuration = Get-Configuration -ConfigFile $ConfigFile
-        $configuration | Out-Host
-        Copy-PsScriptToServer -configuration $configuration -ConfigFile $ConfigFile -ServerSideFileListFile $sflf
-        [SshInvoker]$sshInvoker = Get-SshInvoker -configuration $configuration
-        $sshInvoker.isFileExists($configuration.ServerSide.ScriptDir) | Should -BeTrue
-
-        $invoker = Invoke-ServerRunningPs1 -configuration $configuration -ConfigFile $ConfigFile -action Echo a b c
-        $invoker | Out-Host
+        $mysql = Join-Path -Path $scriptDir -ChildPath "mysql"
+        $ht = Copy-TestPsScriptToServer -HerePath $mysql
+        $ht | Out-Host
+        [SshInvoker]$sshInvoker = Get-SshInvoker -configuration $ht.configuration
+        $sshInvoker.isFileExists($ht.configuration.ServerSide.ScriptDir) | Should -BeTrue
+        $result = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action Echo a b c
+        $result | Should -Be 'a b c'
     }
 }

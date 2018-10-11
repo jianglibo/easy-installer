@@ -63,6 +63,7 @@ class SshInvoker {
 
     [string] hidden invokeBash([string]$cmd) {
         $c =  "$($this.sshStr) `"$cmd 2>&1`""
+        $c | Write-Verbose
         $this.commandName = $c
         $r = Invoke-Expression -Command $c
         $this.ExitCode = $LASTEXITCODE
