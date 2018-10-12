@@ -291,19 +291,21 @@ function Get-ChangedHashtable {
     $OneLevelHashTable.GetEnumerator() | ForEach-Object {
         $v = $_.Value
         [array]$ks = $_.Key -split "\."
-        switch ($ks.Count) {
-            0 {
-                throw "empty key of hashtable $OneLevelHashTable"
-            }
-            1 { 
-                $lastKey = $ks[0]
-                $preKeys = @()
-            }
-            Default {
-                $lastKey = $ks[-1]
-                $preKeys = $ks[0..($ks.Count - 2)]
-            }
-        }
+        $lastKey = $ks | Select-Object -Last 1
+        $preKeys = $ks | Select-Object -SkipLast 1
+        # switch ($ks.Count) {
+        #     0 {
+        #         throw "empty key of hashtable $OneLevelHashTable"
+        #     }
+        #     1 { 
+        #         $lastKey = $ks[0]
+        #         $preKeys = @()
+        #     }
+        #     Default {
+        #         $lastKey = $ks[-1]
+        #         $preKeys = $ks[0..($ks.Count - 2)]
+        #     }
+        # }
         $node = $customob
         foreach ($k in $preKeys) {
             if ($k -match "^(.*?)\[(\d+)\]$") {
