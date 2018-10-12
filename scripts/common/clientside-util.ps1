@@ -91,6 +91,7 @@ function Invoke-ServerRunningPs1 {
         [Parameter(Mandatory = $true, Position = 1)][string]$ConfigFile,
         [Parameter(Mandatory = $true, Position = 2)]
         [string]$action,
+        [parameter(Mandatory = $false)][switch]$notCombineError,
         [parameter(Mandatory = $false,
             ValueFromRemainingArguments = $true)]
         [String[]]
@@ -105,5 +106,5 @@ function Invoke-ServerRunningPs1 {
     
     $rcmd = "pwsh -f {0} -action {1} -ConfigFile {2} {3} {4}" -f $entryPoint, $action, $toServerConfigFile, (Get-Verbose), ($hints -join ' ')
     $rcmd | Out-String | Write-Verbose
-    $sshInvoker.Invoke($rcmd)
+    $sshInvoker.Invoke($rcmd, (-not $notCombineError))
 }

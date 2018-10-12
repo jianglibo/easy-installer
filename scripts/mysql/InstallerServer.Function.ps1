@@ -72,6 +72,25 @@ function Get-MycnfFile {
     ([string]$r).Trim() -split '\s+' | Where-Object {Test-Path -Path $_} | Select-Object -First 1
 }
 
-function Uninstall-Mysql {
+function Get-MysqlVariables {
+    param (
+        [parameter(Mandatory = $true, Position = 0)]$configuration,
+        [parameter(Mandatory = $false, Position = 1)][string[]]$VariableNames
+    )
+    $sql = "{0} -uroot -p{1} -X -e `"{2}`"" -f $configuration.clientBin, $configuration.MysqlPassword, "show variables"
+    $r = Invoke-Expression -Command $sql | Where-Object {-not ($_ -like 'Warning:*')}
+    if ($VariableNames.Count -gt 0) {
+        ([xml]$r).resultset.row | ForEach-Object {@{name=$_.field[0].'#text';value=$_.field[1].'#text'}} | Where-Object {$_.name -in $VariableNames} | ConvertTo-Json
+    } else {
+        ([xml]$r).resultset.row | ForEach-Object {@{name=$_.field[0].'#text';value=$_.field[1].'#text'}} | ConvertTo-Json
+    }
+}
 
+
+function Uninstall-Mysql {
+    param (
+        [parameter(Mandatory = $true, Position = 0)]$configuration
+    )
+
+    # datadir
 }

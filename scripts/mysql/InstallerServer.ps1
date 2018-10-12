@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install","GetMycnf", "Echo")]
+    [ValidateSet("Install","GetMycnf","GetVariables", "Echo")]
     [string]$Action,
     [parameter(Mandatory = $true, Position = 1)]
     [string]$ConfigFile,
@@ -42,7 +42,11 @@ switch ($Action) {
     }
     "GetMycnf" {
         Get-MycnfFile -configuration $configuration
-        break;
+        break
+    }
+    "GetVariables" {
+        Get-MysqlVariables -configuration $configuration "$hints"
+        break
     }
     Default {
         $configuration | ConvertTo-Json

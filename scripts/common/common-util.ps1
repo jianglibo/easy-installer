@@ -177,3 +177,75 @@ function Test-SoftwareInstalled {
         -not ($r -match $idt.unexpect)
     }
 }
+
+function Get-MaxBackupNumber {
+    param (
+        [Parameter(Mandatory = $false, Position = 1)][string]$Path
+    )
+    $r = Get-ChildItem -Path "${Path}*" | 
+        # Where-Object Name -Match ".*\.\d+$" |
+    Foreach-Object {@{base = $_; dg = [int](Select-String -InputObject $_.Name -Pattern '(\d*)$' -AllMatches).matches.groups[1].Value}} |
+        Sort-Object -Property @{Expression = {$_.dg}; Descending = $true} |
+        # Where-Object {$_ -is [System.IO.DirectoryInfo]} |
+    # We can not handle this situation, mixed files and directories.
+    Select-Object -First 1 | ForEach-Object {$_.dg}
+    if (-not $r) {
+        0
+    }
+    else {
+        $r
+    }
+}
+function Get-NextBackup {
+    param (
+        [Parameter(Mandatory = $false, Position = 1)][string]$Path
+    )
+    $mn = 1 + (Get-MaxBackupNumber -Path $Path)
+    "${Path}.${mn}"
+}
+
+
+function Get-MaxBackup {
+    param (
+        [Parameter(Mandatory = $false, Position = 1)][string]$Path
+    )
+    $mn = Get-MaxBackupNumber -Path $Path
+    if ($mn -eq 0) {
+        $Path
+    }
+    else {
+        "${Path}.${mn}"
+    }
+}
+
+<#
+may run in remote server.
+#>
+function Backup-LocalDirectory {
+    param (
+        [Parameter(Mandatory = $false, Position = 1)][string]$Path,
+        [switch]$keepOrigin
+    )
+    $nx = Get-NextBackup -Path $Path
+    if (-not (Test-Path -Path $Path)) {
+        throw "$Path does'nt exists."
+    }
+
+    if (Test-Path -Path $Path -Type Container) {
+        if ($keepOrigin) {
+            Copy-Item -Path $Path -Recurse -Destination $nx
+        }
+        else {
+            Move-Item -Path $Path -Destination $nx
+        }
+    }
+    else {
+        if ($keepOrigin) {
+            Copy-Item -Path $Path -Destination $nx
+        }
+        else {
+            Move-Item -Path $Path -Destination $nx
+        }
+    }
+    $nx
+}

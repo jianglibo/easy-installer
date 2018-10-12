@@ -52,17 +52,25 @@ class SshInvoker {
     }
 
     [string] invoke([string]$cmd) {
+        return $this.invoke($cmd, $true)
+    }
+
+    [string] invoke([string]$cmd, [bool]$combineError) {
         switch ($this.ShellName) {
             bash { 
-                return $this.InvokeBash($cmd)
+                return $this.InvokeBash($cmd, $combineError)
              }
             Default {}
         }
         return null
     }
 
-    [string] hidden invokeBash([string]$cmd) {
-        $c =  "$($this.sshStr) `"$cmd 2>&1`""
+    [string] hidden invokeBash([string]$cmd, [bool]$combineError) {
+        if ($combineError) {
+            $c =  "$($this.sshStr) `"$cmd 2>&1`""
+        } else {
+            $c =  "$($this.sshStr) `"$cmd`""
+        }
         $c | Write-Verbose
         $this.commandName = $c
         $r = Invoke-Expression -Command $c

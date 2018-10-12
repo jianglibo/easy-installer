@@ -49,6 +49,25 @@ Describe "manual" {
 
         } while ($false)
     }
+
+    it "should alter hashtable" {
+        $ht = @{a=@{b=@{c=1}}}
+        $ht.a.b.c | Should -Be 1
+
+        $ht.Keys | Should -Be "a"
+
+        $node = $ht
+
+        [array]$ks = "a.b.c" -split '\.'
+        $ks | Should -Be a,b,c
+        $ks1 = $ks[0..($ks.Count - 1)]
+        $ks1 | Should -Be a,b
+        foreach ($k in $ks) {
+           $node = $node.$k 
+        }
+
+        $node
+    }
 }
 
 
@@ -65,5 +84,21 @@ Describe "getmycnf" {
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action GetMycnf
         $r | Should -Be '/etc/my.cnf'
+    }
+}
+
+Describe "get mysql variables" {
+    it "should return variables hashtable." {
+        $ht = Copy-TestPsScriptToServer -HerePath $here
+        $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "auto_increment_offset"
+        $r = $r | ConvertFrom-Json
+        $r.value | Should -Be '1'
+
+        $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "auto_increment_offset1"
+        $r | Should -BeFalse
+    }
+
+    it "should get new configfile" {
+
     }
 }
