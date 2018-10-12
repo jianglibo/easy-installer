@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install","GetMycnf","GetVariables", "Echo")]
+    [ValidateSet("Install","GetMycnf","GetVariables","Uninstall", "Echo")]
     [string]$Action,
     [parameter(Mandatory = $true, Position = 1)]
     [string]$ConfigFile,
@@ -46,6 +46,10 @@ switch ($Action) {
     }
     "GetVariables" {
         Get-MysqlVariables -configuration $configuration "$hints"
+        break
+    }
+    "Uninstall" {
+        Uninstall-Mysql -configuration $configuration
         break
     }
     Default {

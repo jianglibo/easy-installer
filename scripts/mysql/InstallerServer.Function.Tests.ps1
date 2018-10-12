@@ -52,21 +52,35 @@ Describe "manual" {
 
     it "should alter hashtable" {
         $ht = @{a=@{b=@{c=1}}}
-        $ht.a.b.c | Should -Be 1
+        $ht1 = Get-ChangedHashtable -customob $ht -OneLevelHashTable @{"a.b"=2}
+        $ht.a.b |Should -Be 2
+        $ht1.a.b |Should -Be 2
 
-        $ht.Keys | Should -Be "a"
+        $configuration = Get-DemoConfiguration -HerePath $here
+        
+        $configuration.ServerSide.EntryPoint | Should -Be "InstallerServer.ps1"
 
-        $node = $ht
+        Get-ChangedHashtable -customob $configuration -OneLevelHashTable @{"ServerSide.EntryPoint"=55}
+        $configuration.ServerSide.EntryPoint | Should -Be 55
 
-        [array]$ks = "a.b.c" -split '\.'
-        $ks | Should -Be a,b,c
-        $ks1 = $ks[0..($ks.Count - 1)]
-        $ks1 | Should -Be a,b
-        foreach ($k in $ks) {
-           $node = $node.$k 
-        }
+        Get-ChangedHashtable -customob $configuration -OneLevelHashTable @{"Softwares[0].LocalName"="ln"}
+        $configuration.Softwares[0].LocalName | Should -Be "ln"
 
-        $node
+    }
+
+    it "should get new config file" {
+        $f = Get-ConfigFileInTestDriver $here
+        $ht = Get-Content -Path $f | ConvertFrom-Json
+        $ht.Softwares[0].LocalName | Should -BeNullOrEmpty
+
+        $f = Get-ConfigFileInTestDriver $here -OneLevelHashTable @{"Softwares[0].LocalName"="ln"}
+        $ht = Get-Content -Path $f | ConvertFrom-Json
+        $ht.Softwares[0].LocalName | Should -Be "ln"
+
+        $ht.MysqlPassword | Should -Be "123456"
+        $f = Get-ConfigFileInTestDriver $here -OneLevelHashTable @{"MysqlPassword"="567"}
+        $ht = Get-Content -Path $f | ConvertFrom-Json
+        $ht.MysqlPassword | Should -Be "567"
     }
 }
 
@@ -96,9 +110,27 @@ Describe "get mysql variables" {
 
         $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "auto_increment_offset1"
         $r | Should -BeFalse
+
+        $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "datadir"
+        $r = $r | ConvertFrom-Json
+        $r.value | Should -Be '/var/lib/mysql/'
+
     }
+}
 
-    it "should get new configfile" {
+Describe "uninstall mysql access denied." {
+    it "should denied." {
+        $f = Get-ConfigFileInTestDriver -HerePath $here -OneLevelHashTable @{MysqlPassword="bbc"}
+        $ht = Copy-TestPsScriptToServer -HerePath $here -ConfigFile $f
+        $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $f -Action uninstall -notCombineError
+        $r | should -Be 'Mysql Access Denied.'
+    }
+}
 
+Describe "uninstall mysql successly." {
+    it "should uninstall." {
+        $ht = Copy-TestPsScriptToServer -HerePath $here
+        $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -Action uninstall -notCombineError
+        $r | should -Be 'Uninstall successly.'
     }
 }

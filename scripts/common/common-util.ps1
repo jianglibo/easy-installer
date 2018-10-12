@@ -1,4 +1,33 @@
-﻿function Split-Url {
+﻿class OsDetail {
+    [string]$Name
+    [string]$Version
+    [string]$Platform
+
+    OsDetail ([string]$Platform, [string]$Name, [string]$Version) {
+        $this.Platform = $Platform
+        $this.Name = $Name
+        $this.Version = $Version
+    }
+
+    [bool]IsWin() {
+        return $this.Platform -like '*win*'
+    }
+
+    [bool]IsUnix() {
+        return $this.Platform -like '*unix*'
+    }
+
+    [bool]IsCentos() {
+        return $this.Name -like '*centos*'
+    }
+
+
+    [bool]IsCentos7() {
+        return ($this.Name -like '*centos*') -and ($this.Version -like '*7*')
+    }
+
+}
+function Split-Url {
     param (
         [Parameter(Mandatory = $true)]
         [string]$Url,
@@ -156,7 +185,7 @@ function Write-ParameterWarning {
         [Parameter(Mandatory = $true, Position = 0)][string]$wstring
     )
     $stars = (1..$wstring.Length | ForEach-Object {'*'}) -join ''
-    "`n`n{0}`n`n{1}`n`n{2}`n`n" -f $stars,$wstring,$stars | Write-Warning
+    "`n`n{0}`n`n{1}`n`n{2}`n`n" -f $stars, $wstring, $stars | Write-Warning
 }
 
 function Test-SoftwareInstalled {
@@ -173,7 +202,8 @@ function Test-SoftwareInstalled {
     if ($idt.expect) {
         $idt.expect | Write-Verbose
         $r -match $idt.expect
-    } else {
+    }
+    else {
         -not ($r -match $idt.unexpect)
     }
 }
@@ -248,4 +278,63 @@ function Backup-LocalDirectory {
         }
     }
     $nx
+}
+
+function Get-ChangedHashtable {
+    param (
+        [Parameter(Mandatory = $false, Position = 1)]$customob,
+        [Parameter(Mandatory = $false, Position = 1)][hashtable]$OneLevelHashTable
+    )
+    if (-not $OneLevelHashTable) {
+        return $customob
+    }
+    $OneLevelHashTable.GetEnumerator() | ForEach-Object {
+        $v = $_.Value
+        [array]$ks = $_.Key -split "\."
+        switch ($ks.Count) {
+            0 {
+                throw "empty key of hashtable $OneLevelHashTable"
+            }
+            1 { 
+                $lastKey = $ks[0]
+                $preKeys = @()
+            }
+            Default {
+                $lastKey = $ks[-1]
+                $preKeys = $ks[0..($ks.Count - 2)]
+            }
+        }
+        $node = $customob
+        foreach ($k in $preKeys) {
+            if ($k -match "^(.*?)\[(\d+)\]$") {
+                $node = ($node.($Matches[1]))[$Matches[2]]
+            }
+            else {
+                $node = $node.$k
+            }
+        }
+        # $node.abc[0] = xx ?
+        if ($lastKey -match "^(.*?)\[(\d+)\]$") {
+            ($node.($Matches[1]))[$Matches[2]] = $v
+        }
+        else {
+            $node.$lastKey = $v
+        }
+    }
+    $customob
+}
+
+function Get-OsDetail {
+    $plt = [System.Environment]::OSVersion.Platform
+    if ($plt -eq 'unix') {
+        $h = Get-Content -Path "/etc/os-release" -ErrorAction SilentlyContinue | ConvertFrom-StringData
+        if ($h) {
+            [OsDetail]::new($plt, $h.ID, $h.VERSION_ID)
+        }
+        else {
+            [OsDetail]::new($plt, $(uname -s), $(uname -r))
+        }
+    } else {
+        [OsDetail]::new($plt, $plt, [System.Environment]::OSVersion.Version.ToString())
+    }
 }
