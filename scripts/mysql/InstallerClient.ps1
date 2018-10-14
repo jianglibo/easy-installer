@@ -58,7 +58,7 @@ process {
             }
             Default {
                 $configuration = Get-Configuration -MyDir $here -ConfigFile $ConfigFile
-                $configuration | ConvertTo-Json
+                $configuration | ConvertTo-Json -Depth 10
             }
         }
     }

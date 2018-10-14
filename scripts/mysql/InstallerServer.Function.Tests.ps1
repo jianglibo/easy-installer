@@ -57,25 +57,27 @@ Describe "manual" {
         $ht1.a.b |Should -Be 2
 
         $configuration = Get-DemoConfiguration -HerePath $here
-        
-        $configuration.ServerSide.EntryPoint | Should -Be "InstallerServer.ps1"
 
-        Get-ChangedHashtable -customob $configuration -OneLevelHashTable @{"ServerSide.EntryPoint"=55}
-        $configuration.ServerSide.EntryPoint | Should -Be 55
+        $configuration.SwitchByOs.centos.ServerSide.EntryPoint | Should -Be "InstallerServer.ps1"
 
-        Get-ChangedHashtable -customob $configuration -OneLevelHashTable @{"Softwares[0].LocalName"="ln"}
-        $configuration.Softwares[0].LocalName | Should -Be "ln"
+        Get-ChangedHashtable -customob $configuration -OneLevelHashTable @{"SwitchByOs.centos.ServerSide.EntryPoint"=55}
+        $configuration.SwitchByOs.centos.ServerSide.EntryPoint | Should -Be 55
+
+        Get-ChangedHashtable -customob $configuration -OneLevelHashTable @{"SwitchByOs.centos.Softwares[0].LocalName"="ln"}
+        $configuration.SwitchByOs.centos.Softwares[0].LocalName | Should -Be "ln"
 
     }
 
     it "should get new config file" {
-        $f = Get-ConfigFileInTestDriver $here
-        $ht = Get-Content -Path $f | ConvertFrom-Json
-        $ht.Softwares[0].LocalName | Should -BeNullOrEmpty
+        # $f = Get-ConfigFileInTestDriver $here
+        # $ht = Get-Content -Path $f | ConvertFrom-Json
+        # $ht.SwitchByOs.centos.Softwares[0].LocalName | Should -BeNullOrEmpty
 
-        $f = Get-ConfigFileInTestDriver $here -OneLevelHashTable @{"Softwares[0].LocalName"="ln"}
+        $f = Get-ConfigFileInTestDriver $here -OneLevelHashTable @{"SwitchByOs.centos.Softwares[0].LocalName"="ln"}
+
         $ht = Get-Content -Path $f | ConvertFrom-Json
-        $ht.Softwares[0].LocalName | Should -Be "ln"
+        $ht.SwitchByOs.centos.Softwares[0].LocalName | Should -Be "ln"
+
 
         $ht.MysqlPassword | Should -Be "123456"
         $f = Get-ConfigFileInTestDriver $here -OneLevelHashTable @{"MysqlPassword"="567"}
@@ -88,6 +90,7 @@ Describe "manual" {
 Describe "install" {
     it "should return already installed." {
         $ht = Copy-TestPsScriptToServer -HerePath $here
+        $ht.ConfigFile | Out-Host
         $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action Install 57
         $r | Should -Be 'AlreadyInstalled'
     }

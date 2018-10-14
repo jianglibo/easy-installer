@@ -5,17 +5,24 @@
   "ServerPassword": null,
   "MysqlPassword": "123456",
   "ClientBin": "mysql",
-  "Softwares": [{
-    "PackageUrl": "https://cdn.mysql.com//Downloads/MySQL-5.7/mysql-community-common-5.7.23-1.el7.x86_64.rpm",
-    "LocalName": null
-  }],
-  "ServerSide" : {
-    "ScriptDir": "/tmp/easyinstaller-scripts",
-    "EntryPoint": "InstallerServer.ps1",
-    "InstallDetect": {
-      "command": "which mysql",
-      "expect": "",
-      "unexpect": "\\("
+  "OsType": "centos",
+  "SwitchByOs": {
+    "centos": {
+      "Softwares": [
+        {
+          "PackageUrl": "https://cdn.mysql.com//Downloads/MySQL-5.7/mysql-community-common-5.7.23-1.el7.x86_64.rpm",
+          "LocalName": null
+        }
+      ],
+      "ServerSide": {
+        "ScriptDir": "/tmp/easyinstaller-scripts",
+        "EntryPoint": "InstallerServer.ps1",
+        "InstallDetect": {
+          "command": "which mysql",
+          "expect": "",
+          "unexpect": "\\("
+        }
+      }
     }
   }
 }

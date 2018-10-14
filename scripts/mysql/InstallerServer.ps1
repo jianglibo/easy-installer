@@ -23,8 +23,9 @@ $here = $myself | Split-Path -Parent
 . (Join-Path -Path $here -ChildPath "common-util.ps1")
 
 $configuration = Get-Configuration -ConfigFile $ConfigFile -ServerSide
+$osConfig = Get-OsConfiguration -configuration $configuration
 
-Get-ChildItem -Path (Join-UniversalPath -Path $configuration.ServerSide.ScriptDir -ChildPath "*.ps1") |
+Get-ChildItem -Path (Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath "*.ps1") |
     Select-Object -ExpandProperty FullName |
     Where-Object {$_ -ne $myself} |
     ForEach-Object {
@@ -37,7 +38,7 @@ switch ($Action) {
         break
     }
     "Install" {
-        Install-Mysql -ConfigFile $ConfigFile -Version "$hints"
+        Install-Mysql -configuration $configuration -Version "$hints"
         break
     }
     "GetMycnf" {
@@ -53,6 +54,6 @@ switch ($Action) {
         break
     }
     Default {
-        $configuration | ConvertTo-Json
+        $configuration | ConvertTo-Json -Depth 10
     }
 }

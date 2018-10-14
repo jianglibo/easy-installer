@@ -20,8 +20,10 @@ function Get-ConfigFileInTestDriver {
     $repofile = Join-Path $TestDrive "config.json"
     $repofile | Write-Verbose
     $configuration = Get-DemoConfiguration -HerePath $HerePath
+    
     Get-ChangedHashtable -customob $configuration -OneLevelHashTable $OneLevelHashTable | Out-Null
-    $configuration | ConvertTo-Json | Out-File -FilePath $repofile
+    
+    $configuration | ConvertTo-Json -Depth 10 | Out-File -FilePath $repofile
     $repofile
 }
 

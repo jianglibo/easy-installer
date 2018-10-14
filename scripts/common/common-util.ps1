@@ -180,12 +180,29 @@ function Get-Verbose {
     }
 }
 
+
 function Write-ParameterWarning {
     param (
-        [Parameter(Mandatory = $true, Position = 0)][string]$wstring
+        [Parameter(Mandatory = $true, Position = 0)][string]$wstring,
+        [Parameter(Mandatory = $false)][int]$level = 1
     )
     $stars = (1..$wstring.Length | ForEach-Object {'*'}) -join ''
-    "`n`n{0}`n`n{1}`n`n{2}`n`n" -f $stars, $wstring, $stars | Write-Warning
+    $l = (Get-PSCallStack)[$level].Location
+    "`n`n{0}`n`n`{1}`n`n{2}`n`n{3}`n`n" -f $stars, $l, $wstring, $stars | Write-Warning
+}
+
+function Get-OsConfiguration {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]$configuration
+    )
+    $osConfig = $configuration.SwitchByOs.($configuration.OsType)
+
+    if (-not $osConfig) {
+        $s = "The 'OsType' property is $($configuration.OsType), But there is no corresponding item in 'SwitchByOs': $ConfigFile"
+        Write-ParameterWarning -wstring $s -level 2
+        throw $s
+    }
+    $osConfig
 }
 
 function Test-SoftwareInstalled {
@@ -193,7 +210,8 @@ function Test-SoftwareInstalled {
         [Parameter(Mandatory = $true, Position = 0)]$configuration
     )
 
-    $idt = $configuration.ServerSide.InstallDetect
+    $osConfig = Get-OsConfiguration -configuration $configuration
+    $idt = $osConfig.ServerSide.InstallDetect
     $idt.command | Write-Verbose
     $idt.expect | Write-Verbose
     $idt.unexpect | Write-Verbose
@@ -293,22 +311,12 @@ function Get-ChangedHashtable {
         [array]$ks = $_.Key -split "\."
         $lastKey = $ks | Select-Object -Last 1
         $preKeys = $ks | Select-Object -SkipLast 1
-        # switch ($ks.Count) {
-        #     0 {
-        #         throw "empty key of hashtable $OneLevelHashTable"
-        #     }
-        #     1 { 
-        #         $lastKey = $ks[0]
-        #         $preKeys = @()
-        #     }
-        #     Default {
-        #         $lastKey = $ks[-1]
-        #         $preKeys = $ks[0..($ks.Count - 2)]
-        #     }
-        # }
         $node = $customob
         foreach ($k in $preKeys) {
             if ($k -match "^(.*?)\[(\d+)\]$") {
+                if (-not $node.($Matches[1])) {
+                    throw "Key: $k does'nt exists."
+                }
                 $node = ($node.($Matches[1]))[$Matches[2]]
             }
             else {
@@ -317,6 +325,9 @@ function Get-ChangedHashtable {
         }
         # $node.abc[0] = xx ?
         if ($lastKey -match "^(.*?)\[(\d+)\]$") {
+            if (-not $node.($Matches[1])) {
+                throw "lastKey: $lastKey does'nt exists."
+            }
             ($node.($Matches[1]))[$Matches[2]] = $v
         }
         else {
@@ -336,7 +347,76 @@ function Get-OsDetail {
         else {
             [OsDetail]::new($plt, $(uname -s), $(uname -r))
         }
-    } else {
+    }
+    else {
         [OsDetail]::new($plt, $plt, [System.Environment]::OSVersion.Version.ToString())
     }
+}
+
+function Start-PasswordPromptCommand {
+    param (
+        [Parameter(Mandatory = $true, Position = 1)][string]$Command
+    )
+    $p = [System.Diagnostics.Process]::new()
+    $p.StartInfo.FileName = $Command
+    $p.StartInfo.UseShellExecute = $false
+    $p.StartInfo.RedirectStandardOutput = $true
+    $p.StartInfo.RedirectStandardInput = $true
+    $p.StartInfo.Arguments = ""
+    # $inputStreamWriter = $p.StandardInput
+    $p | Out-Host
+    $outvar = @{outstr="55";outp = $p}
+
+    # $outvar | Out-Host
+
+    Register-ObjectEvent -InputObject $p -EventName OutputDataReceived -action {
+        # ddkss
+        # $EventArgs.data | Write-Host
+
+        # [console]::WriteLine($EventArgs.data)
+        # $EventArgs | gm | Out-Host
+        # "ssssssss" | Out-Host
+        # $Event.MessageData | Out-Host
+        # $Event.MessageData.$outstr | Out-Host
+        $Event.MessageData.outstr += $EventArgs.data
+        $Event.MessageData.outp | Out-Host
+        # $Event.MessageData.outp.StandardInput.WriteLine("exit")
+        # if (-not [string]::IsNullOrEmpty($EventArgs.data)) {
+        #     {
+        #         Write-Host "a"
+        #     }
+        # }
+    } -MessageData $outvar
+
+    $running = $true
+
+    Register-ObjectEvent -InputObject $p -EventName Exited -Action {
+        $Event.MessageData.outstr | Out-Host
+        $running = $false
+    } -MessageData $outvar
+    
+    $p.Start()
+
+    $p.BeginOutputReadLine()
+
+    # do {
+    #     if ($outvar.outstr) {
+    #         $outvar.outstr | Out-Host
+    #         $outvar.outstr = ""
+    #     } else {
+    #         Start-Sleep -Milliseconds 100
+    #     }
+    # } while ($running)
+    $p.StandardInput.WriteLine("exit")
+    $p.WaitForExit()
+    $p.Close()
+
+    # $psi = New-Object System.Diagnostics.ProcessStartInfo;
+    # $psi.FileName = $Command; #process file
+    # $psi.UseShellExecute = $false; #start the process from it's own executable file
+    # $psi.RedirectStandardInput = $true; #enable the process to read from standard input
+    # $p = [System.Diagnostics.Process]::Start($psi);
+
+    # Start-Sleep -s 2 #wait 2 seconds so that the process can be up and running
+    # $p.StandardInput.WriteLine(""); #StandardInput property of the Process is a .NET StreamWriter object
 }

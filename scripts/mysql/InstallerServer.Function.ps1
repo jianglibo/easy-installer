@@ -127,10 +127,10 @@ function Get-MysqlVariables {
     )
     $r = Invoke-MysqlSQLCommand -configuration $configuration -sql "show variables" -combineError
     if ($VariableNames.Count -gt 0) {
-        ([xml]$r).resultset.row | ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | Where-Object {$_.name -in $VariableNames} | ConvertTo-Json
+        ([xml]$r).resultset.row | ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | Where-Object {$_.name -in $VariableNames} | ConvertTo-Json -Depth 10
     }
     else {
-        ([xml]$r).resultset.row | ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | ConvertTo-Json
+        ([xml]$r).resultset.row | ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | ConvertTo-Json -Depth 10
     }
 }
 
@@ -150,7 +150,7 @@ function Uninstall-Mysql {
                 $r = "$(yum list installed | grep mysql | ForEach-Object {($_ -split "\s+",3)[0]} | Where-Object {$_ -like 'mysql-community*'})"
                 $r = Invoke-Expression "yum remove -y $r"
                 $nx = Backup-LocalDirectory -Path $vh.value
-                if ($r -like "*Complete!") {
+                if ($r -like "*Complete!*") {
                     "Uninstall successly."
                 } else {
                     $r

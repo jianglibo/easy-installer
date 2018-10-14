@@ -33,3 +33,19 @@ Describe "common-util" {
         Join-UniversalPath -Path "/tmp/sciprt" -ChildPath "*.ps1" | Should -Be "/tmp/sciprt/*.ps1"
     }
 }
+
+Describe "process control" {
+    it "should handle scriptblock" {
+        $outv = "outv"
+        $ss = @'
+$outv
+'@
+        [scriptblock]$sb = [scriptblock]::Create($ss)
+        $sb.ToString() | Out-Host
+        Invoke-Command -ScriptBlock $sb |Should -Be "outv"
+    }
+
+    it "should start cmd" {
+        Start-PasswordPromptCommand -Command "cmd"
+    }
+}

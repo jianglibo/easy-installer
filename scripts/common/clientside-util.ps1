@@ -74,12 +74,14 @@ function Copy-PsScriptToServer {
     $filesToCopy | Write-Verbose
 
     $sshInvoker = Get-SshInvoker -configuration $configuration
-    $dst = $configuration.ServerSide.ScriptDir
+    $osConfig = Get-OsConfiguration -configuration $configuration
+
+    $dst = $osConfig.ServerSide.ScriptDir
     if (-not $dst) {
         Write-ParameterWarning -wstring "There must have a value for ServerSide.ScriptDir in configuration file: $ConfigFile"
         return
     }
-    $r = $sshInvoker.scp($filesToCopy, $configuration.ServerSide.ScriptDir, $true)
+    $r = $sshInvoker.scp($filesToCopy, $dst, $true)
     $sshInvoker | Out-String | Write-Verbose
     "copied files:"
     $r -split ' '
@@ -101,8 +103,11 @@ function Invoke-ServerRunningPs1 {
 
     $cfn = Split-UniversalPath -Path $ConfigFile
 
-    $toServerConfigFile = Join-UniversalPath -Path $configuration.ServerSide.ScriptDir -ChildPath $cfn
-    $entryPoint = Join-UniversalPath -Path $configuration.ServerSide.ScriptDir -ChildPath $configuration.ServerSide.EntryPoint
+    $osConfig = Get-OsConfiguration -configuration $configuration
+
+    $toServerConfigFile = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath $cfn
+
+    $entryPoint = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath $osConfig.ServerSide.EntryPoint
     
     $rcmd = "pwsh -f {0} -action {1} -ConfigFile {2} {3} {4}" -f $entryPoint, $action, $toServerConfigFile, (Get-Verbose), ($hints -join ' ')
     $rcmd | Out-String | Write-Verbose

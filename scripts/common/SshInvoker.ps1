@@ -110,8 +110,6 @@ class SshInvoker {
         $roption = if ($hasDir) {'-r'} else {''}
 
         $scpStr = "scp -i {0} {1} {2} {3}@{4}:{5} 2>&1" -f $this.ifile,$roption,$localPathes,$this.UserName,$this.HostName,$remotePath
-        # $scpStr | Out-Host
-        # $scpStr = "scp -i $($this.ifile) ${roption} ${localPath} $($this.UserName)@$($this.HostName):${remotePath} 2>&1"
 
         $this.commandName = $scpStr
 
@@ -143,7 +141,6 @@ class SshInvoker {
 
     [string]unzip([string]$zipFile, [string]$expandDir) {
         $c = "unzip -d $expandDir $zipFile"
-        # $c | Out-Host
         $this.invoke($c)
         if ($this.isCommandNotFound()) {
             throw "unzip command not found."
