@@ -34,22 +34,36 @@ Describe "common-util" {
     }
 }
 
-Describe "process control" {
-    it "should handle scriptblock" {
-        $outv = "outv"
-        $ss = @'
-$outv
-'@
-        [scriptblock]$sb = [scriptblock]::Create($ss)
-        $sb.ToString() | Out-Host
-        Invoke-Command -ScriptBlock $sb |Should -Be "outv"
-    }
+Describe "hash table" {
 
-    it "should start cmd" {
-        Start-PasswordPromptCommand -Command "cmd"
+    it "should like dict." {
+        $ht = @{}
+        $ms = '.*>$'
+        if ($ht.ContainsKey($ms)) {
+            $ht[$ms] += 1
+        } else {
+            $ht[$ms] = 0
+        }
+        $ht[$ms] | Should -Be 0
     }
 }
 
+Describe "process control" {
+    it "should start cmd" {
+        # Start-PasswordPromptCommand -Command "mysql"  -Arguments "-uroot -p" -mysqlpwd "123456"
+        # Start-PasswordPromptCommand -Command "cmd"  -Arguments "/K dir" -mysqlpwd "123456"
+        # Start-PasswordPromptCommandSync -Command "powershell"  -Arguments "-Command cmd /K dir" -mysqlpwd "123456"
+        Start-PasswordPromptCommandSync -Command "powershell"  -Arguments "-Command mysql -uroot -p" -mysqlpwd "123456"
+
+        # Invoke-Executable -sExeFile "cmd" -cArgs "/C", "dir"
+    }
+}
+
+Describe "process control executable" {
+    it "should start cmd" {
+        Invoke-Executable -sExeFile "cmd" -cArgs "/C", "dir"
+    }
+}
 $procTools = @"
 
 using System;

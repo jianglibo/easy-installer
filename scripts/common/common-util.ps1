@@ -353,51 +353,137 @@ function Get-OsDetail {
     }
 }
 
-function Start-PasswordPromptCommand {
+function Start-PasswordPromptCommandSync {
     param (
-        [Parameter(Mandatory = $true, Position = 1)][string]$Command
+        [Parameter(Mandatory = $true, Position = 0)][string]$Command,
+        [Parameter(Mandatory = $false, Position = 1)][string]$Arguments,
+        [Parameter(Mandatory = $false, Position = 2)][string]$mysqlpwd
     )
     $p = [System.Diagnostics.Process]::new()
     $p.StartInfo.FileName = $Command
     $p.StartInfo.UseShellExecute = $false
     $p.StartInfo.RedirectStandardOutput = $true
     $p.StartInfo.RedirectStandardInput = $true
-    $p.StartInfo.Arguments = ""
+    # $p.StartInfo.RedirectStandardError = $true
+    $p.StartInfo.Arguments = $Arguments
+    $p.StartInfo.CreateNoWindow = $true
+
+    $v = $p.Start()
+
+    $inputStreamWriter = $p.StandardInput
+    $outputStreamReader = $p.StandardOutput
+    $errorStreamReader = $p.StandardErro
+
+    # $stream = [System.IO.StreamWriter]::new($outputStreamReader,  [System.Text.Encoding]::Default)
+    $outstr = ""
+
+    $p.StandardOutput.CurrentEncoding | Out-Host
+    [System.Text.Encoding]::Default | Out-Host
+    while (!$p.HasExited) {
+        # $p.StandardError.ReadToEnd() | Out-Host
+        $s = $outputStreamReader.ReadLine()
+        [System.text.Encoding]::Convert([System.Text.Encoding]::UTF8, [System.Text.Encoding]::Default, [System.Text.Encoding]::UTF8.GetBytes($s))
+        $s | Out-Host
+        Start-Sleep -Seconds 1
+    }
+
+
+    # do {
+    #     $line = $errorStreamReader.ReadLine()
+    #     $line = $outputStreamReader.ReadToEnd()
+    #     $line | Out-Host
+    #     if (!$line) {
+    #         $inputStreamWriter.WriteLine("dir");
+    #     }
+    #     elseif ($line -match '.*>\s*') {
+    #         break
+    #     }
+    # } while ($true)
+    
+    # $p.WaitForExit()
+    $p.Close()
+
+}
+
+function Start-PasswordPromptCommandAsync {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$Command,
+        [Parameter(Mandatory = $false, Position = 1)][string]$Arguments,
+        [Parameter(Mandatory = $false, Position = 2)][string]$mysqlpwd
+    )
+    $p = [System.Diagnostics.Process]::new()
+    $p.StartInfo.FileName = $Command
+    $p.StartInfo.UseShellExecute = $false
+    $p.StartInfo.RedirectStandardOutput = $true
+    $p.StartInfo.RedirectStandardInput = $true
+    $p.StartInfo.RedirectStandardError = $true
+    $p.StartInfo.Arguments = $Arguments
+    $p.StartInfo.CreateNoWindow = $true
     # $inputStreamWriter = $p.StandardInput
-    $p | Out-Host
-    $outvar = @{outstr="55";outp = $p}
+    # $p | Out-Host
+    $outvar = @{outstr = "55"; outp = $p; mcount = @{}}
 
     # $outvar | Out-Host
 
-    Register-ObjectEvent -InputObject $p -EventName OutputDataReceived -action {
-        # ddkss
-        # $EventArgs.data | Write-Host
+    
+    Register-ObjectEvent -InputObject $p -EventName ErrorDataReceived -action {
+        $emd = $Event.MessageData
+        $emd.outstr += $EventArgs.data
+        $ms = 'password:\s*$'
+        if ($emd.outstr -match $ms) {
+            if ($emd.mcount.ContainsKey($ms)) {
+                $emd.mcount[$ms] += 1
+            }
+            else {
+                $emd.mcount[$ms] = 0
+            }
+            if ($emd.mcount[$ms] -eq 0) {
+                $emd.outp.StandardInput.WriteLine("dir")    
+            }
+            else {
+                $emd.outp.StandardInput.WriteLine('exit')
+            }
+        }
+    } -MessageData $outvar
 
-        # [console]::WriteLine($EventArgs.data)
-        # $EventArgs | gm | Out-Host
-        # "ssssssss" | Out-Host
-        # $Event.MessageData | Out-Host
-        # $Event.MessageData.$outstr | Out-Host
-        $Event.MessageData.outstr += $EventArgs.data
-        $Event.MessageData.outp | Out-Host
-        # $Event.MessageData.outp.StandardInput.WriteLine("exit")
-        # if (-not [string]::IsNullOrEmpty($EventArgs.data)) {
-        #     {
-        #         Write-Host "a"
-        #     }
-        # }
+    $script:OdrJob = Register-ObjectEvent -InputObject $p -EventName OutputDataReceived -action {
+        $emd = $Event.MessageData
+        $emd.outstr += $EventArgs.data
+        $ms = 'password:\s*$'
+        if ($emd.outstr -match $ms) {
+            if ($emd.mcount.ContainsKey($ms)) {
+                $emd.mcount[$ms] += 1
+            }
+            else {
+                $emd.mcount[$ms] = 0
+            }
+            if ($emd.mcount[$ms] -eq 0) {
+                $emd.outp.StandardInput.WriteLine("dir")    
+            }
+            else {
+                $emd.outp.StandardInput.WriteLine('exit')
+            }
+        }
     } -MessageData $outvar
 
     $running = $true
 
     Register-ObjectEvent -InputObject $p -EventName Exited -Action {
         $Event.MessageData.outstr | Out-Host
+        $Event.MessageData.mcount | Out-Host
+        $Event.MessageData | Out-Host
         $running = $false
     } -MessageData $outvar
     
-    $p.Start()
-
+    $v = $p.Start()
+    # $jc = $script:OdrJob | Receive-Job
     $p.BeginOutputReadLine()
+    $p.BeginErrorReadLine()
+
+    # Start-Sleep -Seconds 3
+    # $p.StandardInput.WriteLine($mysqlpwd)
+    # $v = $p.StandardOutput.ReadToEnd()
+
 
     # do {
     #     if ($outvar.outstr) {
@@ -407,7 +493,8 @@ function Start-PasswordPromptCommand {
     #         Start-Sleep -Milliseconds 100
     #     }
     # } while ($running)
-    $p.StandardInput.WriteLine("exit")
+    # Get-Job -IncludeChildJob
+    # $p.StandardInput.WriteLine("exit")
     $p.WaitForExit()
     $p.Close()
 
@@ -419,4 +506,75 @@ function Start-PasswordPromptCommand {
 
     # Start-Sleep -s 2 #wait 2 seconds so that the process can be up and running
     # $p.StandardInput.WriteLine(""); #StandardInput property of the Process is a .NET StreamWriter object
+}
+
+function Invoke-Executable {
+    # Runs the specified executable and captures its exit code, stdout
+    # and stderr.
+    # Returns: custom object.
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [String]$sExeFile,
+        [Parameter(Mandatory = $false)]
+        [String[]]$cArgs,
+        [Parameter(Mandatory = $false)]
+        [String]$sVerb
+    )
+
+    # Setting process invocation parameters.
+    $oPsi = New-Object -TypeName System.Diagnostics.ProcessStartInfo
+    $oPsi.CreateNoWindow = $true
+    $oPsi.UseShellExecute = $false
+    $oPsi.RedirectStandardOutput = $true
+    $oPsi.RedirectStandardError = $true
+    $oPsi.FileName = $sExeFile
+    if (! [String]::IsNullOrEmpty($cArgs)) {
+        $oPsi.Arguments = $cArgs
+    }
+    if (! [String]::IsNullOrEmpty($sVerb)) {
+        $oPsi.Verb = $sVerb
+    }
+
+    # Creating process object.
+    $oProcess = New-Object -TypeName System.Diagnostics.Process
+    $oProcess.StartInfo = $oPsi
+
+    # Creating string builders to store stdout and stderr.
+    $oStdOutBuilder = New-Object -TypeName System.Text.StringBuilder
+    $oStdErrBuilder = New-Object -TypeName System.Text.StringBuilder
+
+    # Adding event handers for stdout and stderr.
+    $sScripBlock = {
+        if (! [String]::IsNullOrEmpty($EventArgs.Data)) {
+            $EventArgs.Data
+            $Event.MessageData.AppendLine($EventArgs.Data)
+        }
+    }
+    $oStdOutEvent = Register-ObjectEvent -InputObject $oProcess `
+        -Action $sScripBlock -EventName 'OutputDataReceived' `
+        -MessageData $oStdOutBuilder
+    $oStdErrEvent = Register-ObjectEvent -InputObject $oProcess `
+        -Action $sScripBlock -EventName 'ErrorDataReceived' `
+        -MessageData $oStdErrBuilder
+
+    # Starting process.
+    [Void]$oProcess.Start()
+    $oProcess.BeginOutputReadLine()
+    $oProcess.BeginErrorReadLine()
+    [Void]$oProcess.WaitForExit()
+
+    # Unregistering events to retrieve process output.
+    Unregister-Event -SourceIdentifier $oStdOutEvent.Name
+    Unregister-Event -SourceIdentifier $oStdErrEvent.Name
+
+    $oResult = New-Object -TypeName PSObject -Property ([Ordered]@{
+            "ExeFile"  = $sExeFile;
+            "Args"     = $cArgs -join " ";
+            "ExitCode" = $oProcess.ExitCode;
+            "StdOut"   = $oStdOutBuilder.ToString().Trim();
+            "StdErr"   = $oStdErrBuilder.ToString().Trim()
+        })
+
+    return $oResult
 }
