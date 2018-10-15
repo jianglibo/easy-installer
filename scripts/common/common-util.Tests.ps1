@@ -49,3 +49,77 @@ $outv
         Start-PasswordPromptCommand -Command "cmd"
     }
 }
+
+$procTools = @"
+
+using System;
+using System.Diagnostics;
+
+namespace Proc.Tools
+{
+  public static class exec
+  {
+    public static int runCommand(string executable, string args = "", string cwd = "", string verb = "runas") {
+
+      //* Create your Process
+      Process process = new Process();
+      process.StartInfo.FileName = executable;
+      process.StartInfo.UseShellExecute = false;
+      process.StartInfo.CreateNoWindow = true;
+      process.StartInfo.RedirectStandardOutput = true;
+      process.StartInfo.RedirectStandardError = true;
+    //*  process.StartInfo.RedirectStandardInput = true;
+
+      //* Optional process configuration
+      if (!String.IsNullOrEmpty(args)) { process.StartInfo.Arguments = args; }
+      if (!String.IsNullOrEmpty(cwd)) { process.StartInfo.WorkingDirectory = cwd; }
+      if (!String.IsNullOrEmpty(verb)) { process.StartInfo.Verb = verb; }
+
+      //* Set your output and error (asynchronous) handlers
+      process.OutputDataReceived += new DataReceivedEventHandler(OutputHandler);
+      process.ErrorDataReceived += new DataReceivedEventHandler(OutputHandler);
+
+      //* Start process and handlers
+      process.Start();
+      process.BeginOutputReadLine();
+      process.BeginErrorReadLine();
+      process.WaitForExit();
+
+      //* Return the commands exit code
+      return process.ExitCode;
+    }
+    public static void OutputHandler(object sendingProcess, DataReceivedEventArgs outLine) {
+      //* Do your stuff with the output (write to console/log/StringBuilder)
+      Console.WriteLine(outLine.Data);
+    }
+  }
+}
+"@
+
+Describe "csharp" {
+    it "should start cmd" {
+        Add-Type -TypeDefinition $procTools -Language CSharp
+        $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+        $puppetApplyRc = [Proc.Tools.exec]::runCommand("cmd", "/K dir");
+
+        if ( $puppetApplyRc -eq 0 ) {
+            Write-Host "The run succeeded with no changes or failures; the system was already in the desired state."
+        }
+        elseif ( $puppetApplyRc -eq 1 ) {
+            throw "The run failed; halt"
+        }
+        elseif ( $puppetApplyRc -eq 2) {
+            Write-Host "The run succeeded, and some resources were changed."
+        }
+        elseif ( $puppetApplyRc -eq 4 ) {
+            Write-Warning "WARNING: The run succeeded, and some resources failed."
+        }
+        elseif ( $puppetApplyRc -eq 6 ) {
+            Write-Warning "WARNING: The run succeeded, and included both changes and failures."
+        }
+        else {
+            throw "Un-recognised return code RC: $puppetApplyRc"
+        }
+    }
+}
+
