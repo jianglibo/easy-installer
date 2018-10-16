@@ -300,7 +300,7 @@ function Backup-LocalDirectory {
 
 function Get-ChangedHashtable {
     param (
-        [Parameter(Mandatory = $false, Position = 1)]$customob,
+        [Parameter(Mandatory = $true, Position = 0)]$customob,
         [Parameter(Mandatory = $false, Position = 1)][hashtable]$OneLevelHashTable
     )
     if (-not $OneLevelHashTable) {
@@ -364,27 +364,53 @@ function Start-PasswordPromptCommandSync {
     $p.StartInfo.UseShellExecute = $false
     $p.StartInfo.RedirectStandardOutput = $true
     $p.StartInfo.RedirectStandardInput = $true
+    $p.StartInfo.StandardOutputEncoding = [System.Text.Encoding]::Default
     # $p.StartInfo.RedirectStandardError = $true
     $p.StartInfo.Arguments = $Arguments
     $p.StartInfo.CreateNoWindow = $true
 
+    # https://docs.microsoft.com/en-us/dotnet/api/system.io.streamreader?view=netframework-4.7.2
+    # https://docs.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1?view=netframework-4.7.2
+    # https://docs.microsoft.com/en-us/dotnet/api/system.runtime.compilerservices.taskawaiter-1.iscompleted?view=netframework-4.7.2
+
     $v = $p.Start()
+    # $OutputEncoding = [System.Text.Encoding]::Unicode
 
     $inputStreamWriter = $p.StandardInput
     $outputStreamReader = $p.StandardOutput
     $errorStreamReader = $p.StandardErro
 
-    # $stream = [System.IO.StreamWriter]::new($outputStreamReader,  [System.Text.Encoding]::Default)
+    # $stream = [System.IO.StreamReader]::new($outputStreamReader,  [System.Text.Encoding]::Default)
     $outstr = ""
 
-    $p.StandardOutput.CurrentEncoding | Out-Host
-    [System.Text.Encoding]::Default | Out-Host
-    while (!$p.HasExited) {
+    # $p.StandardOutput.CurrentEncoding | Out-Host
+    # [System.Text.Encoding]::Default | Out-Host
+    # while (!$p.HasExited) {
+    while ($true) {
+        $start = Get-Date
+        # $p.Kill()
         # $p.StandardError.ReadToEnd() | Out-Host
-        $s = $outputStreamReader.ReadLine()
-        [System.text.Encoding]::Convert([System.Text.Encoding]::UTF8, [System.Text.Encoding]::Default, [System.Text.Encoding]::UTF8.GetBytes($s))
-        $s | Out-Host
-        Start-Sleep -Seconds 1
+        # $t = $outputStreamReader.ReadLineAsync()
+
+        # if ($t.GetAwaiter().IsCompleted) {
+        #     $s = $t.Result
+        #     if ($s -like '*序列号是*') {
+        #         'oooooooooo' | Out-Host
+        #     }
+        #     if ($s -eq $null) {
+        #         break
+        #     }
+        #     $s | Out-Host
+        # } else {
+        #     '------------------' | Out-Host
+        # }
+
+
+        # $s = $stream.ReadLine()
+
+        
+        # [System.text.Encoding]::Convert([System.Text.Encoding]::UTF8, [System.Text.Encoding]::Default, [System.Text.Encoding]::UTF8.GetBytes($s))
+        # Start-Sleep -Seconds 1
     }
 
 
@@ -577,4 +603,29 @@ function Invoke-Executable {
         })
 
     return $oResult
+}
+
+function Protect-ByOpenSSL {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$PublicKeyFile,
+        [Parameter(Mandatory = $true, Position = 1)][string]$PlainFile
+    )
+    $f = New-TemporaryFile
+    $cmd = "openssl rsautl -encrypt -inkey $PublicKeyFile -pubin -in $PlainFile -out $f"
+    $cmd | Write-Verbose
+    Invoke-Expression -Command $cmd
+    $f
+}
+
+
+function UnProtect-ByOpenSSL {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$PrivateKeyFile,
+        [Parameter(Mandatory = $true, Position = 1)][string]$encryptedFile,
+        [Parameter(Mandatory = $true, Position = 2)][string]$decryptedFile
+    )
+    $cmd = "openssl rsautl -decrypt -inkey $PrivateKeyFile -in $encryptedFile -out $decryptedFile"
+    $cmd | Write-Verbose
+    Invoke-Expression -Command $cmd
+    $decryptFile
 }

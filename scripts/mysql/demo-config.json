@@ -2,6 +2,8 @@
   "HostName": "192.168.33.110",
   "UserName": "root",
   "IdentityFile": "D:/cygwin64/home/admin/.ssh/id_rsa",
+  "PublicKeyFile": "default|none",
+  "PrivateKeyFile": "",
   "ServerPassword": null,
   "MysqlPassword": "123456",
   "ClientBin": "mysql",
@@ -15,7 +17,7 @@
         }
       ],
       "ServerSide": {
-        "ScriptDir": "/tmp/easyinstaller-scripts",
+        "ScriptDir": "/tmp/easyinstaller-scripts/mysql",
         "EntryPoint": "InstallerServer.ps1",
         "InstallDetect": {
           "command": "which mysql",

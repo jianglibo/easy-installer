@@ -5,7 +5,7 @@ function Copy-DemoConfigFile {
         [Parameter(Mandatory = $true, Position = 0)][string]$MyDir,
         [Parameter(Mandatory = $true, Position = 1)][string]$ToFileName
     )
-    $demofolder = $PWD | Join-Path -ChildPath "demo-configs"
+    $demofolder = $PWD | Join-Path -ChildPath "myconfigs"
     "MyDir is: $MyDir" | Write-Verbose
     "Checking existance of $demofolder ...." | Write-Verbose
     if (-not (Test-Path -Path $demofolder)) {
@@ -18,6 +18,34 @@ function Copy-DemoConfigFile {
 
     Copy-Item -Path $srcfile -Destination $tofile
     "The demo config file created at ${tofile}`n"
+}
+function Get-PublicKeyFile {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]$configuration,
+        [Parameter(Mandatory = $true, Position = 1)][string]$MyDir
+    )
+    if ($configuration.PublicKeyFile -eq 'none') {
+        @{exists = $false; error = $false}
+    }
+    else {
+        if ($configuration.PublicKeyFile -like "default*") {
+            $pk = $MyDir | Split-Path -Parent | Split-Path -Parent |
+                Join-Path -ChildPath "myconfigs" |
+                Join-Path -ChildPath $configuration.HostName |
+                Join-Path -ChildPath "public_key.pem"
+            $pkrsolved = Resolve-Path -Path $pk -ErrorAction SilentlyContinue
+        }
+        else {
+            $pkrsolved = Resolve-Path -Path $configuration.PublicKeyFile -ErrorAction SilentlyContinue
+        }
+        if (-not $pkrsolved) {
+            Write-ParameterWarning -wstring "${pk} does'nt exists."
+            @{exists = $true; error = $true}
+        }
+        else {
+            @{exists = $true; value = $pkrsolved}
+        }
+    }
 }
 
 function Get-SoftwarePackages {
@@ -65,10 +93,10 @@ function Copy-PsScriptToServer {
     )
 
     $files = Get-Content -Path $ServerSideFileListFile |
-         ForEach-Object {Join-Path -Path $ServerSideFileListFile -ChildPath $_} |
-         ForEach-Object {Resolve-Path -Path $_} |
-         Select-Object -ExpandProperty Path
-    $files += $ConfigFile
+        ForEach-Object {Join-Path -Path $ServerSideFileListFile -ChildPath $_} |
+        ForEach-Object {Resolve-Path -Path $_} |
+        Select-Object -ExpandProperty Path
+    # $files += $ConfigFile
 
     $filesToCopy = $files -join ' '
     $filesToCopy | Write-Verbose
@@ -82,11 +110,17 @@ function Copy-PsScriptToServer {
         return
     }
     $r = $sshInvoker.scp($filesToCopy, $dst, $true)
+
+    #copy configfile to fixed server name.
+    $cfgServer = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
+    $rc = $sshInvoker.scp($ConfigFile, $cfgServer, $false)
     $sshInvoker | Out-String | Write-Verbose
-    "copied files:"
-    $r -split ' '
+    $r += $rc
 }
 
+<#
+it's better to fix the configfile name on server side.
+#>
 function Invoke-ServerRunningPs1 {
     param (
         [Parameter(Mandatory = $true, Position = 0)]$configuration,
@@ -101,15 +135,13 @@ function Invoke-ServerRunningPs1 {
     )
     $sshInvoker = Get-SshInvoker -configuration $configuration
 
-    $cfn = Split-UniversalPath -Path $ConfigFile
-
     $osConfig = Get-OsConfiguration -configuration $configuration
 
-    $toServerConfigFile = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath $cfn
+    $toServerConfigFile = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
 
     $entryPoint = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath $osConfig.ServerSide.EntryPoint
     
-    $rcmd = "pwsh -f {0} -action {1} -ConfigFile {2} {3} {4}" -f $entryPoint, $action, $toServerConfigFile, (Get-Verbose), ($hints -join ' ')
+    $rcmd = "pwsh -f {0} -action {1} -ConfigFile {2} -privateKeyFile {3} {4}" -f $entryPoint, $action, $toServerConfigFile, (Get-Verbose), ($hints -join ' ')
     $rcmd | Out-String | Write-Verbose
     $sshInvoker.Invoke($rcmd, (-not $notCombineError))
 }

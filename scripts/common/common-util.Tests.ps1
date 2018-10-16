@@ -4,6 +4,8 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 $scriptDir = $here | Split-Path -Parent
 
+$tcfg = Get-Content -Path ($here | Join-Path -ChildPath "common-util.t.json") | ConvertFrom-Json
+
 Describe "common-util" {
     It "should split url" {
         Split-Url -Url "abc/" | Should -Be ''
@@ -34,8 +36,21 @@ Describe "common-util" {
     }
 }
 
-Describe "hash table" {
+Describe "openssl" {
+    $plainfile = Join-Path $TestDrive "plain.txt"
+    $plainfile1 = Join-Path $TestDrive "plain1.txt"
+    "abc" | Out-File $plainfile
+    it "should encrypt." {
+        $tcfg | Out-Host
+        $encrypted = Protect-ByOpenSSL -PublicKeyFile $tcfg.PublicKeyFile -PlainFile $plainfile
+        Test-Path -Path $encrypted -PathType Leaf | Should -BeTrue
+        $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $tcfg.PrivateKeyFile -encryptedFile $encrypted -decryptedFile $plainfile1
+        $LASTEXITCODE | Should -Be 0
+        Get-Content -Path $plainfile1 | Should -Be "abc"
+    }
+}
 
+Describe "hash table" {
     it "should like dict." {
         $ht = @{}
         $ms = '.*>$'
@@ -53,9 +68,39 @@ Describe "process control" {
         # Start-PasswordPromptCommand -Command "mysql"  -Arguments "-uroot -p" -mysqlpwd "123456"
         # Start-PasswordPromptCommand -Command "cmd"  -Arguments "/K dir" -mysqlpwd "123456"
         # Start-PasswordPromptCommandSync -Command "powershell"  -Arguments "-Command cmd /K dir" -mysqlpwd "123456"
-        Start-PasswordPromptCommandSync -Command "powershell"  -Arguments "-Command mysql -uroot -p" -mysqlpwd "123456"
+        Start-PasswordPromptCommandSync -Command "cmd"  -Arguments "/K dir" -mysqlpwd "123456"
 
         # Invoke-Executable -sExeFile "cmd" -cArgs "/C", "dir"
+    }
+}
+
+
+Describe "String convert" {
+    it "should convert string" {
+        # 230 136 145 230 152 175 232 176 129 hxd
+        # 230 136 145 230 152 175 232 176 129 utf8
+        # 230 136 145 230 152 175 232， utf8 file read as cp936，then read bytes as cp936
+        # 233 142 180 230 136 158 230 167 184 231 146 139， utf8 file read as cp936，then read bytes as utf8
+
+
+        $utf8 = [System.Text.Encoding]::UTF8
+        $df = [System.Text.Encoding]::Default
+
+        # $dd = [System.Text.Encoding]::GetEncoding(936)
+        # 
+        $str = Get-Content -Path "utf8.txt"
+        $bytes = $utf8.GetBytes($str)
+        "$bytes" | Out-Host
+        $bytes = $df.GetBytes($str)
+        "$bytes" | Out-Host
+        $str | Out-Host # this is a wrong encoded string. It is utf8, but wrongly read as cp936
+        $bytes = $df.GetBytes($str)
+
+        # $utfstr = $df.GetString($bytes)
+        # $c = [System.Text.Encoding]::Convert($df, $utf8, $bytes)
+        $utf8str = $utf8.GetString($bytes)
+        $utf8str | Out-Host
+        "我是谁" | Out-Host
     }
 }
 
