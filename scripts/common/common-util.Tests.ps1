@@ -79,23 +79,102 @@ Describe "open io" {
 
         $ib = $barr[0..($c - 1)]
         # $ib.Length | Should -Be $c
-        $ib | Out-Host
         [bitconverter]::ToInt32($ib, 0) | Should -Be 5566
     }
 
-    it "should join files" {
+    it "should join one small files" {
         "abc" | Out-File -FilePath $outFile1 -Encoding ascii -NoNewline # for test only
+        $hash1 = Get-FileHash -Path $outFile1
         $combined = Join-Files -FileNamePairs $outFile1
         # 4 + 10(filename) + 4 + 3(file content)
         (Get-Item -Path $combined).Length | Should -Be 21
+
+        # plain.bin1
+
+        $dst = Split-Files -CombinedFile $combined
+
+        $f1 = Join-Path -Path $dst -ChildPath "plain.bin1"
+        $hash2 = Get-FileHash -Path $f1
+        $hash1.Hash | Should -Be $hash2.Hash
+        Test-Path -Path $f1 -PathType Leaf | Should -BeTrue
+        Get-Content -Path $f1 | Should -Be "abc"
     }
 
-    it "should split file" {
-        
+    it "should join renamed 1 small file" {
+        "abc" | Out-File -FilePath $outFile1 -Encoding ascii -NoNewline # for test only
+        $hash1 = Get-FileHash -Path $outFile1
+        $combined = Join-Files -FileNamePairs @{file=$outFile1;name="hello.txt1"}
+        # 4 + 10(filename) + 4 + 3(file content)
+        (Get-Item -Path $combined).Length | Should -Be 21
+
+        # plain.bin1
+        $dst = Split-Files -CombinedFile $combined
+        $f1 = Join-Path -Path $dst -ChildPath "hello.txt1"
+        $hash2 = Get-FileHash -Path $f1
+        $hash1.Hash | Should -Be $hash2.Hash
+        Test-Path -Path $f1 -PathType Leaf | Should -BeTrue
+        Get-Content -Path $f1 | Should -Be "abc"
     }
+
+    it "should join renamed 1 large file" {
+        1..50000 -join ' ' | Out-File -FilePath $outFile1 -Encoding ascii -NoNewline # for test only
+        $hash1 = Get-FileHash -Path $outFile1
+        $combined = Join-Files -FileNamePairs @{file=$outFile1;name="hello.txt1"}
+
+        # plain.bin1
+        $dst = Split-Files -CombinedFile $combined
+        $f1 = Join-Path -Path $dst -ChildPath "hello.txt1"
+        $hash2 = Get-FileHash -Path $f1
+        $hash1.Hash | Should -Be $hash2.Hash
+    }
+
+    it "should join renamed 2 small file" {
+        "akl1234" | Out-File -FilePath $outFile1 -Encoding ascii -NoNewline # for test only
+        "llluukv" | Out-File -FilePath $outFile -Encoding ascii -NoNewline # for test only
+        $hash1 = Get-FileHash -Path $outFile1
+        $combined = Join-Files -FileNamePairs @{file=$outFile1;name="hello.txt1"}, $outFile
+
+        # plain.bin1
+        $dst = Split-Files -CombinedFile $combined
+        $f1 = Join-Path -Path $dst -ChildPath "hello.txt1"
+        $hash2 = Get-FileHash -Path $f1
+        $hash1.Hash | Should -Be $hash2.Hash
+
+        $f2 = Join-Path -Path $dst -ChildPath "plain.bin"
+
+        (Get-FileHash -Path $outFile).Hash | Should -Be (Get-FileHash -Path $f2).Hash
+
+    }
+
+    it "should join renamed 2 large file" {
+        1..50000 -join ' ' | Out-File -FilePath $outFile1 -Encoding ascii -NoNewline # for test only
+        1..23457 -join ' ' | Out-File -FilePath $outFile -Encoding ascii -NoNewline # for test only
+        $hash1 = Get-FileHash -Path $outFile1
+        $combined = Join-Files -FileNamePairs @{file=$outFile1;name="hello.txt1"}, $outFile
+
+        # plain.bin1
+        $dst = Split-Files -CombinedFile $combined
+        $f1 = Join-Path -Path $dst -ChildPath "hello.txt1"
+        $hash2 = Get-FileHash -Path $f1
+        $hash1.Hash | Should -Be $hash2.Hash
+
+        $f2 = Join-Path -Path $dst -ChildPath "plain.bin"
+
+        (Get-FileHash -Path $outFile).Hash | Should -Be (Get-FileHash -Path $f2).Hash
+    }
+
 }
 
 
+
+Describe "very big file" {
+    it "should join real file" {
+        $f = "C:\Users\Administrator\AppData\Local\Temp\tmp5082.tmp"
+
+        Split-Files -CombinedFile $f -dstFolder "f:\kkk" -bufsize 2048
+        
+    }
+}
 
 Describe "openssl" {
     $plainfile = Join-Path $TestDrive "plain.txt"

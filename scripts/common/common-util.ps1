@@ -606,19 +606,26 @@ function Invoke-Executable {
 }
 
 function New-TemporaryDirectory {
-    New-TemporaryFile | ForEach-Object {Remove-Item $_;New-Item -Path $_ -ItemType Container}    
+    New-TemporaryFile | ForEach-Object {Remove-Item $_; New-Item -Path $_ -ItemType Container}    
 }
 
 function Split-Files {
     param (
-        [Parameter(Mandatory = $true, Position = 0)][string]$CombinedFile
-    )
-    $instream = [System.IO.File]::OpenRead($CombinedFile)
+        [Parameter(Mandatory = $true, Position = 0)][string]$CombinedFile,
+        [Parameter(Mandatory = $false, Position = 1)][string]$dstFolder,
+        [Parameter(Mandatory = $false, Position = 2)][int]$bufsize = 1024
 
-    $bufsize = 1024
+    )
+
+    $instream = [System.IO.File]::OpenRead($CombinedFile)
     $barr = New-Object byte[] $bufsize
-    
-    $dstFolder = New-TemporaryDirectory
+    if (-not $dstFolder) {
+        $dstFolder = New-TemporaryDirectory
+    } else {
+        if (-not (Test-Path -Path $dstFolder -PathType Container)) {
+            New-Item -Path $dstFolder -ItemType "directory"
+        }
+    }
 
     $step = 0 # 0 start, 1 filename length read, 2 filename read, 3 file length read, 4 file content read.
     [array]$tmpBytesHolder = @()
@@ -633,7 +640,8 @@ function Split-Files {
                     $fnlen = [bitconverter]::ToInt32($fnlenBytes, 0)
                     $tmpBytesHolder = $tmpBytesHolder | Select-Object -Skip 4
                     $step = 1
-                } else {
+                }
+                else {
                     $readLen = $instream.Read($barr, 0, $bufsize)
                     $tmpBytesHolder += $barr | Select-Object -First $readLen
                 }
@@ -645,11 +653,12 @@ function Split-Files {
                     $tmpBytesHolder = $tmpBytesHolder | Select-Object -Skip $fnlen
                     $fn = $utf8.GetString($fnBytes)
                     $step = 2
-                } else {
+                }
+                else {
                     $readLen = $instream.Read($barr, 0, $bufsize)
                     $tmpBytesHolder += $barr | Select-Object -First $readLen
                 }
-                break;
+                break
             }
             2 {
                 if ($tmpBytesHolder.Length -ge 4) {
@@ -657,7 +666,8 @@ function Split-Files {
                     $fclen = [bitconverter]::ToInt32($fclenBytes, 0)
                     $tmpBytesHolder = $tmpBytesHolder | Select-Object -Skip 4
                     $step = 3
-                } else {
+                }
+                else {
                     $readLen = $instream.Read($barr, 0, $bufsize)
                     $tmpBytesHolder += $barr | Select-Object -First $readLen
                 }
@@ -670,33 +680,53 @@ function Split-Files {
                 if ($tmpBytesHolder.Length -ge $fclen) {
                     $ostream.write(($tmpBytesHolder | Select-Object -First $fclen), 0, $fclen)
                     $tmpBytesHolder = $tmpBytesHolder | Select-Object -Skip $fclen
-                } else {
+                    $step = 0 #process one file over.
+                }
+                else {
                     if ($tmpBytesHolder.Length -gt 0) {
                         $ostream.write($tmpBytesHolder, 0, $tmpBytesHolder.Length)
-                        $tmpBytesHolder = @()
                         $fclen -= $tmpBytesHolder.Length
+                        $tmpBytesHolder = @()
                     }
-                   while ($readLen = $instream.Read($barr, 0, $bufsize)) {
-                       $readed = $barr | Select-Object
-                   } 
+                    while ($readLen = $instream.Read($barr, 0, $bufsize)) {
+                        if ($readLen -eq $bufsize) {
+                            $readed = $barr
+                        }
+                        else {
+                            $readed = $barr | Select-Object -First $readLen
+                        }
+                        if ($fclen -gt $readLen) {
+                            $ostream.write($readed, 0, $readLen)
+                            $fclen -= $readLen
+                        }
+                        else {
+                            $lastBytes = $readed | Select-Object -First $fclen
+                            $ostream.write($lastBytes, 0, $fclen)
+                            $tmpBytesHolder = $readed | Select-Object -Skip $fclen
+                            $step = 0 # process one file over.
+                            break # should break out this loop. readed bytes alreay save to tempBytesHolder.
+                        }
+                    }
                 }
+                $ostream.flush()
                 $ostream.close()
                 $ostream.dispose()
             }
             Default {}
         }
     }
-    
-
     $instream.close()
     $instream.dispose()
+
+    $dstFolder
 }
 
 <#
 #>
 function Join-Files {
     param (
-        [Parameter(Mandatory = $true, Position = 0)][object[]]$FileNamePairs
+        [Parameter(Mandatory = $true, Position = 0)][object[]]$FileNamePairs,
+        [Parameter(Mandatory = $false, Position = 1)][int]$bufsize = 1024
     )
     
     $hts = $FileNamePairs | ForEach-Object {
@@ -710,8 +740,8 @@ function Join-Files {
     $combined = New-TemporaryFile
     $ostream = [System.IO.File]::OpenWrite($combined)
 
+    $utf8 = [System.Text.Encoding]::UTF8
     foreach ($item in $hts) {
-        $utf8 = [System.Text.Encoding]::UTF8
         [int32]$flen = (Get-Item -Path $item.file).Length
         $name = $item.name
         $nbytes = $utf8.GetBytes($name)
@@ -722,7 +752,6 @@ function Join-Files {
 
         $instream = [System.IO.File]::OpenRead($item.file) # write file content.
 
-        $bufSize = 1024
         $barr = New-Object byte[] $bufSize
         while ( $bytesRead = $instream.Read($barr, 0, $bufsize)) {
             $ostream.Write($barr, 0, $bytesRead);
