@@ -605,16 +605,160 @@ function Invoke-Executable {
     return $oResult
 }
 
+function New-TemporaryDirectory {
+    New-TemporaryFile | ForEach-Object {Remove-Item $_;New-Item -Path $_ -ItemType Container}    
+}
+
+function Split-Files {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$CombinedFile
+    )
+    $instream = [System.IO.File]::OpenRead($CombinedFile)
+
+    $bufsize = 1024
+    $barr = New-Object byte[] $bufsize
+    
+    $dstFolder = New-TemporaryDirectory
+
+    $step = 0 # 0 start, 1 filename length read, 2 filename read, 3 file length read, 4 file content read.
+    [array]$tmpBytesHolder = @()
+    $fnlen = 0
+    $readLen = $true
+    $utf8 = [System.Text.Encoding]::UTF8
+    while ( $readLen ) {
+        switch ($step) {
+            0 { 
+                if ($tmpBytesHolder.Length -ge 4) {
+                    $fnlenBytes = $tmpBytesHolder | Select-Object -First 4
+                    $fnlen = [bitconverter]::ToInt32($fnlenBytes, 0)
+                    $tmpBytesHolder = $tmpBytesHolder | Select-Object -Skip 4
+                    $step = 1
+                } else {
+                    $readLen = $instream.Read($barr, 0, $bufsize)
+                    $tmpBytesHolder += $barr | Select-Object -First $readLen
+                }
+                break
+            }
+            1 {
+                if ($tmpBytesHolder.Length -ge $fnlen) {
+                    $fnBytes = $tmpBytesHolder | Select-Object -First $fnlen
+                    $tmpBytesHolder = $tmpBytesHolder | Select-Object -Skip $fnlen
+                    $fn = $utf8.GetString($fnBytes)
+                    $step = 2
+                } else {
+                    $readLen = $instream.Read($barr, 0, $bufsize)
+                    $tmpBytesHolder += $barr | Select-Object -First $readLen
+                }
+                break;
+            }
+            2 {
+                if ($tmpBytesHolder.Length -ge 4) {
+                    $fclenBytes = $tmpBytesHolder | Select-Object -First 4
+                    $fclen = [bitconverter]::ToInt32($fclenBytes, 0)
+                    $tmpBytesHolder = $tmpBytesHolder | Select-Object -Skip 4
+                    $step = 3
+                } else {
+                    $readLen = $instream.Read($barr, 0, $bufsize)
+                    $tmpBytesHolder += $barr | Select-Object -First $readLen
+                }
+                break
+            }
+            3 {
+                $dst = Join-Path -Path $dstFolder -ChildPath $fn
+                $ostream = [System.IO.File]::OpenWrite($dst)
+
+                if ($tmpBytesHolder.Length -ge $fclen) {
+                    $ostream.write(($tmpBytesHolder | Select-Object -First $fclen), 0, $fclen)
+                    $tmpBytesHolder = $tmpBytesHolder | Select-Object -Skip $fclen
+                } else {
+                    if ($tmpBytesHolder.Length -gt 0) {
+                        $ostream.write($tmpBytesHolder, 0, $tmpBytesHolder.Length)
+                        $tmpBytesHolder = @()
+                        $fclen -= $tmpBytesHolder.Length
+                    }
+                   while ($readLen = $instream.Read($barr, 0, $bufsize)) {
+                       $readed = $barr | Select-Object
+                   } 
+                }
+                $ostream.close()
+                $ostream.dispose()
+            }
+            Default {}
+        }
+    }
+    
+
+    $instream.close()
+    $instream.dispose()
+}
+
+<#
+#>
+function Join-Files {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][object[]]$FileNamePairs
+    )
+    
+    $hts = $FileNamePairs | ForEach-Object {
+        if ($_ -is [string]) {
+            @{file = $_; name = (Split-Path -Path $_ -Leaf)}
+        }
+        else {
+            $_
+        }
+    }
+    $combined = New-TemporaryFile
+    $ostream = [System.IO.File]::OpenWrite($combined)
+
+    foreach ($item in $hts) {
+        $utf8 = [System.Text.Encoding]::UTF8
+        [int32]$flen = (Get-Item -Path $item.file).Length
+        $name = $item.name
+        $nbytes = $utf8.GetBytes($name)
+        [int32]$nlen = $nbytes.Length
+        $ostream.write([bitconverter]::GetBytes($nlen), 0, 4) # write int32 of name length
+        $ostream.write($nbytes, 0, $nlen) # write name bytes.
+        $ostream.write([bitconverter]::GetBytes($flen), 0, 4) # write int32 of file length
+
+        $instream = [System.IO.File]::OpenRead($item.file) # write file content.
+
+        $bufSize = 1024
+        $barr = New-Object byte[] $bufSize
+        while ( $bytesRead = $instream.Read($barr, 0, $bufsize)) {
+            $ostream.Write($barr, 0, $bytesRead);
+        }
+        $instream.close()
+        $instream.dispose()       
+    }
+    $ostream.close()
+    $ostream.dispose()
+    $combined
+}
+
+
+
 function Protect-ByOpenSSL {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$PublicKeyFile,
         [Parameter(Mandatory = $true, Position = 1)][string]$PlainFile
     )
-    $f = New-TemporaryFile
-    $cmd = "openssl rsautl -encrypt -inkey $PublicKeyFile -pubin -in $PlainFile -out $f"
-    $cmd | Write-Verbose
+    $plainPassFile = New-TemporaryFile
+    Invoke-Command -Command {openssl rand -base64 64 | Out-File $plainPassFile}
+
+    $encryptPassFile = New-TemporaryFile
+    $encryptFile = New-TemporaryFile
+    $cmd = "openssl enc -aes-256-cbc -salt -in $PlainFile -out $encryptFile -pass file:$plainPassFile"
+    "encrypt large file: $cmd" | Write-Verbose
     Invoke-Expression -Command $cmd
-    $f
+
+    $cmd = "openssl rsautl -encrypt -inkey $PublicKeyFile -pubin -in $plainPassFile -out $encryptPassFile"
+    "encrypt password file: $cmd" | Write-Verbose
+    Invoke-Expression -Command $cmd
+    Remove-Item -Path $plainPassFile
+
+    $archive = New-TemporaryFile
+    Compress-Archive -Path $encryptPassFile, $encryptFile -DestinationPath $archive
+    $archive
 }
 
 
@@ -624,6 +768,9 @@ function UnProtect-ByOpenSSL {
         [Parameter(Mandatory = $true, Position = 1)][string]$encryptedFile,
         [Parameter(Mandatory = $true, Position = 2)][string]$decryptedFile
     )
+    $d = New-TemporaryFile | ForEach-Object {Remove-Item $_; New-Item -Path $_ -ItemType Container}
+    Expand-Archive -Path $encryptedFile -DestinationPath $d
+
     $cmd = "openssl rsautl -decrypt -inkey $PrivateKeyFile -in $encryptedFile -out $decryptedFile"
     $cmd | Write-Verbose
     Invoke-Expression -Command $cmd

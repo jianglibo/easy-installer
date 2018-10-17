@@ -3,7 +3,7 @@
   "UserName": "root",
   "IdentityFile": "D:/cygwin64/home/admin/.ssh/id_rsa",
   "PublicKeyFile": "default|none",
-  "PrivateKeyFile": "",
+  "PrivateKeyFile": "/root/.ssh/id_rsa",
   "ServerPassword": null,
   "MysqlPassword": "123456",
   "ClientBin": "mysql",

@@ -21,31 +21,22 @@ function Copy-DemoConfigFile {
 }
 function Get-PublicKeyFile {
     param (
-        [Parameter(Mandatory = $true, Position = 0)]$configuration,
-        [Parameter(Mandatory = $true, Position = 1)][string]$MyDir
+        [Parameter(Mandatory = $true, Position = 0)]$configuration
     )
-    if ($configuration.PublicKeyFile -eq 'none') {
-        @{exists = $false; error = $false}
+    if ($configuration.PublicKeyFile -like "default*") {
+        $pk = $CommonScriptsDir | Split-Path -Parent | Split-Path -Parent |
+            Join-Path -ChildPath "myconfigs" |
+            Join-Path -ChildPath $configuration.HostName |
+            Join-Path -ChildPath "public_key.pem"
+        $pkrsolved = Resolve-Path -Path $pk -ErrorAction SilentlyContinue
     }
     else {
-        if ($configuration.PublicKeyFile -like "default*") {
-            $pk = $MyDir | Split-Path -Parent | Split-Path -Parent |
-                Join-Path -ChildPath "myconfigs" |
-                Join-Path -ChildPath $configuration.HostName |
-                Join-Path -ChildPath "public_key.pem"
-            $pkrsolved = Resolve-Path -Path $pk -ErrorAction SilentlyContinue
-        }
-        else {
-            $pkrsolved = Resolve-Path -Path $configuration.PublicKeyFile -ErrorAction SilentlyContinue
-        }
-        if (-not $pkrsolved) {
-            Write-ParameterWarning -wstring "${pk} does'nt exists."
-            @{exists = $true; error = $true}
-        }
-        else {
-            @{exists = $true; value = $pkrsolved}
-        }
+        $pkrsolved = Resolve-Path -Path $configuration.PublicKeyFile -ErrorAction SilentlyContinue
     }
+    if (-not $pkrsolved) {
+        Write-ParameterWarning -wstring "${pk} does'nt exists. If you don't want to encrypt the config file leave either of PrivateKeyFile or PublicKeyFile empty."
+    }
+    $pkrsolved
 }
 
 function Get-SoftwarePackages {
@@ -110,6 +101,10 @@ function Copy-PsScriptToServer {
         return
     }
     $r = $sshInvoker.scp($filesToCopy, $dst, $true)
+
+    if ($configuration.PrivateKeyFile -and $configuration.PublicKeyFile) {
+        $ConfigFile = Protect-ByOpenSSL -PublicKeyFile (Get-PublicKeyFile -configuration $configuration) -PlainFile $ConfigFile
+    }
 
     #copy configfile to fixed server name.
     $cfgServer = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'

@@ -36,17 +36,78 @@ Describe "common-util" {
     }
 }
 
+function split($inFile,  $outPrefix, [Int32] $bufSize){
+
+    $stream = [System.IO.File]::OpenRead($inFile)
+    $chunkNum = 1
+    $barr = New-Object byte[] $bufSize
+  
+    while( $bytesRead = $stream.Read($barr,0,$bufsize)){
+      $outFile = "$outPrefix$chunkNum"
+      $ostream = [System.IO.File]::OpenWrite($outFile)
+      $ostream.Write($barr,0,$bytesRead);
+      $ostream.close();
+      echo "wrote $outFile"
+      $chunkNum += 1
+    }
+
+    $stream
+  }
+
+#   https://docs.microsoft.com/en-us/dotnet/api/system.io.filestream?view=netframework-4.7.2
+  
+Describe "open io" {
+    $outFile = Join-Path $TestDrive "plain.bin"
+    $outFile1 = Join-Path $TestDrive "plain.bin1"
+    it "should write int." {
+        # $utf8 = [System.Text.Encoding]::UTF8
+        $ostream = [System.IO.File]::OpenWrite($outFile)
+        $bytes = [bitconverter]::GetBytes([int32]5566)
+        $ostream.write($bytes, 0, $bytes.Length)
+        $ostream.close()
+        $ostream.dispose()
+
+        # [Int32]::MaxValue
+        # 2147483647
+
+        $instream = [System.IO.File]::OpenRead($outFile)
+        $barr = New-Object byte[] 100
+        $c = $instream.Read($barr,0, 100)
+        $c | Should -Be $bytes.Length
+        $instream.close()
+        $instream.dispose()
+
+        $ib = $barr[0..($c - 1)]
+        # $ib.Length | Should -Be $c
+        $ib | Out-Host
+        [bitconverter]::ToInt32($ib, 0) | Should -Be 5566
+    }
+
+    it "should join files" {
+        "abc" | Out-File -FilePath $outFile1 -Encoding ascii -NoNewline # for test only
+        $combined = Join-Files -FileNamePairs $outFile1
+        # 4 + 10(filename) + 4 + 3(file content)
+        (Get-Item -Path $combined).Length | Should -Be 21
+    }
+
+    it "should split file" {
+        
+    }
+}
+
+
+
 Describe "openssl" {
     $plainfile = Join-Path $TestDrive "plain.txt"
     $plainfile1 = Join-Path $TestDrive "plain1.txt"
-    "abc" | Out-File $plainfile
+    1..5000 -join ' ' | Out-File $plainfile
     it "should encrypt." {
         $tcfg | Out-Host
         $encrypted = Protect-ByOpenSSL -PublicKeyFile $tcfg.PublicKeyFile -PlainFile $plainfile
         Test-Path -Path $encrypted -PathType Leaf | Should -BeTrue
         $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $tcfg.PrivateKeyFile -encryptedFile $encrypted -decryptedFile $plainfile1
         $LASTEXITCODE | Should -Be 0
-        Get-Content -Path $plainfile1 | Should -Be "abc"
+        Get-Content -Path $plainfile1 | Should -Be (1..5000 -join ' ')
     }
 }
 
@@ -63,16 +124,16 @@ Describe "hash table" {
     }
 }
 
-Describe "process control" {
-    it "should start cmd" {
-        # Start-PasswordPromptCommand -Command "mysql"  -Arguments "-uroot -p" -mysqlpwd "123456"
-        # Start-PasswordPromptCommand -Command "cmd"  -Arguments "/K dir" -mysqlpwd "123456"
-        # Start-PasswordPromptCommandSync -Command "powershell"  -Arguments "-Command cmd /K dir" -mysqlpwd "123456"
-        Start-PasswordPromptCommandSync -Command "cmd"  -Arguments "/K dir" -mysqlpwd "123456"
+# Describe "process control" {
+#     it "should start cmd" {
+#         # Start-PasswordPromptCommand -Command "mysql"  -Arguments "-uroot -p" -mysqlpwd "123456"
+#         # Start-PasswordPromptCommand -Command "cmd"  -Arguments "/K dir" -mysqlpwd "123456"
+#         # Start-PasswordPromptCommandSync -Command "powershell"  -Arguments "-Command cmd /K dir" -mysqlpwd "123456"
+#         Start-PasswordPromptCommandSync -Command "cmd"  -Arguments "/K dir" -mysqlpwd "123456"
 
-        # Invoke-Executable -sExeFile "cmd" -cArgs "/C", "dir"
-    }
-}
+#         # Invoke-Executable -sExeFile "cmd" -cArgs "/C", "dir"
+#     }
+# }
 
 
 Describe "String convert" {
@@ -104,81 +165,81 @@ Describe "String convert" {
     }
 }
 
-Describe "process control executable" {
-    it "should start cmd" {
-        Invoke-Executable -sExeFile "cmd" -cArgs "/C", "dir"
-    }
-}
-$procTools = @"
+# Describe "process control executable" {
+#     it "should start cmd" {
+#         Invoke-Executable -sExeFile "cmd" -cArgs "/C", "dir"
+#     }
+# }
+# $procTools = @"
 
-using System;
-using System.Diagnostics;
+# using System;
+# using System.Diagnostics;
 
-namespace Proc.Tools
-{
-  public static class exec
-  {
-    public static int runCommand(string executable, string args = "", string cwd = "", string verb = "runas") {
+# namespace Proc.Tools
+# {
+#   public static class exec
+#   {
+#     public static int runCommand(string executable, string args = "", string cwd = "", string verb = "runas") {
 
-      //* Create your Process
-      Process process = new Process();
-      process.StartInfo.FileName = executable;
-      process.StartInfo.UseShellExecute = false;
-      process.StartInfo.CreateNoWindow = true;
-      process.StartInfo.RedirectStandardOutput = true;
-      process.StartInfo.RedirectStandardError = true;
-    //*  process.StartInfo.RedirectStandardInput = true;
+#       //* Create your Process
+#       Process process = new Process();
+#       process.StartInfo.FileName = executable;
+#       process.StartInfo.UseShellExecute = false;
+#       process.StartInfo.CreateNoWindow = true;
+#       process.StartInfo.RedirectStandardOutput = true;
+#       process.StartInfo.RedirectStandardError = true;
+#     //*  process.StartInfo.RedirectStandardInput = true;
 
-      //* Optional process configuration
-      if (!String.IsNullOrEmpty(args)) { process.StartInfo.Arguments = args; }
-      if (!String.IsNullOrEmpty(cwd)) { process.StartInfo.WorkingDirectory = cwd; }
-      if (!String.IsNullOrEmpty(verb)) { process.StartInfo.Verb = verb; }
+#       //* Optional process configuration
+#       if (!String.IsNullOrEmpty(args)) { process.StartInfo.Arguments = args; }
+#       if (!String.IsNullOrEmpty(cwd)) { process.StartInfo.WorkingDirectory = cwd; }
+#       if (!String.IsNullOrEmpty(verb)) { process.StartInfo.Verb = verb; }
 
-      //* Set your output and error (asynchronous) handlers
-      process.OutputDataReceived += new DataReceivedEventHandler(OutputHandler);
-      process.ErrorDataReceived += new DataReceivedEventHandler(OutputHandler);
+#       //* Set your output and error (asynchronous) handlers
+#       process.OutputDataReceived += new DataReceivedEventHandler(OutputHandler);
+#       process.ErrorDataReceived += new DataReceivedEventHandler(OutputHandler);
 
-      //* Start process and handlers
-      process.Start();
-      process.BeginOutputReadLine();
-      process.BeginErrorReadLine();
-      process.WaitForExit();
+#       //* Start process and handlers
+#       process.Start();
+#       process.BeginOutputReadLine();
+#       process.BeginErrorReadLine();
+#       process.WaitForExit();
 
-      //* Return the commands exit code
-      return process.ExitCode;
-    }
-    public static void OutputHandler(object sendingProcess, DataReceivedEventArgs outLine) {
-      //* Do your stuff with the output (write to console/log/StringBuilder)
-      Console.WriteLine(outLine.Data);
-    }
-  }
-}
-"@
+#       //* Return the commands exit code
+#       return process.ExitCode;
+#     }
+#     public static void OutputHandler(object sendingProcess, DataReceivedEventArgs outLine) {
+#       //* Do your stuff with the output (write to console/log/StringBuilder)
+#       Console.WriteLine(outLine.Data);
+#     }
+#   }
+# }
+# "@
 
-Describe "csharp" {
-    it "should start cmd" {
-        Add-Type -TypeDefinition $procTools -Language CSharp
-        $PSDefaultParameterValues['*:Encoding'] = 'utf8'
-        $puppetApplyRc = [Proc.Tools.exec]::runCommand("cmd", "/K dir");
+# Describe "csharp" {
+#     it "should start cmd" {
+#         Add-Type -TypeDefinition $procTools -Language CSharp
+#         $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+#         $puppetApplyRc = [Proc.Tools.exec]::runCommand("cmd", "/K dir");
 
-        if ( $puppetApplyRc -eq 0 ) {
-            Write-Host "The run succeeded with no changes or failures; the system was already in the desired state."
-        }
-        elseif ( $puppetApplyRc -eq 1 ) {
-            throw "The run failed; halt"
-        }
-        elseif ( $puppetApplyRc -eq 2) {
-            Write-Host "The run succeeded, and some resources were changed."
-        }
-        elseif ( $puppetApplyRc -eq 4 ) {
-            Write-Warning "WARNING: The run succeeded, and some resources failed."
-        }
-        elseif ( $puppetApplyRc -eq 6 ) {
-            Write-Warning "WARNING: The run succeeded, and included both changes and failures."
-        }
-        else {
-            throw "Un-recognised return code RC: $puppetApplyRc"
-        }
-    }
-}
+#         if ( $puppetApplyRc -eq 0 ) {
+#             Write-Host "The run succeeded with no changes or failures; the system was already in the desired state."
+#         }
+#         elseif ( $puppetApplyRc -eq 1 ) {
+#             throw "The run failed; halt"
+#         }
+#         elseif ( $puppetApplyRc -eq 2) {
+#             Write-Host "The run succeeded, and some resources were changed."
+#         }
+#         elseif ( $puppetApplyRc -eq 4 ) {
+#             Write-Warning "WARNING: The run succeeded, and some resources failed."
+#         }
+#         elseif ( $puppetApplyRc -eq 6 ) {
+#             Write-Warning "WARNING: The run succeeded, and included both changes and failures."
+#         }
+#         else {
+#             throw "Un-recognised return code RC: $puppetApplyRc"
+#         }
+#     }
+# }
 
