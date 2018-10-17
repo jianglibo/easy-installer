@@ -759,6 +759,7 @@ function Join-Files {
         $instream.close()
         $instream.dispose()       
     }
+    $ostream.flush()
     $ostream.close()
     $ostream.dispose()
     $combined
