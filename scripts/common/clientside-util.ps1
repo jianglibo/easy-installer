@@ -1,4 +1,5 @@
 $CommonScriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectRoot = $CommonScriptsDir | Split-Path -Parent | Split-Path  -Parent
 . "${CommonScriptsDir}\common-util.ps1"
 function Copy-DemoConfigFile {
     param (
@@ -43,7 +44,7 @@ function Get-SoftwarePackages {
     param (
         [Parameter(Mandatory = $true, Position = 0)]$configuration
     )
-    $dl = Join-Path -Path $PWD -ChildPath "downloads"
+    $dl = Join-Path -Path $ProjectRoot -ChildPath "downloads" | Join-Path -ChildPath $configuration.myname
     if (-not (Test-Path -Path $dl -PathType Container)) {
         New-Item -Path $dl -ItemType "directory"
     }
@@ -57,6 +58,40 @@ function Get-SoftwarePackages {
         if (-not (Test-Path -Path $lf -PathType Leaf)) {
             Invoke-WebRequest -Uri $url -OutFile $lf
         }
+    }
+}
+
+function Send-SoftwarePackages {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]$configuration
+    )
+    $dl = Join-Path -Path $ProjectRoot -ChildPath "downloads" | Join-Path $configuration.myname
+    if (-not (Test-Path -Path $dl -PathType Container)) {
+        New-Item -Path $dl -ItemType "directory"
+    }
+    $localFileNames = $configuration.Softwares | ForEach-Object {
+        $url = $_.PackageUrl
+        $ln = $_.LocalName
+        if (-not $ln) {
+            $ln = Split-Url -Url $url
+        }
+        Join-Path -Path $dl -ChildPath $ln
+    }
+
+    [array]$unexists = $localFileNames | Where-Object {-not (Test-Path -Path $_ -PathType Leaf)}
+    if ($unexists.Count -gt 0) {
+        Write-ParameterWarning -wstring "Following files doesn't download yet: $($unexists -join ',')"
+    }
+    else {
+        $sshInvoker = Get-SshInvoker -configuration $configuration
+        $osConfig = Get-OsConfiguration -configuration $configuration
+
+        $dst = $osConfig.ServerSide.PackageDir
+        if (-not $dst) {
+            Write-ParameterWarning -wstring "There must have a value for ServerSide.PackageDir in configuration file: $ConfigFile"
+            return
+        }
+        $r = $sshInvoker.scp($localFileNames, $dst, $true) 
     }
 }
 
@@ -138,7 +173,7 @@ function Invoke-ServerRunningPs1 {
 
     $entryPoint = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath $osConfig.ServerSide.EntryPoint
     
-    $rcmd = "pwsh -f {0} -action {1} -ConfigFile {2} -privateKeyFile {3} {4}" -f $entryPoint, $action, $toServerConfigFile, (Get-Verbose), ($hints -join ' ')
+    $rcmd = "pwsh -f {0} -action {1} -ConfigFile {2} -PrivateKeyFile {3} {4} {5}" -f $entryPoint, $action, $toServerConfigFile,$configuration.PrivateKeyFile, (Get-Verbose), ($hints -join ' ')
     $rcmd | Out-String | Write-Verbose
     $sshInvoker.Invoke($rcmd, (-not $notCombineError))
 }

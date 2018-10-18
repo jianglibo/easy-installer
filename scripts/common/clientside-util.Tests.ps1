@@ -24,6 +24,7 @@ Describe "SshInvoker" {
     }
 
     it "should copy script to server." {
+        $PSDefaultParameterValues['*:Verbose'] = $true
         $mysql = Join-Path -Path $scriptDir -ChildPath "mysql"
         $ht = Copy-TestPsScriptToServer -HerePath $mysql
         $ht | Out-Host

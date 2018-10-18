@@ -62,6 +62,8 @@ function Install-Mysql {
     if (Test-SoftwareInstalled -configuration $configuration) {
         "AlreadyInstalled"
         return
+    } else {
+        $cmd = "yum install -y "
     }
     
 }

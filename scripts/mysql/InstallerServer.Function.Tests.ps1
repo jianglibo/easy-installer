@@ -88,9 +88,16 @@ Describe "manual" {
 
 
 Describe "install" {
-    it "should return already installed." {
-        $ht = Copy-TestPsScriptToServer -HerePath $here -Verbose
-        $ht.ConfigFile | Out-Host
+    # it "should return already installed." {
+    #     $ht = Copy-TestPsScriptToServer -HerePath $here 
+    #     $ht.ConfigFile | Out-Host
+    #     $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action Install 57
+    #     $r | Should -Be 'AlreadyInstalled'
+    # }
+
+    it "should install mysql." {
+        $ht = Copy-TestPsScriptToServer -HerePath $here
+        $PSDefaultParameterValues['*:Verbose'] = $true
         $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action Install 57
         $r | Should -Be 'AlreadyInstalled'
     }
