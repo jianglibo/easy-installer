@@ -178,15 +178,36 @@ Describe "very big file" {
 
 Describe "openssl" {
     $plainfile = Join-Path $TestDrive "plain.txt"
-    $plainfile1 = Join-Path $TestDrive "plain1.txt"
     1..5000 -join ' ' | Out-File $plainfile
     it "should encrypt." {
-        $tcfg | Out-Host
         $encrypted = Protect-ByOpenSSL -PublicKeyFile $tcfg.PublicKeyFile -PlainFile $plainfile
         Test-Path -Path $encrypted -PathType Leaf | Should -BeTrue
-        $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $tcfg.PrivateKeyFile -encryptedFile $encrypted -decryptedFile $plainfile1
+        $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $tcfg.PrivateKeyFile -CombinedEncriptedFile $encrypted
         $LASTEXITCODE | Should -Be 0
-        Get-Content -Path $plainfile1 | Should -Be (1..5000 -join ' ')
+        Get-Content -Path $decrypted | Should -Be (1..5000 -join ' ')
+    }
+}
+
+Describe "base64" {
+    $plainfile = Join-Path $TestDrive "plain.txt"
+    $plainfile1 = Join-Path $TestDrive "plain.txt1"
+    it "should convert." {
+        "akkddls ss " | Out-File -FilePath $plainfile
+        $b64 = Get-Base64FromFile -File $plainfile
+        $f = Get-FileFromBase64 -Base64 $b64 -OutFile $plainfile1
+
+        (Get-FileHash $plainfile).Hash | Should -Be (Get-FileHash $plainfile1).Hash
+    }
+}
+
+Describe "protect password" {
+    it "should convert." {
+        $ss = ConvertTo-SecureString -String "123456" -AsPlainText -Force  # | ConvertFrom-SecureString
+
+        $base64 = Protect-PasswordByOpenSSLPublicKey -PublicKeyFile $tcfg.PublicKeyFile -ss $ss
+        $plainPwd = UnProtect-PasswordByOpenSSLPublicKey -PrivateKeyFile $tcfg.PrivateKeyFile -base64 $base64
+
+        $plainPwd | should -Be "123456"
     }
 }
 

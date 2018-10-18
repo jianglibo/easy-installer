@@ -621,7 +621,8 @@ function Split-Files {
     $barr = New-Object byte[] $bufsize
     if (-not $dstFolder) {
         $dstFolder = New-TemporaryDirectory
-    } else {
+    }
+    else {
         if (-not (Test-Path -Path $dstFolder -PathType Container)) {
             New-Item -Path $dstFolder -ItemType "directory"
         }
@@ -766,43 +767,126 @@ function Join-Files {
 }
 
 
-
+# https://wiki.openssl.org/index.php/Command_Line_Utilities
 function Protect-ByOpenSSL {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$PublicKeyFile,
         [Parameter(Mandatory = $true, Position = 1)][string]$PlainFile
     )
-    $plainPassFile = New-TemporaryFile
-    Invoke-Command -Command {openssl rand -base64 64 | Out-File $plainPassFile}
 
-    $encryptPassFile = New-TemporaryFile
-    $encryptFile = New-TemporaryFile
-    $cmd = "openssl enc -aes-256-cbc -salt -in $PlainFile -out $encryptFile -pass file:$plainPassFile"
-    "encrypt large file: $cmd" | Write-Verbose
-    Invoke-Expression -Command $cmd
+    try {
+        
+        $plainPassFile = New-TemporaryFile
+        Invoke-Command -Command {openssl rand -base64 64 | Out-File $plainPassFile}
 
-    $cmd = "openssl rsautl -encrypt -inkey $PublicKeyFile -pubin -in $plainPassFile -out $encryptPassFile"
-    "encrypt password file: $cmd" | Write-Verbose
-    Invoke-Expression -Command $cmd
-    Remove-Item -Path $plainPassFile
+        $encryptPassFile = New-TemporaryFile
+        $encryptFile = New-TemporaryFile
+        $cmd = "openssl enc -aes-256-cbc -salt -pbkdf2 -e -in $PlainFile -out $encryptFile -pass file:$plainPassFile"
+        "encrypt large file: $cmd" | Write-Verbose
+        Invoke-Expression -Command $cmd
 
-    $archive = New-TemporaryFile
-    Compress-Archive -Path $encryptPassFile, $encryptFile -DestinationPath $archive
-    $archive
+        $cmd = "openssl pkeyutl -encrypt -inkey $PublicKeyFile -pubin -in $plainPassFile -out $encryptPassFile"
+        "encrypt password file: $cmd" | Write-Verbose
+        Invoke-Expression -Command $cmd
+        Join-Files -FileNamePairs @{file = $encryptPassFile; name = "pass"}, @{file = $encryptFile; name = "content"}
+    }
+    finally {
+        if ((Test-Path -Path $plainPassFile)) {
+            Remove-Item -Path $plainPassFile
+        }
+    }
 }
-
 
 function UnProtect-ByOpenSSL {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$PrivateKeyFile,
-        [Parameter(Mandatory = $true, Position = 1)][string]$encryptedFile,
-        [Parameter(Mandatory = $true, Position = 2)][string]$decryptedFile
+        [Parameter(Mandatory = $true, Position = 1)][string]$CombinedEncriptedFile
     )
-    $d = New-TemporaryFile | ForEach-Object {Remove-Item $_; New-Item -Path $_ -ItemType Container}
-    Expand-Archive -Path $encryptedFile -DestinationPath $d
+    try {
+        $d = Split-Files -CombinedFile $CombinedEncriptedFile # pass.txt and content.txt
+        $encryptedKeyFile = Join-Path -Path $d -ChildPath "pass"
+        $encryptedFile = Join-Path -Path $d -ChildPath "content"
+        $decryptedKeyFile = New-TemporaryFile
+        $cmd = "openssl pkeyutl -decrypt -inkey $PrivateKeyFile -in $encryptedKeyFile -out $decryptedKeyFile"
+        "decrypt key file: $cmd" | Write-Verbose
+        Invoke-Expression -Command $cmd
+        $decryptedFile = New-TemporaryFile
+        $cmd = "openssl enc -aes-256-cbc -salt -pbkdf2 -d -in $encryptedFile -out $decryptedFile -pass file:$decryptedKeyFile"
+        "decrypt large file: $cmd" | Write-Verbose
+        Invoke-Expression -Command $cmd
+        $decryptedFile
+    }
+    finally {
+        if ((Test-Path -Path $d)) {
+            Remove-Item -Recurse -Force -Path $d
+        }
+        if ((Test-Path -Path $decryptedKeyFile)) {
+            Remove-Item -Force -Path $decryptedKeyFile
+        }
+    }
+}
 
-    $cmd = "openssl rsautl -decrypt -inkey $PrivateKeyFile -in $encryptedFile -out $decryptedFile"
-    $cmd | Write-Verbose
-    Invoke-Expression -Command $cmd
-    $decryptFile
+function Get-Base64FromFile {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$File
+    )
+    $bytes = Get-Content -Path $File -Encoding Byte
+    [Convert]::ToBase64String($Bytes)
+}
+
+function Get-FileFromBase64 {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$Base64,
+        [Parameter(Mandatory = $false, Position = 1)][string]$OutFile
+    )
+    $bytes = [Convert]::FromBase64String($Base64)
+    if (-not $OutFile) {
+        $OutFile = New-TemporaryFile
+    }
+    Set-Content -Path $OutFile -Value $bytes -Encoding Byte
+    $OutFile
+}
+
+# $SecurePassword = Get-Content C:\Users\tmarsh\Documents\securePassword.txt | ConvertTo-SecureString
+# $UnsecurePassword = (New-Object PSCredential "user",$SecurePassword).GetNetworkCredential().Password
+
+function Protect-PasswordByOpenSSLPublicKey {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$PublicKeyFile,
+        [Parameter(Mandatory = $false)][securestring]$ss
+    )
+    $f = New-TemporaryFile
+    $outf = New-TemporaryFile
+    try {
+        if (-not $ss) {
+            $ss = Read-Host -AsSecureString -Prompt "Please input the password to protect"
+        }
+        $plainPassword = (New-Object PSCredential "user", $ss).GetNetworkCredential().Password
+        $plainPassword | Out-File -FilePath $f -NoNewline -Encoding ascii
+        $cmd = "openssl pkeyutl -encrypt -inkey $PublicKeyFile -pubin -in $f -out $outf"
+        Invoke-Expression -Command $cmd
+        $s =  Get-Base64FromFile $outf
+        $s
+    }
+    finally {
+       Remove-Item -Force -Path $f,$outf 
+    }
+}
+
+function UnProtect-PasswordByOpenSSLPublicKey {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$PrivateKeyFile,
+        [Parameter(Mandatory = $true, Position = 1)][string]$base64
+    )
+        $f = Get-FileFromBase64 -Base64 $base64
+        $outf = New-TemporaryFile
+    try {
+        $cmd = "openssl pkeyutl -decrypt -inkey $PrivateKeyFile -in $f -out $outf"
+        Invoke-Expression -Command $cmd
+        $s = Get-Content -Path $outf -Encoding Ascii
+        $s
+    }
+    finally {
+       Remove-Item -Force -Path $f,$outf 
+    }
 }

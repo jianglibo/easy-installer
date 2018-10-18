@@ -65,6 +65,8 @@ function Get-SoftwarePackages {
 # PS C:\>$Encrypted = ConvertFrom-SecureString -SecureString $Secure -Key (1..16)
 # PS C:\>$Encrypted | Set-Content Encrypted.txt
 # PS C:\>$Secure2 = Get-Content Encrypted.txt | ConvertTo-SecureString -Key (1..16)
+# $SecurePassword = Get-Content C:\Users\tmarsh\Documents\securePassword.txt | ConvertTo-SecureString
+# $UnsecurePassword = (New-Object PSCredential "user",$SecurePassword).GetNetworkCredential().Password
 
 
 function  Get-SshInvoker {
