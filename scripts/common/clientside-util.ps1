@@ -1,6 +1,8 @@
 $CommonScriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = $CommonScriptsDir | Split-Path -Parent | Split-Path  -Parent
 . "${CommonScriptsDir}\common-util.ps1"
+
+
 function Copy-DemoConfigFile {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$MyDir,
@@ -84,9 +86,7 @@ function Send-SoftwarePackages {
     }
     else {
         $sshInvoker = Get-SshInvoker -configuration $configuration
-        $osConfig = Get-OsConfiguration -configuration $configuration
-
-        $dst = $osConfig.ServerSide.PackageDir
+        $dst = $configuration.OsConfig.ServerSide.PackageDir
         if (-not $dst) {
             Write-ParameterWarning -wstring "There must have a value for ServerSide.PackageDir in configuration file: $ConfigFile"
             return
@@ -124,13 +124,12 @@ function Copy-PsScriptToServer {
         ForEach-Object {Join-Path -Path $ServerSideFileListFile -ChildPath $_} |
         ForEach-Object {Resolve-Path -Path $_} |
         Select-Object -ExpandProperty Path
-    # $files += $ConfigFile
 
     $filesToCopy = $files -join ' '
     $filesToCopy | Write-Verbose
 
     $sshInvoker = Get-SshInvoker -configuration $configuration
-    $osConfig = Get-OsConfiguration -configuration $configuration
+    $osConfig = $configuration.OsConfig
 
     $dst = $osConfig.ServerSide.ScriptDir
     if (-not $dst) {
@@ -167,7 +166,7 @@ function Invoke-ServerRunningPs1 {
     )
     $sshInvoker = Get-SshInvoker -configuration $configuration
 
-    $osConfig = Get-OsConfiguration -configuration $configuration
+    $osConfig = $configuration.OsConfig
 
     $toServerConfigFile = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
 

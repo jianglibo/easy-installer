@@ -1,4 +1,7 @@
-﻿class OsDetail {
+﻿$CommonScriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectRoot = $CommonScriptsDir | Split-Path -Parent | Split-Path  -Parent
+
+class OsDetail {
     [string]$Name
     [string]$Version
     [string]$Platform
@@ -80,7 +83,6 @@ function Get-Configuration {
         [Parameter(Mandatory = $false)][string]$PrivateKeyFile
     )
     $vcf = Resolve-Path -Path $ConfigFile -ErrorAction SilentlyContinue
-
     if (-not $vcf) {
         $m = "ConfigFile ${ConfigFile} doesn't exists."
         Write-ParameterWarning -wstring $m
@@ -91,26 +93,41 @@ function Get-Configuration {
         $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $PrivateKeyFile -CombinedEncriptedFile $vcf
         $c = Get-Content -Path $decrypted | ConvertFrom-Json
         Remove-Item -Path $decrypted -Force
-    } else {
+    }
+    else {
         $c = Get-Content -Path $vcf | ConvertFrom-Json
     }
 
     if (-not $ServerSide) {
+
+        if (-not ($c.IdentityFile -or $c.ServerPassword)) {
+            Write-ParameterWarning -wstring "Neither IdentityFile Nor ServerPassword property exists in ${vcf}." -ThrowIt
+        }
         if ($c.IdentityFile) {
             if (-not (Test-Path -Path $c.IdentityFile -PathType Leaf)) {
-                Write-ParameterWarning -wstring "IdentityFile property in $vcf point to an unexist file."
-                return
-            }
-            else {
-                return $c
+                Write-ParameterWarning -wstring "IdentityFile property in $vcf point to an unexist file." -ThrowIt
             }
         }
-        
-        if (-not $c.ServerPassword) {
-            Write-ParameterWarning -wstring "Neither IdentityFile Nor ServerPassword property exists in ${vcf}."
-            return
+
+        $capp = Get-Content -Path ($ProjectRoot | Join-Path -ChildPath "app.json") | ConvertFrom-Json
+        if (-not (Get-Command $capp.openssl)) {
+            $s = "$($capp.openssl) does'nt exists."
+            Write-ParameterWarning -wstring $s    
+            throw $s        
+        } else {
+            $c.openssl = $capp.openssl
         }
     }
+
+    $c | Add-Member -MemberType ScriptProperty -Name OsConfig -Value {
+        $osConfig = $this.SwitchByOs.($this.OsType)
+        if (-not $osConfig) {
+            $s = "The 'OsType' property is $($this.OsType), But there is no corresponding item in 'SwitchByOs': $ConfigFile"
+            Write-ParameterWarning -wstring $s -level 2 -ThrowIt
+        }
+        $osConfig
+    }
+    $Global:configuration = $c
     $c
 }
 function Join-UniversalPath {
@@ -192,25 +209,15 @@ function Get-Verbose {
 function Write-ParameterWarning {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$wstring,
-        [Parameter(Mandatory = $false)][int]$level = 1
+        [Parameter(Mandatory = $false)][int]$level = 1,
+        [Parameter()][switch]$ThrowIt
     )
     $stars = (1..$wstring.Length | ForEach-Object {'*'}) -join ''
     $l = (Get-PSCallStack)[$level].Location
     "`n`n{0}`n`n`{1}`n`n{2}`n`n{3}`n`n" -f $stars, $l, $wstring, $stars | Write-Warning
-}
-
-function Get-OsConfiguration {
-    param (
-        [Parameter(Mandatory = $true, Position = 0)]$configuration
-    )
-    $osConfig = $configuration.SwitchByOs.($configuration.OsType)
-
-    if (-not $osConfig) {
-        $s = "The 'OsType' property is $($configuration.OsType), But there is no corresponding item in 'SwitchByOs': $ConfigFile"
-        Write-ParameterWarning -wstring $s -level 2
-        throw $s
+    if ($ThrowIt) {
+        throw $wstring
     }
-    $osConfig
 }
 
 function Test-SoftwareInstalled {
@@ -218,7 +225,7 @@ function Test-SoftwareInstalled {
         [Parameter(Mandatory = $true, Position = 0)]$configuration
     )
 
-    $osConfig = Get-OsConfiguration -configuration $configuration
+    $osConfig = $configuration.OsConfig
     $idt = $osConfig.ServerSide.InstallDetect
     $idt.command | Write-Verbose
     $idt.expect | Write-Verbose
@@ -783,17 +790,17 @@ function Protect-ByOpenSSL {
     )
 
     try {
-        
+        $openssl = $Global:configuration.openssl
         $plainPassFile = New-TemporaryFile
-        Invoke-Command -Command {openssl rand -base64 64 | Out-File $plainPassFile}
+        Invoke-Command -Command {& $openssl rand -base64 64 | Out-File $plainPassFile}
 
         $encryptPassFile = New-TemporaryFile
         $encryptFile = New-TemporaryFile
-        $cmd = "openssl enc -aes-256-cbc -salt -pbkdf2 -e -in $PlainFile -out $encryptFile -pass file:$plainPassFile"
+        $cmd = "& '${openssl}' enc -aes-256-cbc -salt -pbkdf2 -e -in $PlainFile -out $encryptFile -pass file:$plainPassFile"
         "encrypt large file: $cmd" | Write-Verbose
         Invoke-Expression -Command $cmd
 
-        $cmd = "openssl pkeyutl -encrypt -inkey $PublicKeyFile -pubin -in $plainPassFile -out $encryptPassFile"
+        $cmd = "& '${openssl}' pkeyutl -encrypt -inkey $PublicKeyFile -pubin -in $plainPassFile -out $encryptPassFile"
         "encrypt password file: $cmd" | Write-Verbose
         Invoke-Expression -Command $cmd
         Join-Files -FileNamePairs @{file = $encryptPassFile; name = "pass"}, @{file = $encryptFile; name = "content"}
@@ -811,15 +818,17 @@ function UnProtect-ByOpenSSL {
         [Parameter(Mandatory = $true, Position = 1)][string]$CombinedEncriptedFile
     )
     try {
+        $openssl = $Global:configuration.openssl
+
         $d = Split-Files -CombinedFile $CombinedEncriptedFile # pass.txt and content.txt
         $encryptedKeyFile = Join-Path -Path $d -ChildPath "pass"
         $encryptedFile = Join-Path -Path $d -ChildPath "content"
         $decryptedKeyFile = New-TemporaryFile
-        $cmd = "openssl pkeyutl -decrypt -inkey $PrivateKeyFile -in $encryptedKeyFile -out $decryptedKeyFile"
+        $cmd = "& '${openssl}' pkeyutl -decrypt -inkey $PrivateKeyFile -in $encryptedKeyFile -out $decryptedKeyFile"
         "decrypt key file: $cmd" | Write-Verbose
         Invoke-Expression -Command $cmd
         $decryptedFile = New-TemporaryFile
-        $cmd = "openssl enc -aes-256-cbc -salt -pbkdf2 -d -in $encryptedFile -out $decryptedFile -pass file:$decryptedKeyFile"
+        $cmd = "& '${openssl}' enc -aes-256-cbc -salt -pbkdf2 -d -in $encryptedFile -out $decryptedFile -pass file:$decryptedKeyFile"
         "decrypt large file: $cmd" | Write-Verbose
         Invoke-Expression -Command $cmd
         $decryptedFile
@@ -871,13 +880,14 @@ function Protect-PasswordByOpenSSLPublicKey {
         }
         $plainPassword = (New-Object PSCredential "user", $ss).GetNetworkCredential().Password
         $plainPassword | Out-File -FilePath $f -NoNewline -Encoding ascii
-        $cmd = "openssl pkeyutl -encrypt -inkey $PublicKeyFile -pubin -in $f -out $outf"
+        $openssl = $Global:configuration.openssl
+        $cmd = "& '${openssl}' pkeyutl -encrypt -inkey $PublicKeyFile -pubin -in $f -out $outf"
         Invoke-Expression -Command $cmd
-        $s =  Get-Base64FromFile $outf
+        $s = Get-Base64FromFile $outf
         $s
     }
     finally {
-       Remove-Item -Force -Path $f,$outf 
+        Remove-Item -Force -Path $f, $outf 
     }
 }
 
@@ -886,15 +896,16 @@ function UnProtect-PasswordByOpenSSLPublicKey {
         [Parameter(Mandatory = $true, Position = 0)][string]$PrivateKeyFile,
         [Parameter(Mandatory = $true, Position = 1)][string]$base64
     )
-        $f = Get-FileFromBase64 -Base64 $base64
-        $outf = New-TemporaryFile
+    $f = Get-FileFromBase64 -Base64 $base64
+    $outf = New-TemporaryFile
     try {
-        $cmd = "openssl pkeyutl -decrypt -inkey $PrivateKeyFile -in $f -out $outf"
+        $openssl = $Global:configuration.openssl
+        $cmd = "& '${openssl}' pkeyutl -decrypt -inkey $PrivateKeyFile -in $f -out $outf"
         Invoke-Expression -Command $cmd
         $s = Get-Content -Path $outf -Encoding Ascii
         $s
     }
     finally {
-       Remove-Item -Force -Path $f,$outf 
+        Remove-Item -Force -Path $f, $outf 
     }
 }

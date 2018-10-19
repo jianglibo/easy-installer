@@ -9,6 +9,14 @@ $scriptDir = $here | Split-Path -Parent
 . "${scriptDir}\common\clientside-util.ps1"
 . "${scriptDir}\common\common-for-t.ps1"
 
+$cfgfile = $scriptDir | Join-Path -ChildPath "mysql" |Join-Path -ChildPath "demo-config.1.json"
+
+Describe "configuration" {
+    it "should get configuration." {
+        Get-Configuration -ConfigFile $cfgfile
+        $Global:configuration.openssl | Should -Be "openssl"
+    }
+}
 
 Describe "SshInvoker" {
 
@@ -22,6 +30,7 @@ Describe "SshInvoker" {
         $j[0].a | Should -Be 1
         $j[1].b | Should -Be 2
     }
+
 
     it "should copy script to server." {
         $PSDefaultParameterValues['*:Verbose'] = $true

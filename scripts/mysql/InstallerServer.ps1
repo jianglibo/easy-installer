@@ -25,7 +25,7 @@ $here = $myself | Split-Path -Parent
 . (Join-Path -Path $here -ChildPath "common-util.ps1")
 
 $configuration = Get-Configuration -ConfigFile $ConfigFile -ServerSide -PrivateKeyFile $PrivateKeyFile
-$osConfig = Get-OsConfiguration -configuration $configuration
+$osConfig = $configuration.OsConfig
 
 Get-ChildItem -Path (Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath "*.ps1") |
     Select-Object -ExpandProperty FullName |

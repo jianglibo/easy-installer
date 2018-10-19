@@ -1,5 +1,6 @@
 {
   "myname": "mysql",
+  "openssl": "openssl",
   "HostName": "192.168.33.110",
   "UserName": "root",
   "IdentityFile": "D:/cygwin64/home/admin/.ssh/id_rsa",

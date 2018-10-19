@@ -9,57 +9,65 @@ param (
     [string]$Version
 )
 
-process { 
-    $vb = $PSBoundParameters.ContainsKey('Verbose')
-    if ($vb) {
-        $PSDefaultParameterValues['*:Verbose'] = $true
-    }
+<#
+    Put configuration values in Global scope is a choice.
+    1. openssl executable(client and server)
+    2. private key file.
+    3. configuration it's self.
+#>
 
-    $myself = $MyInvocation.MyCommand.Path
-    $here = $myself | Split-Path -Parent
-    $ScriptDir = $here | Split-Path -Parent
+$vb = $PSBoundParameters.ContainsKey('Verbose')
+if ($vb) {
+    $PSDefaultParameterValues['*:Verbose'] = $true
+}
 
-    ".\SshInvoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1" | ForEach-Object {
-        . "${ScriptDir}\common\$_"
-    }
+$myself = $MyInvocation.MyCommand.Path
+$here = $myself | Split-Path -Parent
+$ScriptDir = $here | Split-Path -Parent
 
-    $isInstall = $Action -eq "Install"
+$Global:ProjectRoot = $ScriptDir | Split-Path -Parent
 
-    if ($isInstall -and (-not $ConfigFile)) {
-        Write-ParameterWarning -wstring "If action is Install then ConfigFile parameter is required."
+".\SshInvoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1" | ForEach-Object {
+    . "${ScriptDir}\common\$_"
+}
+
+$isInstall = $Action -eq "Install"
+
+if ($isInstall -and (-not $ConfigFile)) {
+    Write-ParameterWarning -wstring "If action is Install then ConfigFile parameter is required."
+    return
+}
+
+if ($isInstall -and (-not $Version)) {
+    Write-ParameterWarning -wstring "If action is Install then Version parameter is required."
+    return
+}
+
+
+if ($Action -eq "GetDemoConfigFile") {
+    Copy-DemoConfigFile -MyDir $here -ToFileName "mysql-demo-config.json"
+}
+else {
+    $configuration = Get-Configuration -ConfigFile $ConfigFile
+    if (-not $configuration) {
         return
     }
-
-    if ($isInstall -and (-not $Version)) {
-        Write-ParameterWarning -wstring "If action is Install then Version parameter is required."
-        return
-    }
-
-
-    if ($Action -eq "GetDemoConfigFile") {
-        Copy-DemoConfigFile -MyDir $here -ToFileName "mysql-demo-config.json"
-    }
-    else {
-        $configuration = Get-Configuration -ConfigFile $ConfigFile
-        if (-not $configuration) {
-            return
+    switch ($Action) {
+        "DownloadPackages" {
+            Get-SoftwarePackages -configuration $configuration
+            break
         }
-        switch ($Action) {
-            "DownloadPackages" {
-                Get-SoftwarePackages -configuration $configuration
-                break
+        "Remove" {
+            if ($PSCmdlet.ShouldContinue("Are you sure?", "")) {
+                "removed."
             }
-            "Remove" {
-                if ($PSCmdlet.ShouldContinue("Are you sure?", "")) {
-                    "removed."
-                } else {
-                    "canceled."
-                }
+            else {
+                "canceled."
             }
-            Default {
-                $configuration = Get-Configuration -ConfigFile $ConfigFile
-                $configuration | ConvertTo-Json -Depth 10
-            }
+        }
+        Default {
+            $configuration = Get-Configuration -ConfigFile $ConfigFile
+            $configuration | ConvertTo-Json -Depth 10
         }
     }
 }
