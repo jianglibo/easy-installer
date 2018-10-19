@@ -76,7 +76,8 @@ function Split-Url {
 function Get-Configuration {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$ConfigFile,
-        [Parameter()][switch]$ServerSide
+        [Parameter()][switch]$ServerSide,
+        [Parameter(Mandatory = $false)][string]$PrivateKeyFile
     )
     $vcf = Resolve-Path -Path $ConfigFile -ErrorAction SilentlyContinue
 
@@ -85,7 +86,14 @@ function Get-Configuration {
         Write-ParameterWarning -wstring $m
         return
     }
-    $c = Get-Content -Path $vcf | ConvertFrom-Json
+
+    if ($PrivateKeyFile) {
+        $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $PrivateKeyFile -CombinedEncriptedFile $vcf
+        $c = Get-Content -Path $decrypted | ConvertFrom-Json
+        Remove-Item -Path $decrypted -Force
+    } else {
+        $c = Get-Content -Path $vcf | ConvertFrom-Json
+    }
 
     if (-not $ServerSide) {
         if ($c.IdentityFile) {

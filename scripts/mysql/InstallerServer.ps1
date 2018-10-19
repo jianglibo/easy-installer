@@ -4,6 +4,8 @@ param (
     [string]$Action,
     [parameter(Mandatory = $true, Position = 1)]
     [string]$ConfigFile,
+    [parameter(Mandatory = $false, Position = 2)]
+    [string]$PrivateKeyFile,
     [parameter(Mandatory = $false,
         ValueFromRemainingArguments = $true)]
     [String[]]
@@ -22,7 +24,7 @@ $here = $myself | Split-Path -Parent
 
 . (Join-Path -Path $here -ChildPath "common-util.ps1")
 
-$configuration = Get-Configuration -ConfigFile $ConfigFile -ServerSide
+$configuration = Get-Configuration -ConfigFile $ConfigFile -ServerSide -PrivateKeyFile $PrivateKeyFile
 $osConfig = Get-OsConfiguration -configuration $configuration
 
 Get-ChildItem -Path (Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath "*.ps1") |
