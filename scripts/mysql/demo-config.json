@@ -1,6 +1,10 @@
 {
   "myname": "mysql",
   "openssl": "openssl",
+  "ClientOpenssl": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.exe",
+  "ClientEnv": {
+    "OPENSSL_CONF": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.cfg"
+  },
   "HostName": "192.168.33.110",
   "UserName": "root",
   "IdentityFile": "D:/cygwin64/home/admin/.ssh/id_rsa",

@@ -168,11 +168,12 @@ function Invoke-ServerRunningPs1 {
 
     $osConfig = $configuration.OsConfig
 
-    $toServerConfigFile = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
+    # it's a fixed name on server. so it's no necessary to tell the server script where it is.
+    # $toServerConfigFile = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
 
     $entryPoint = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath $osConfig.ServerSide.EntryPoint
     
-    $rcmd = "pwsh -f {0} -action {1} -ConfigFile {2} -PrivateKeyFile {3} {4} {5}" -f $entryPoint, $action, $toServerConfigFile,$configuration.PrivateKeyFile, (Get-Verbose), ($hints -join ' ')
+    $rcmd = "pwsh -f {0} -action {1} -PrivateKeyFile {2} -OpenSSL {3} {4} {5}" -f $entryPoint, $action, $configuration.PrivateKeyFile, $configuration.openssl, (Get-Verbose), ($hints -join ' ')
     $rcmd | Out-String | Write-Verbose
     $sshInvoker.Invoke($rcmd, (-not $notCombineError))
 }

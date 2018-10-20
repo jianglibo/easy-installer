@@ -2,10 +2,10 @@ param (
     [parameter(Mandatory = $true, Position = 0)]
     [ValidateSet("Install","GetMycnf","GetVariables","Uninstall", "Echo")]
     [string]$Action,
-    [parameter(Mandatory = $true, Position = 1)]
-    [string]$ConfigFile,
     [parameter(Mandatory = $false, Position = 2)]
     [string]$PrivateKeyFile,
+    [parameter(Mandatory = $false, Position = 3)]
+    [string]$OpenSSL,
     [parameter(Mandatory = $false,
         ValueFromRemainingArguments = $true)]
     [String[]]
@@ -22,9 +22,11 @@ if ($vb) {
 $myself = $MyInvocation.MyCommand.Path
 $here = $myself | Split-Path -Parent
 
+$ConfigFile = $here | Join-Path -ChildPath "config.json"
+
 . (Join-Path -Path $here -ChildPath "common-util.ps1")
 
-$configuration = Get-Configuration -ConfigFile $ConfigFile -ServerSide -PrivateKeyFile $PrivateKeyFile
+$configuration = Get-Configuration -ConfigFile $ConfigFile -ServerSide -PrivateKeyFile $PrivateKeyFile -OpenSSL $OpenSSL
 $osConfig = $configuration.OsConfig
 
 Get-ChildItem -Path (Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath "*.ps1") |

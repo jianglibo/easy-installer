@@ -13,8 +13,11 @@ $cfgfile = $scriptDir | Join-Path -ChildPath "mysql" |Join-Path -ChildPath "demo
 
 Describe "configuration" {
     it "should get configuration." {
-        Get-Configuration -ConfigFile $cfgfile
+        Get-Configuration -ConfigFile $cfgfile -ServerSide
         $Global:configuration.openssl | Should -Be "openssl"
+
+        Get-Configuration -ConfigFile $cfgfile 
+        $Global:configuration.openssl | Should -Not -Be "openssl"
     }
 }
 
@@ -24,19 +27,19 @@ Describe "SshInvoker" {
         $js = "[{a: 1}, {b: 2}]"
         $j = $js | ConvertFrom-Json
         $j -is [array] | Should -BeTrue
-        $j | ForEach-Object {
-            $_ | Out-Host
-        }
+        # $j | ForEach-Object {
+        #     $_ | Out-Host
+        # }
         $j[0].a | Should -Be 1
         $j[1].b | Should -Be 2
     }
 
 
     it "should copy script to server." {
-        $PSDefaultParameterValues['*:Verbose'] = $true
+        $PSDefaultParameterValues['*:Verbose'] = $false
         $mysql = Join-Path -Path $scriptDir -ChildPath "mysql"
         $ht = Copy-TestPsScriptToServer -HerePath $mysql
-        $ht | Out-Host
+        # $ht | Out-Host
         [SshInvoker]$sshInvoker = Get-SshInvoker -configuration $ht.configuration
         $sshInvoker.isFileExists($ht.configuration.ServerSide.ScriptDir) | Should -BeTrue
         $result = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action Echo a b c
