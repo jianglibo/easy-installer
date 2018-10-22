@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "GetDemoConfigFile", "DownloadPackages", "Remove")]
+    [ValidateSet("Install", "GetDemoConfigFile", "DownloadPackages","SendPackages", "Remove")]
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,
@@ -54,7 +54,11 @@ else {
     }
     switch ($Action) {
         "DownloadPackages" {
-            Get-SoftwarePackages -configuration $configuration
+            $configuration.DownloadPackages()
+            break
+        }
+        "SendPackages" {
+            Send-SoftwarePackages
             break
         }
         "Remove" {

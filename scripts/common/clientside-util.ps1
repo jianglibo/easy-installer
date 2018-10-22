@@ -23,18 +23,17 @@ function Copy-DemoConfigFile {
     "The demo config file created at ${tofile}`n"
 }
 function Get-PublicKeyFile {
-    param (
-        [Parameter(Mandatory = $true, Position = 0)]$configuration
-    )
-    if ($configuration.PublicKeyFile -like "default*") {
+    $c = $Global:configuration
+
+    if ($c.PublicKeyFile -like "default*") {
         $pk = $CommonScriptsDir | Split-Path -Parent | Split-Path -Parent |
             Join-Path -ChildPath "myconfigs" |
-            Join-Path -ChildPath $configuration.HostName |
+            Join-Path -ChildPath $c.HostName |
             Join-Path -ChildPath "public_key.pem"
         $pkrsolved = Resolve-Path -Path $pk -ErrorAction SilentlyContinue
     }
     else {
-        $pkrsolved = Resolve-Path -Path $configuration.PublicKeyFile -ErrorAction SilentlyContinue
+        $pkrsolved = Resolve-Path -Path $c.PublicKeyFile -ErrorAction SilentlyContinue
     }
     if (-not $pkrsolved) {
         Write-ParameterWarning -wstring "${pk} does'nt exists. If you don't want to encrypt the config file leave either of PrivateKeyFile or PublicKeyFile empty."
@@ -42,36 +41,15 @@ function Get-PublicKeyFile {
     $pkrsolved
 }
 
-function Get-SoftwarePackages {
-    param (
-        [Parameter(Mandatory = $true, Position = 0)]$configuration
-    )
-    $dl = Join-Path -Path $ProjectRoot -ChildPath "downloads" | Join-Path -ChildPath $configuration.myname
-    if (-not (Test-Path -Path $dl -PathType Container)) {
-        New-Item -Path $dl -ItemType "directory"
-    }
-    $configuration.Softwares | ForEach-Object {
-        $url = $_.PackageUrl
-        $ln = $_.LocalName
-        if (-not $ln) {
-            $ln = Split-Url -Url $url
-        }
-        $lf = Join-Path -Path $dl -ChildPath $ln
-        if (-not (Test-Path -Path $lf -PathType Leaf)) {
-            Invoke-WebRequest -Uri $url -OutFile $lf
-        }
-    }
-}
 
 function Send-SoftwarePackages {
-    param (
-        [Parameter(Mandatory = $true, Position = 0)]$configuration
-    )
-    $dl = Join-Path -Path $ProjectRoot -ChildPath "downloads" | Join-Path $configuration.myname
+    $c = $Global:configuration
+    $dl = $ProjectRoot | Join-Path -ChildPath "downloads" | Join-Path -ChildPath $c.myname
     if (-not (Test-Path -Path $dl -PathType Container)) {
         New-Item -Path $dl -ItemType "directory"
     }
-    $localFileNames = $configuration.Softwares | ForEach-Object {
+    $osConfig = $c.OsConfig
+    $localFileNames = $osConfig.Softwares | ForEach-Object {
         $url = $_.PackageUrl
         $ln = $_.LocalName
         if (-not $ln) {
@@ -85,8 +63,8 @@ function Send-SoftwarePackages {
         Write-ParameterWarning -wstring "Following files doesn't download yet: $($unexists -join ',')"
     }
     else {
-        $sshInvoker = Get-SshInvoker -configuration $configuration
-        $dst = $configuration.OsConfig.ServerSide.PackageDir
+        $sshInvoker = Get-SshInvoker
+        $dst = $osConfig.ServerSide.PackageDir
         if (-not $dst) {
             Write-ParameterWarning -wstring "There must have a value for ServerSide.PackageDir in configuration file: $ConfigFile"
             return
@@ -105,48 +83,70 @@ function Send-SoftwarePackages {
 
 
 function  Get-SshInvoker {
-    param (
-        [Parameter(Mandatory = $true, Position = 0)]$configuration
-    )
-    $sshInvoker = [SshInvoker]::new($configuration.HostName, $configuration.IdentityFile)
+    $c = $Global:configuration
+    $sshInvoker = [SshInvoker]::new($c.HostName, $c.IdentityFile)
     $sshInvoker
 }
 
 
 function Copy-PsScriptToServer {
     param (
-        [Parameter(Mandatory = $true, Position = 0)]$configuration,
         [Parameter(Mandatory = $true, Position = 1)][string]$ConfigFile,
         [Parameter(Mandatory = $true, Position = 2)][string]$ServerSideFileListFile
     )
 
-    $files = Get-Content -Path $ServerSideFileListFile |
-        ForEach-Object {Join-Path -Path $ServerSideFileListFile -ChildPath $_} |
-        ForEach-Object {Resolve-Path -Path $_} |
-        Select-Object -ExpandProperty Path
+    try {
+        
+        $td = New-TemporaryDirectory
+        $tf = $td | Join-Path -ChildPath "config.json"
 
-    $filesToCopy = $files -join ' '
-    $filesToCopy | Write-Verbose
+        Copy-Item -Path $ConfigFile -Destination $tf
 
-    $sshInvoker = Get-SshInvoker -configuration $configuration
-    $osConfig = $configuration.OsConfig
+        "Configuration File is: $ConfigFile" | Write-Verbose
+        "temporary file is: $tf" | Write-Verbose
 
-    $dst = $osConfig.ServerSide.ScriptDir
-    if (-not $dst) {
-        Write-ParameterWarning -wstring "There must have a value for ServerSide.ScriptDir in configuration file: $ConfigFile"
-        return
+        $c = $Global:configuration
+        $files = Get-Content -Path $ServerSideFileListFile |
+            ForEach-Object {Join-Path -Path $ServerSideFileListFile -ChildPath $_} |
+            ForEach-Object {Resolve-Path -Path $_} |
+            Select-Object -ExpandProperty Path
+
+        $tf = Resolve-Path -Path $tf | Select-Object -ExpandProperty ProviderPath
+
+        $files +=  $tf
+
+        $filesToCopy = $files -join ' '
+        "files to copy: $filesToCopy" | Write-Verbose
+
+        $sshInvoker = Get-SshInvoker
+        $osConfig = $c.OsConfig
+
+        $dst = $osConfig.ServerSide.ScriptDir
+        if (-not $dst) {
+            Write-ParameterWarning -wstring "There must have a value for ServerSide.ScriptDir in configuration file: $ConfigFile"
+            return
+        }
+        $r = $sshInvoker.scp($filesToCopy, $dst, $true)
+
+        "files copied: $r" | Write-Verbose
+
+        $r
     }
-    $r = $sshInvoker.scp($filesToCopy, $dst, $true)
-
-    if ($configuration.PrivateKeyFile -and $configuration.PublicKeyFile) {
-        $ConfigFile = Protect-ByOpenSSL -PublicKeyFile (Get-PublicKeyFile -configuration $configuration) -PlainFile $ConfigFile
+    finally {
+        Remove-Item -Path $td -Recurse -Force
     }
 
-    #copy configfile to fixed server name.
-    $cfgServer = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
-    $rc = $sshInvoker.scp($ConfigFile, $cfgServer, $false)
-    $sshInvoker | Out-String | Write-Verbose
-    $r += $rc
+    # unnecessary to encrypt whole configuration file. Because We had encrypt the password in it.
+
+    # if ($c.PrivateKeyFile -and $c.PublicKeyFile) {
+    #     $ConfigFile = Protect-ByOpenSSL -PublicKeyFile (Get-PublicKeyFile) -PlainFile $ConfigFile
+    # }
+
+    # #copy configfile to fixed server name.
+    # $cfgServer = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
+    # $rc = $sshInvoker.scp($ConfigFile, $cfgServer, $false)
+    # $sshInvoker | Out-String | Write-Verbose
+    # $r += $rc
 }
 
 <#
@@ -154,9 +154,8 @@ it's better to fix the configfile name on server side.
 #>
 function Invoke-ServerRunningPs1 {
     param (
-        [Parameter(Mandatory = $true, Position = 0)]$configuration,
-        [Parameter(Mandatory = $true, Position = 1)][string]$ConfigFile,
-        [Parameter(Mandatory = $true, Position = 2)]
+        [Parameter(Mandatory = $true, Position = 0)][string]$ConfigFile,
+        [Parameter(Mandatory = $true, Position = 1)]
         [string]$action,
         [parameter(Mandatory = $false)][switch]$notCombineError,
         [parameter(Mandatory = $false,
@@ -164,16 +163,17 @@ function Invoke-ServerRunningPs1 {
         [String[]]
         $hints
     )
-    $sshInvoker = Get-SshInvoker -configuration $configuration
+    $c = $Global:configuration
+    $sshInvoker = Get-SshInvoker
 
-    $osConfig = $configuration.OsConfig
+    $osConfig = $c.OsConfig
 
     # it's a fixed name on server. so it's no necessary to tell the server script where it is.
     # $toServerConfigFile = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
 
     $entryPoint = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath $osConfig.ServerSide.EntryPoint
     
-    $rcmd = "pwsh -f {0} -action {1} -PrivateKeyFile {2} -OpenSSL {3} {4} {5}" -f $entryPoint, $action, $configuration.PrivateKeyFile, $configuration.openssl, (Get-Verbose), ($hints -join ' ')
+    $rcmd = "pwsh -f {0} -action {1} {2} {3}" -f $entryPoint, $action, (Get-Verbose), ($hints -join ' ')
     $rcmd | Out-String | Write-Verbose
     $sshInvoker.Invoke($rcmd, (-not $notCombineError))
 }

@@ -32,7 +32,7 @@ class OsDetail {
 }
 function Split-Url {
     param (
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [string]$Url,
         [Parameter()]
         [ValidateSet("Container", "Leaf")]
@@ -75,13 +75,32 @@ function Split-Url {
     }
 }
 
-
+function Get-SoftwarePackages {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$TargetDir,
+        [Parameter(Mandatory = $true, Position = 1)]$Softwares
+    )
+    if (-not (Test-Path -Path $TargetDir -PathType Container)) {
+        New-Item -Path $TargetDir -ItemType "directory"
+    }
+    $Softwares | ForEach-Object {
+        $url = $_.PackageUrl
+        $ln = $_.LocalName
+        if (-not $ln) {
+            $ln = Split-Url -Url $url
+        }
+        $lf = Join-Path -Path $TargetDir -ChildPath $ln
+        if (-not (Test-Path -Path $lf -PathType Leaf)) {
+            Invoke-WebRequest -Uri $url -OutFile $lf
+        }
+    }
+}
 function Get-Configuration {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$ConfigFile,
-        [Parameter()][switch]$ServerSide,
-        [Parameter(Mandatory = $false)][string]$PrivateKeyFile,
-        [Parameter(Mandatory = $false)][string]$OpenSSL
+        [Parameter()][switch]$ServerSide
+        # [Parameter(Mandatory = $false)][string]$PrivateKeyFile,
+        # [Parameter(Mandatory = $false)][string]$OpenSSL
     )
     $vcf = Resolve-Path -Path $ConfigFile -ErrorAction SilentlyContinue
     if (-not $vcf) {
@@ -90,14 +109,14 @@ function Get-Configuration {
         return
     }
 
-    if ($PrivateKeyFile) {
-        $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $PrivateKeyFile -CombinedEncriptedFile $vcf -OpenSSL $OpenSSL
-        $c = Get-Content -Path $decrypted | ConvertFrom-Json
-        Remove-Item -Path $decrypted -Force
-    }
-    else {
-        $c = Get-Content -Path $vcf | ConvertFrom-Json
-    }
+    # if ($PrivateKeyFile) {
+    #     $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $PrivateKeyFile -CombinedEncriptedFile $vcf -OpenSSL $OpenSSL
+    #     $c = Get-Content -Path $decrypted | ConvertFrom-Json
+    #     Remove-Item -Path $decrypted -Force
+    # }
+    # else {
+    $c = Get-Content -Path $vcf | ConvertFrom-Json
+    # }
 
     if (-not $ServerSide) {
 
@@ -117,6 +136,19 @@ function Get-Configuration {
         # } else {
         #     $c | Add-Member -MemberType NoteProperty -Name "ClientOpenssl" -Value $capp.openssl
         # }
+        $c | Add-Member -MemberType ScriptMethod -Name "DownloadPackages" -Value {
+            $dl = Join-Path -Path $ProjectRoot -ChildPath "downloads" | Join-Path -ChildPath $this.myname
+            $osConfig = $this.SwitchByOs.($this.OsType)
+            Get-SoftwarePackages -TargetDir $dl -Softwares $osConfig.Softwares
+        }
+
+    }
+    else {
+        $c | Add-Member -MemberType ScriptMethod -Name "DownloadPackages" -Value {
+            $osConfig = $this.SwitchByOs.($this.OsType)
+            $packageDir = $osConfig.ServerSide.PackageDir
+            Get-SoftwarePackages -TargetDir $packageDir -Softwares $osConfig.Softwares
+        }
     }
 
     $c | Add-Member -MemberType ScriptProperty -Name OsConfig -Value {
@@ -127,12 +159,26 @@ function Get-Configuration {
         }
         $osConfig
     }
+
+    if ($ServerSide) {
+        $TargetDir = $c.OsConfig.ServerSide.PackageDir
+        $c.OsConfig.Softwares | ForEach-Object {
+            $url = $_.PackageUrl
+            $ln = $_.LocalName
+            if (-not $ln) {
+                $ln = Split-Url -Url $url
+            }
+            $lf = Join-Path -Path $TargetDir -ChildPath $ln
+            $_ | Add-Member -MemberType NoteProperty -Value $lf -Name LocalPath
+        }
+    }
+
     $Global:configuration = $c
     $c
 }
 function Join-UniversalPath {
     param (
-        [Parameter(Mandatory = $true, Position = 0)][string]$Path,
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)][string]$Path,
         [Parameter(Mandatory = $true, Position = 1)][string]$ChildPath
     )
     $sanitizedParent = sanitizePath -Path $Path
@@ -176,8 +222,10 @@ function sanitizePath {
 }
 function Split-UniversalPath {
     param (
-        [Parameter(Mandatory = $true, Position = 0)][string]$Path,
-        [switch]$Parent
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
+        [string]$Path,
+        [switch]$Parent,
+        [switch]$Leaf
     )
     $sanitized = sanitizePath -Path $Path
     $Path = $sanitized.sanitized
@@ -221,11 +269,7 @@ function Write-ParameterWarning {
 }
 
 function Test-SoftwareInstalled {
-    param (
-        [Parameter(Mandatory = $true, Position = 0)]$configuration
-    )
-
-    $osConfig = $configuration.OsConfig
+    $osConfig = $Global:configuration.OsConfig
     $idt = $osConfig.ServerSide.InstallDetect
     $idt.command | Write-Verbose
     $idt.expect | Write-Verbose
@@ -621,7 +665,9 @@ function Invoke-Executable {
 }
 
 function New-TemporaryDirectory {
-    New-TemporaryFile | ForEach-Object {Remove-Item $_; New-Item -Path $_ -ItemType Container}    
+    $t = New-TemporaryFile
+    Remove-Item $t
+    New-Item -Path $t -ItemType Container
 }
 
 function Split-Files {
@@ -909,14 +955,20 @@ function Protect-PasswordByOpenSSLPublicKey {
 
 function UnProtect-PasswordByOpenSSLPublicKey {
     param (
-        [Parameter(Mandatory = $true, Position = 0)][string]$PrivateKeyFile,
-        [Parameter(Mandatory = $true, Position = 1)][string]$base64
+        [Parameter(Mandatory = $true, Position = 0)][string]$base64,
+        [Parameter(Mandatory = $false, Position = 1)][string]$PrivateKeyFile,
+        [Parameter(Mandatory = $false, Position = 2)][string]$OpenSSL
     )
     $f = Get-FileFromBase64 -Base64 $base64
     $outf = New-TemporaryFile
     try {
-        $openssl = $Global:configuration.openssl
-        $cmd = "& '${openssl}' pkeyutl -decrypt -inkey $PrivateKeyFile -in $f -out $outf"
+        if (-not $OpenSSL) {
+            $OpenSSL = $Global:configuration.openssl
+        }
+        if (-not $PrivateKeyFile) {
+            $PrivateKeyFile = $Global:PrivateKeyFile
+        }
+        $cmd = "& '${OpenSSL}' pkeyutl -decrypt -inkey $PrivateKeyFile -in $f -out $outf"
         Invoke-Expression -Command $cmd
         $s = Get-Content -Path $outf -Encoding Ascii
         $s

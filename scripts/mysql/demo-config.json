@@ -19,7 +19,15 @@
       "Softwares": [
         {
           "PackageUrl": "https://cdn.mysql.com//Downloads/MySQL-5.7/mysql-community-common-5.7.23-1.el7.x86_64.rpm",
-          "LocalName": null
+          "LocalName": null,
+          "InstallDetect" : {
+            "command": "yum list installed | Where-Object {$_ -match 'mysql57-community-release.noarch'}",
+            "expect" : "aru",
+            "unexpect" : ""
+          },
+          "Install" : {
+            "command": "yum --nogpgcheck localinstall {0}"
+          }
         }
       ],
       "ServerSide": {

@@ -17,7 +17,11 @@ Describe "configuration" {
         $Global:configuration.openssl | Should -Be "openssl"
 
         Get-Configuration -ConfigFile $cfgfile 
-        $Global:configuration.openssl | Should -Not -Be "openssl"
+        $Global:configuration.openssl | Should -Be "openssl" # still to be openssl. Because we had added ClientOpenssl property.
+
+        $Global:configuration.DownloadPackages()
+
+        Send-SoftwarePackages
     }
 }
 
@@ -34,7 +38,6 @@ Describe "SshInvoker" {
         $j[1].b | Should -Be 2
     }
 
-
     it "should copy script to server." {
         $PSDefaultParameterValues['*:Verbose'] = $false
         $mysql = Join-Path -Path $scriptDir -ChildPath "mysql"
@@ -42,7 +45,7 @@ Describe "SshInvoker" {
         # $ht | Out-Host
         [SshInvoker]$sshInvoker = Get-SshInvoker -configuration $ht.configuration
         $sshInvoker.isFileExists($ht.configuration.ServerSide.ScriptDir) | Should -BeTrue
-        $result = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action Echo a b c
+        $result = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action Echo a b c
         $result | Should -Be 'a b c'
     }
 }

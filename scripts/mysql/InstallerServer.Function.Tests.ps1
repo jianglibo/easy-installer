@@ -79,7 +79,6 @@ Describe "manual" {
         $ht.SwitchByOs.centos.Softwares[0].LocalName | Should -Be "ln"
 
 
-        $ht.MysqlPassword | Should -Be "123456"
         $f = Get-ConfigFileInTestDriver $here -OneLevelHashTable @{"MysqlPassword"="567"}
         $ht = Get-Content -Path $f | ConvertFrom-Json
         $ht.MysqlPassword | Should -Be "567"
@@ -98,7 +97,7 @@ Describe "install" {
     it "should install mysql." {
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $PSDefaultParameterValues['*:Verbose'] = $true
-        $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action Install 57
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action Install 57
         $r | Should -Be 'AlreadyInstalled'
     }
 }

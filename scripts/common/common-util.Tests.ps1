@@ -4,6 +4,8 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 $scriptDir = $here | Split-Path -Parent
 
+. "$here\common-for-t.ps1"
+
 $tcfg = Get-Content -Path ($here | Join-Path -ChildPath "common-util.t.json") | ConvertFrom-Json
 
 Describe "common-util" {
@@ -33,6 +35,10 @@ Describe "common-util" {
         }
 
         Join-UniversalPath -Path "/tmp/sciprt" -ChildPath "*.ps1" | Should -Be "/tmp/sciprt/*.ps1"
+        "/tmp/sciprt" | Join-UniversalPath -ChildPath "*.ps1" | Should -Be "/tmp/sciprt/*.ps1"
+
+        "/tmp/sciprt" | Split-UniversalPath -Leaf | Should -Be 'sciprt'
+        "https://cdn.mysql.com//Downloads/MySQL-5.7/mysql-community-common-5.7.23-1.el7.x86_64.rpm" | Split-UniversalPath -Leaf | Should -Be "mysql-community-common-5.7.23-1.el7.x86_64.rpm"
     }
 }
 
@@ -180,9 +186,13 @@ Describe "openssl" {
     $plainfile = Join-Path $TestDrive "plain.txt"
     1..5000 -join ' ' | Out-File $plainfile
     it "should encrypt." {
+        Get-DemoConfiguration -HerePath (Join-Path -Path $scriptDir -ChildPath "mysql") -ServerSide
         $encrypted = Protect-ByOpenSSL -PublicKeyFile $tcfg.PublicKeyFile -PlainFile $plainfile
         Test-Path -Path $encrypted -PathType Leaf | Should -BeTrue
-        $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $tcfg.PrivateKeyFile -CombinedEncriptedFile $encrypted
+
+        Get-DemoConfiguration -HerePath (Join-Path -Path $scriptDir -ChildPath "mysql")
+
+        $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $tcfg.PrivateKeyFile -CombinedEncriptedFile $encrypted -openssl $Global:configuration.ClientOpenssl
         $LASTEXITCODE | Should -Be 0
         Get-Content -Path $decrypted | Should -Be (1..5000 -join ' ')
     }
@@ -203,10 +213,9 @@ Describe "base64" {
 Describe "protect password" {
     it "should convert." {
         $ss = ConvertTo-SecureString -String "123456" -AsPlainText -Force  # | ConvertFrom-SecureString
-
+        Get-DemoConfiguration -HerePath (Join-Path -Path $scriptDir -ChildPath "mysql")
         $base64 = Protect-PasswordByOpenSSLPublicKey -PublicKeyFile $tcfg.PublicKeyFile -ss $ss
-        $plainPwd = UnProtect-PasswordByOpenSSLPublicKey -PrivateKeyFile $tcfg.PrivateKeyFile -base64 $base64
-
+        $plainPwd = UnProtect-PasswordByOpenSSLPublicKey  -base64 $base64 -PrivateKeyFile $tcfg.PrivateKeyFile -OpenSSL $Global:configuration.ClientOpenssl
         $plainPwd | should -Be "123456"
     }
 }

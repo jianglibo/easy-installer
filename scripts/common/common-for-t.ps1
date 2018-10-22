@@ -8,7 +8,7 @@ function Copy-TestPsScriptToServer {
     }
     $sflf = $HerePath | Join-Path -ChildPath "serversidefilelist.txt"
     $configuration = Get-Configuration -ConfigFile $ConfigFile
-    Copy-PsScriptToServer -configuration $configuration -ConfigFile $ConfigFile -ServerSideFileListFile $sflf | Out-Null
+    Copy-PsScriptToServer -ConfigFile $ConfigFile -ServerSideFileListFile $sflf | Out-Null
     @{ConfigFile=$ConfigFile;configuration=$configuration;ServerSideFileListFile=$sflf}
 }
 
@@ -29,8 +29,9 @@ function Get-ConfigFileInTestDriver {
 
 function Get-DemoConfiguration {
     Param(
-        [Parameter(Mandatory = $true, Position = 0)][string]$HerePath
+        [Parameter(Mandatory = $true, Position = 0)][string]$HerePath,
+        [switch]$ServerSide
     )
     $ConfigFile = $HerePath | Join-Path -ChildPath "demo-config.1.json"
-    Get-Configuration -ConfigFile $ConfigFile
+    Get-Configuration -ConfigFile $ConfigFile -ServerSide:$ServerSide
 }

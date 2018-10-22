@@ -41,11 +41,8 @@ function Enable-RepoVersion {
 }
 
 function Test-MysqlIsRunning {
-    param (
-        [parameter(Mandatory = $true, Position = 0)]$configuration
-    )
     try {
-        Invoke-MysqlSQLCommand -configuration $configuration -sql "select 1" -combineError | Out-Null
+        Invoke-MysqlSQLCommand -sql "select 1" -combineError | Out-Null
         $true
     }
     catch {
@@ -55,24 +52,25 @@ function Test-MysqlIsRunning {
 
 function Install-Mysql {
     param (
-        [parameter(Mandatory = $true, Position = 0)]$configuration,
-        [parameter(Mandatory = $false)]
-        [string]$Version
+        [parameter(Mandatory = $false)][string]$Version
     )
-    if (Test-SoftwareInstalled -configuration $configuration) {
+    if (Test-SoftwareInstalled) {
         "AlreadyInstalled"
         return
     } else {
+        Get-SoftwarePackages
+        $Global:configuration.OsConfig.Softwares | ForEach-Object {
+            if ($_.InstallDetect) {
+                
+            }
+        }
         $cmd = "yum install -y "
     }
     
 }
 
 function Get-MycnfFile {
-    param (
-        [parameter(Mandatory = $true, Position = 0)]$configuration
-    )
-    $r = Invoke-Expression -Command "$($configuration.clientBin) --help"
+    $r = Invoke-Expression -Command "$($Global:configuration.clientBin) --help"
     $r = $r | ForEach-Object -Begin {
         $found = $false
     } -Process {
@@ -93,21 +91,26 @@ function Get-MycnfFile {
 
 function Get-SQLCommandLine {
     param (
-        [parameter(Mandatory = $true, Position = 0)]$configuration,
-        [parameter(Mandatory = $true, Position = 1)]$sql,
+        [parameter(Mandatory = $true, Position = 0)]$sql,
         [parameter()][switch]$combineError
     )
-    "{0} -uroot -p{1} -X -e `"{2}`"{3}" -f $configuration.clientBin, $configuration.MysqlPassword, $sql, $(if ($combineError) {" 2>&1"} else {""})
+    $c = $Global:configuration
+    if ($Global:DecryptedMysqlPassword) {
+        $mp = $Global:DecryptedMysqlPassword
+    } else {
+        $Global:DecryptedMysqlPassword = UnProtect-PasswordByOpenSSLPublicKey -base64 $c.MysqlPassword
+        $mp = $Global:DecryptedMysqlPassword
+    }
+    "{0} -uroot -p{1} -X -e `"{2}`"{3}" -f $c.clientBin, $mp, $sql, $(if ($combineError) {" 2>&1"} else {""})
 }
 
 function Invoke-MysqlSQLCommand {
     param (
-        [parameter(Mandatory = $true, Position = 0)]$configuration,
-        [parameter(Mandatory = $true, Position = 1)]$sql,
+        [parameter(Mandatory = $true, Position = 0)]$sql,
         [parameter()][switch]$combineError
     )
 
-    $sql = Get-SQLCommandLine -configuration $configuration -sql $sql -combineError:$combineError
+    $sql = Get-SQLCommandLine -sql $sql -combineError:$combineError
     $r = Invoke-Expression -Command $sql | Where-Object {-not ($_ -like 'Warning:*')}
     $r | Write-Verbose
     if ($r -like "*Access Denied*") {
@@ -124,10 +127,9 @@ function Invoke-MysqlSQLCommand {
 #>
 function Get-MysqlVariables {
     param (
-        [parameter(Mandatory = $true, Position = 0)]$configuration,
         [parameter(Mandatory = $false, Position = 1)][string[]]$VariableNames
     )
-    $r = Invoke-MysqlSQLCommand -configuration $configuration -sql "show variables" -combineError
+    $r = Invoke-MysqlSQLCommand -sql "show variables" -combineError
     if ($VariableNames.Count -gt 0) {
         ([xml]$r).resultset.row | ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | Where-Object {$_.name -in $VariableNames} | ConvertTo-Json -Depth 10
     }
@@ -137,16 +139,13 @@ function Get-MysqlVariables {
 }
 
 function Uninstall-Mysql {
-    param (
-        [parameter(Mandatory = $true, Position = 0)]$configuration
-    )
     $osDetail = Get-OsDetail
     if ($osDetail.isUnix()) {
         try {
-            $vh = Get-MysqlVariables -configuration $configuration -VariableNames [MysqlVariableNames]::DATA_DIR
+            $vh = Get-MysqlVariables -VariableNames [MysqlVariableNames]::DATA_DIR
             $r = systemctl stop mysqld
             Start-Sleep -Seconds 3
-            if (Test-MysqlIsRunning -configuration $configuration) {
+            if (Test-MysqlIsRunning) {
                 "Fail to stop mysqld."
             } else {
                 $r = "$(yum list installed | grep mysql | ForEach-Object {($_ -split "\s+",3)[0]} | Where-Object {$_ -like 'mysql-community*'})"
