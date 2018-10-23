@@ -20,6 +20,8 @@ $here = $myself | Split-Path -Parent
 
 $ConfigFile = $here | Join-Path -ChildPath "config.json"
 
+$ConfigFile | Write-Verbose
+
 . (Join-Path -Path $here -ChildPath "common-util.ps1")
 
 $configuration = Get-Configuration -ConfigFile $ConfigFile -ServerSide

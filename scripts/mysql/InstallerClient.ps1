@@ -6,7 +6,8 @@ param (
     [string]$ConfigFile,
     [parameter(Mandatory = $false)]
     [ValidateSet("55", "56", "57", "80")]
-    [string]$Version
+    [string]$Version,
+    [switch]$CopyScripts
 )
 
 <#
@@ -52,6 +53,9 @@ else {
     if (-not $configuration) {
         return
     }
+    if ($CopyScripts) {
+        Copy-PsScriptToServer -ConfigFile $ConfigFile -ServerSideFileListFile ($here | Join-Path -ChildPath "serversidefilelist.txt")
+    }
     switch ($Action) {
         "DownloadPackages" {
             $configuration.DownloadPackages()
@@ -70,8 +74,9 @@ else {
             }
         }
         Default {
-            $configuration = Get-Configuration -ConfigFile $ConfigFile
-            $configuration | ConvertTo-Json -Depth 10
+            Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action $Version
+            # $configuration = Get-Configuration -ConfigFile $ConfigFile
+            # $configuration | ConvertTo-Json -Depth 10
         }
     }
 }

@@ -156,7 +156,7 @@ function Invoke-ServerRunningPs1 {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$ConfigFile,
         [Parameter(Mandatory = $true, Position = 1)]
-        [string]$action,
+        [string]$Action,
         [parameter(Mandatory = $false)][switch]$notCombineError,
         [parameter(Mandatory = $false,
             ValueFromRemainingArguments = $true)]

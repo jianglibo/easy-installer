@@ -268,17 +268,46 @@ function Write-ParameterWarning {
     }
 }
 
+function Install-SoftwareByExpression {
+    param (
+        [Parameter(Mandatory = $false, Position = 0)]$OneSoftware
+    )
+    if ($OneSoftware -and $OneSoftware.Install -and $OneSoftware.Install.Command) {
+        $cmd = $OneSoftware.Install.Command
+        $cmd = $cmd -replace '{filepath}',$OneSoftware.LocalPath
+        Invoke-Expression -Command $cmd
+    }
+}
+
+function Show-FilesInRPM {
+    param (
+        [Parameter(Mandatory = $false, Position = 0)]$rpm
+    )
+    # mysql57-community-release
+    $cmd = "rpm -ql $rpm"
+    $cmd | Write-Verbose
+    Invoke-Expression -Command $cmd
+}
+
 function Test-SoftwareInstalled {
-    $osConfig = $Global:configuration.OsConfig
-    $idt = $osConfig.ServerSide.InstallDetect
+    param (
+        [Parameter(Mandatory = $false, Position = 0)]$OneSoftware
+    )
+    if (-not $OneSoftware) {
+        return $false
+    }
+    $idt = $OneSoftware.InstallDetect
     $idt.command | Write-Verbose
     $idt.expect | Write-Verbose
     $idt.unexpect | Write-Verbose
     $r = Invoke-Expression -Command $idt.command
     $r | Write-Verbose
     if ($idt.expect) {
-        $idt.expect | Write-Verbose
-        $r -match $idt.expect
+        if ($idt.expect -eq 'aru') {
+            $r
+        } else {
+            $r -match $idt.expect
+        }
     }
     else {
         -not ($r -match $idt.unexpect)

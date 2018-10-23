@@ -54,19 +54,18 @@ function Install-Mysql {
     param (
         [parameter(Mandatory = $false)][string]$Version
     )
-    if (Test-SoftwareInstalled) {
+    if (Test-SoftwareInstalled -OneSoftware $Global:configuration.ServerSide.Software) {
         "AlreadyInstalled"
         return
     } else {
-        Get-SoftwarePackages
-        $Global:configuration.OsConfig.Softwares | ForEach-Object {
-            if ($_.InstallDetect) {
-                
-            }
-        }
-        $cmd = "yum install -y "
+        $OsConfig = $Global:configuration.OsConfig
+        Get-SoftwarePackages -TargetDir $OsConfig.ServerSide.PackageDir -Softwares $OsConfig.Softwares
+        Enable-RepoVersion -RepoFile "/etc/yum.repos.d/mysql-community.repo" -Version $Version
+        $cmd = "yum install -y mysql-community-server"
+        $cmd | Write-Verbose
+        Invoke-Expression -Command $cmd
+        "Mission accomplished."
     }
-    
 }
 
 function Get-MycnfFile {
