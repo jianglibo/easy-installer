@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "Start", "Stop", "Restart" "GetDemoConfigFile", "DownloadPackages","SendPackages", "Remove")]
+    [ValidateSet("Install", "Start", "Stop", "Restart", "GetDemoConfigFile", "DownloadPackages","SendPackages", "Remove")]
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,
@@ -44,9 +44,8 @@ if ($isInstall -and (-not $Version)) {
     return
 }
 
-
 if ($Action -eq "GetDemoConfigFile") {
-    Copy-DemoConfigFile -MyDir $here -ToFileName "mysql-demo-config.json"
+    Copy-DemoConfigFile -MyDir $here -ToFileName "mysql-config.json"
 }
 else {
     $configuration = Get-Configuration -ConfigFile $ConfigFile

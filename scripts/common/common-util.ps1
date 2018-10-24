@@ -137,7 +137,7 @@ function Get-Configuration {
         #     $c | Add-Member -MemberType NoteProperty -Name "ClientOpenssl" -Value $capp.openssl
         # }
         $c | Add-Member -MemberType ScriptMethod -Name "DownloadPackages" -Value {
-            $dl = Join-Path -Path $ProjectRoot -ChildPath "downloads" | Join-Path -ChildPath $this.myname
+            $dl = Join-Path -Path $ProjectRoot -ChildPath "downloads" | Join-Path -ChildPath $this.AppName
             $osConfig = $this.SwitchByOs.($this.OsType)
             Get-SoftwarePackages -TargetDir $dl -Softwares $osConfig.Softwares
         }

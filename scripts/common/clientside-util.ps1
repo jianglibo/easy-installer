@@ -2,13 +2,20 @@ $CommonScriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = $CommonScriptsDir | Split-Path -Parent | Split-Path  -Parent
 . "${CommonScriptsDir}\common-util.ps1"
 
+function Get-AppName {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$MyDir
+    )
+    (Get-Content -Path (Join-Path -Path $MyDir -ChildPath "demo-config.json") | ConvertFrom-Json).AppName
+}
 
 function Copy-DemoConfigFile {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$MyDir,
-        [Parameter(Mandatory = $true, Position = 1)][string]$ToFileName
+        [Parameter(Mandatory = $true, Position = 1)][string]$HostName,
+        [Parameter(Mandatory = $true, Position = 2)][string]$ToFileName
     )
-    $demofolder = $PWD | Join-Path -ChildPath "myconfigs"
+    $demofolder = $PWD | Join-Path -ChildPath "myconfigs" | Join-Path -ChildPath $HostName
     "MyDir is: $MyDir" | Write-Verbose
     "Checking existance of $demofolder ...." | Write-Verbose
     if (-not (Test-Path -Path $demofolder)) {
@@ -19,7 +26,10 @@ function Copy-DemoConfigFile {
     $srcfile = Join-Path -Path $MyDir -ChildPath "demo-config.json"
     "source file is: $srcfile" | Write-Verbose
 
-    Copy-Item -Path $srcfile -Destination $tofile
+    $h = Get-Content -Path $srcfile | ConvertFrom-Json
+    $h.HostName = $HostName
+    # Copy-Item -Path $srcfile -Destination $tofile
+    $h | ConvertTo-Json -Depth 10 | Out-File $tofile
     "The demo config file created at ${tofile}`n"
 }
 function Get-PublicKeyFile {
@@ -44,7 +54,7 @@ function Get-PublicKeyFile {
 
 function Send-SoftwarePackages {
     $c = $Global:configuration
-    $dl = $ProjectRoot | Join-Path -ChildPath "downloads" | Join-Path -ChildPath $c.myname
+    $dl = $ProjectRoot | Join-Path -ChildPath "downloads" | Join-Path -ChildPath $c.AppName
     if (-not (Test-Path -Path $dl -PathType Container)) {
         New-Item -Path $dl -ItemType "directory"
     }
