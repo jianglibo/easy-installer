@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install","GetMycnf","GetVariables","Uninstall", "Echo")]
+    [ValidateSet("Install","Start", "Stop", "Restart", "GetMycnf","GetVariables","Uninstall", "Echo")]
     [string]$Action,
     [parameter(Mandatory = $false,
         ValueFromRemainingArguments = $true)]
@@ -55,6 +55,11 @@ switch ($Action) {
     "Uninstall" {
         Uninstall-Mysql
         break
+    }
+    "Start" {}
+    "Stop" {}
+    "Restart" {
+        Update-MysqlStatus -StatusTo $Action
     }
     Default {
         $configuration | ConvertTo-Json -Depth 10

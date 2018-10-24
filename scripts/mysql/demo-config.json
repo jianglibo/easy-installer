@@ -31,6 +31,9 @@
         }
       ],
       "ServerSide": {
+        "StartCommand": "systemctl start mysqld",
+        "StopCommand": "systemctl stop mysqld",
+        "RestartCommand": "systemctl restart mysqld",
         "ScriptDir": "/tmp/easyinstaller-scripts/mysql",
         "PackageDir": "/tmp/easyinstaller-sripts/packages",
         "EntryPoint": "InstallerServer.ps1",

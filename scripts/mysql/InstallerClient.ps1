@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "GetDemoConfigFile", "DownloadPackages","SendPackages", "Remove")]
+    [ValidateSet("Install", "Start", "Stop", "Restart" "GetDemoConfigFile", "DownloadPackages","SendPackages", "Remove")]
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,

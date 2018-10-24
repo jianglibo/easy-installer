@@ -50,6 +50,19 @@ function Test-MysqlIsRunning {
     }
 }
 
+function Update-MysqlStatus {
+    param (
+        [parameter(Mandatory = $false)]
+        [ValidateSet("Start", "Stop", "Restart")]
+        [string]
+        $StatusTo
+    )
+
+    $c = "${StatusTo}Command"
+    $OsConfig = $Global:configuration.OsConfig
+    Invoke-Expression -Command $OsConfig.$c
+}
+
 function Install-Mysql {
     param (
         [parameter(Mandatory = $false)][string]$Version
@@ -64,6 +77,11 @@ function Install-Mysql {
         $cmd = "yum install -y mysql-community-server"
         $cmd | Write-Verbose
         Invoke-Expression -Command $cmd
+        Update-MysqlStatus -StatusTo Start
+
+        
+
+
         "Mission accomplished."
     }
 }
