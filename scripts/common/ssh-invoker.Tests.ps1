@@ -1,7 +1,7 @@
 ﻿$here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
-. "$here\deploy-util.ps1"
+# . "$here\deploy-util.ps1"
 . "$here\$sut"
 
 $kv = Get-Content "$here\properties-for-test.json" | ConvertFrom-Json

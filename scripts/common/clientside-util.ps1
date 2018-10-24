@@ -136,6 +136,12 @@ function Copy-PsScriptToServer {
             Write-ParameterWarning -wstring "There must have a value for ServerSide.ScriptDir in configuration file: $ConfigFile"
             return
         }
+
+        $rmcmd = "pwsh -Command '& {remove-item -Path " + $dst + "/* -recurse -force}'"
+        $rmcmd | Write-Verbose
+
+        $sshInvoker.Invoke($rmcmd)
+
         $r = $sshInvoker.scp($filesToCopy, $dst, $true)
 
         "files copied: $r" | Write-Verbose

@@ -112,13 +112,14 @@ function Get-SQLCommandLine {
         [parameter()][switch]$combineError
     )
     $c = $Global:configuration
-    if ($Global:DecryptedMysqlPassword) {
-        $mp = $Global:DecryptedMysqlPassword
-    } else {
-        $Global:DecryptedMysqlPassword = UnProtect-PasswordByOpenSSLPublicKey -base64 $c.MysqlPassword
-        $mp = $Global:DecryptedMysqlPassword
+    if (-not $Global:MysqlExtraFile) {
+        $t = New-TemporaryFile
+        $p = UnProtect-PasswordByOpenSSLPublicKey -base64 $c.MysqlPassword
+        "[client]", "user=$($c.MysqlUser)","password=$p" | Out-File -FilePath $t -Encoding ascii
+        $Global:MysqlExtraFile = $t
     }
-    "{0} -uroot -p{1} -X -e `"{2}`"{3}" -f $c.clientBin, $mp, $sql, $(if ($combineError) {" 2>&1"} else {""})
+    #  mysql  --defaults-extra-file=extra.txt -X  -e "select 1"
+    "{0} {1} -X -e `"{2}`"{3}" -f $c.clientBin, $mp, $Global:MysqlExtraFile, $(if ($combineError) {" 2>&1"} else {""})
 }
 
 function Invoke-MysqlSQLCommand {

@@ -17,13 +17,13 @@ $proot = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $appfolder = ($AppName -csplit '(?<!^)(?=[A-Z])',5 |ForEach-Object {([string]$_).ToLower()}) -join '-'
 
-. "${proot}\scripts\common\SshInvoker.ps1"
+. "${proot}\scripts\common\ssh-invoker.ps1"
 
 # $hints | Out-String | Write-Verbose
 
 # $psDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 # . "${psDir}\internal\deploy-config.ps1"
-# . "${psDir}\internal\SshInvoker.ps1"
+# . "${psDir}\internal\ssh-invoker.ps1"
 # . "${psDir}\internal\deploy-util.ps1"
 # $ConfigFile = "${psDir}\deploy.json"
 # $dconfig = Get-DeployConfig -ConfigFile $ConfigFile

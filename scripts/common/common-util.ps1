@@ -995,7 +995,7 @@ function UnProtect-PasswordByOpenSSLPublicKey {
             $OpenSSL = $Global:configuration.openssl
         }
         if (-not $PrivateKeyFile) {
-            $PrivateKeyFile = $Global:PrivateKeyFile
+            $PrivateKeyFile = $Global:configuration.PrivateKeyFile
         }
         $cmd = "& '${OpenSSL}' pkeyutl -decrypt -inkey $PrivateKeyFile -in $f -out $outf"
         Invoke-Expression -Command $cmd

@@ -116,6 +116,9 @@ class SshInvoker {
         $r = Invoke-Expression -Command $scpStr
         $this.result = $r
         $this.ExitCode = $LASTEXITCODE
+        if ($this.ExitCode -ne 0) {
+            throw $r
+        }
         if ($r -like "*No such file or directory*") {
             if ($retry) {
                 throw 1000

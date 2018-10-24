@@ -28,14 +28,14 @@ $ScriptDir = $here | Split-Path -Parent
 
 $Global:ProjectRoot = $ScriptDir | Split-Path -Parent
 
-".\SshInvoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1" | ForEach-Object {
+".\ssh-invoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1" | ForEach-Object {
     . "${ScriptDir}\common\$_"
 }
 
 $isInstall = $Action -eq "Install"
 
 if ($isInstall -and (-not $ConfigFile)) {
-    Write-ParameterWarning -wstring "If action is Install then ConfigFile parameter is required."
+    Write-ParameterWarning -wstring "If action is Install then ConfigFile parameter is required. If you don't know what ConfigFile is, run Action 'GetDemoConfigFile' first."
     return
 }
 

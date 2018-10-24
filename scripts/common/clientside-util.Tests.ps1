@@ -5,7 +5,7 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 $scriptDir = $here | Split-Path -Parent
 
-. "${scriptDir}\common\SshInvoker.ps1"
+. "${scriptDir}\common\ssh-invoker.ps1"
 . "${scriptDir}\common\clientside-util.ps1"
 . "${scriptDir}\common\common-for-t.ps1"
 
