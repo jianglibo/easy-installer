@@ -8,8 +8,8 @@ function Enable-RepoVersion {
         [ValidateSet("55", "56", "57", "80")]
         [string]$Version
     )
-
-    Get-Content $RepoFile | ForEach-Object -Begin {
+    Backup-LocalDirectory -Path $RepoFile -keepOrigin
+    $content = Get-Content $RepoFile | ForEach-Object -Begin {
         $currentVersion = ""
     } -Process {
         $notChanged = $true
@@ -38,6 +38,8 @@ function Enable-RepoVersion {
             $_
         }
     }
+
+    $content | Out-File -FilePath $RepoFile -Encoding ascii
 }
 
 function Test-MysqlIsRunning {
@@ -53,21 +55,24 @@ function Test-MysqlIsRunning {
 function Update-MysqlStatus {
     param (
         [parameter(Mandatory = $false)]
-        [ValidateSet("Start", "Stop", "Restart")]
+        [ValidateSet("Start", "Stop", "Restart", "Status")]
         [string]
         $StatusTo
     )
 
     $c = "${StatusTo}Command"
-    $OsConfig = $Global:configuration.OsConfig
-    Invoke-Expression -Command $OsConfig.$c
+    $ServerSide = $Global:configuration.OsConfig.ServerSide
+    $cmd = $ServerSide.$c + " 2>&1"
+    $cmd | Write-Verbose
+    Invoke-Expression -Command $cmd
 }
 
 function Install-Mysql {
     param (
         [parameter(Mandatory = $false)][string]$Version
     )
-    if (Test-SoftwareInstalled -OneSoftware $Global:configuration.ServerSide.Software) {
+    if (Test-SoftwareInstalled -OneSoftware $Global:configuration.OsConfig.ServerSide.Software) {
+        Invoke-MysqlSQLCommand -sql "select 1"
         "AlreadyInstalled"
         return
     } else {
@@ -79,6 +84,7 @@ function Install-Mysql {
         Invoke-Expression -Command $cmd
         Update-MysqlStatus -StatusTo Start
 
+        Invoke-MysqlSQLCommand -sql "select 1"
         
 
 
@@ -109,7 +115,7 @@ function Get-MycnfFile {
 function Get-SQLCommandLine {
     param (
         [parameter(Mandatory = $true, Position = 0)]$sql,
-        [parameter()][switch]$combineError
+        [switch]$combineError
     )
     $c = $Global:configuration
     if (-not $Global:MysqlExtraFile) {

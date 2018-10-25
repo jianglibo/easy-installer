@@ -35,8 +35,9 @@
         "StartCommand": "systemctl start mysqld",
         "StopCommand": "systemctl stop mysqld",
         "RestartCommand": "systemctl restart mysqld",
+        "StatusCommand": "systemctl status mysqld",
         "ScriptDir": "/tmp/easyinstaller-scripts/mysql",
-        "PackageDir": "/tmp/easyinstaller-sripts/packages",
+        "PackageDir": "/tmp/easyinstaller-scripts/packages",
         "EntryPoint": "installer-server.ps1",
         "Software": {
           "InstallDetect": {

@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "Start", "Stop", "Restart", "GetDemoConfigFile", "DownloadPackages","SendPackages", "Remove")]
+    [ValidateSet("Install", "Start", "Stop", "Restart", "GetDemoConfigFile","Status", "DownloadPackages","SendPackages", "Remove")]
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,
@@ -20,6 +20,8 @@ param (
 $vb = $PSBoundParameters.ContainsKey('Verbose')
 if ($vb) {
     $PSDefaultParameterValues['*:Verbose'] = $true
+} else {
+    $PSDefaultParameterValues['*:Verbose'] = $false
 }
 
 $myself = $MyInvocation.MyCommand.Path
@@ -34,10 +36,6 @@ $Global:ProjectRoot = $ScriptDir | Split-Path -Parent
 
 $isInstall = $Action -eq "Install"
 
-if ($isInstall -and (-not $ConfigFile)) {
-    Write-ParameterWarning -wstring "If action is Install then ConfigFile parameter is required. If you don't know what ConfigFile is, run Action 'GetDemoConfigFile' first."
-    return
-}
 
 if ($isInstall -and (-not $Version)) {
     Write-ParameterWarning -wstring "If action is Install then Version parameter is required."
@@ -48,6 +46,11 @@ if ($Action -eq "GetDemoConfigFile") {
     Copy-DemoConfigFile -MyDir $here -ToFileName "mysql-config.json"
 }
 else {
+    if (-not $ConfigFile) {
+        Write-ParameterWarning -wstring "This action need ConfigFile parameter, If you don't know what ConfigFile is, run Action 'GetDemoConfigFile' first."
+        return
+    }
+
     $configuration = Get-Configuration -ConfigFile $ConfigFile
     if (-not $configuration) {
         return

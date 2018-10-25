@@ -76,3 +76,27 @@ Describe "file path" {
         }
     }
 }
+
+Describe "switch case" {
+    it "should handle expression branch" {
+        $y = 0
+        $x = "yw"
+        switch ($x) {
+            ({($PSItem -eq 'yw') -or ($PSItem -eq 'yy')}) { 
+                $y = 5
+             }
+            Default {}
+        }
+        $y | Should -Be 5
+
+        $y = 0
+        $x = "yw"
+        switch ($x) {
+            ({$PSItem -in "k","yw"}) { 
+                $y = 5
+             }
+            Default {}
+        }
+        $y | Should -Be 5
+    }
+}

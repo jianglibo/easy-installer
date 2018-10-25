@@ -9,7 +9,7 @@ class SshInvoker {
     [string]$ifile
 
     [int]$ExitCode
-    [string]$result
+    [string[]]$result
     [string]$sshStr
     [string] hidden $ShellName
     [string]$commandName
@@ -51,11 +51,11 @@ class SshInvoker {
         return (-not $this.IsCommandNotFound())
     }
 
-    [string] invoke([string]$cmd) {
+    [string[]] invoke([string]$cmd) {
         return $this.invoke($cmd, $true)
     }
 
-    [string] invoke([string]$cmd, [bool]$combineError) {
+    [string[]] invoke([string]$cmd, [bool]$combineError) {
         switch ($this.ShellName) {
             bash { 
                 return $this.InvokeBash($cmd, $combineError)
@@ -65,7 +65,7 @@ class SshInvoker {
         return null
     }
 
-    [string] hidden invokeBash([string]$cmd, [bool]$combineError) {
+    [string[]] hidden invokeBash([string]$cmd, [bool]$combineError) {
         if ($combineError) {
             $c =  "$($this.sshStr) `"$cmd 2>&1`""
         } else {
@@ -138,7 +138,7 @@ class SshInvoker {
         }
     }
 
-    [string]scp([string]$localPathes, [string]$remotePath, [bool]$targetIsDir) {
+    [string[]]scp([string]$localPathes, [string]$remotePath, [bool]$targetIsDir) {
         return $this.scpInternal($localPathes, $remotePath, $targetIsDir, $false)
     }
 

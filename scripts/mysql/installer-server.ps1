@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "Start", "Stop", "Restart", "GetMycnf", "GetVariables", "Uninstall", "Echo")]
+    [ValidateSet("Install", "Start", "Stop", "Restart","Status", "GetMycnf", "GetVariables", "Uninstall", "Echo")]
     [string]$Action,
     [parameter(Mandatory = $false,
         ValueFromRemainingArguments = $true)]
@@ -58,9 +58,7 @@ try {
             Uninstall-Mysql
             break
         }
-        "Start" {}
-        "Stop" {}
-        "Restart" {
+        {$PSItem -in "Start", "Stop", "Status","Restart"} {
             Update-MysqlStatus -StatusTo $Action
         }
         Default {

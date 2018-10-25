@@ -58,7 +58,7 @@ Describe "manual" {
 
         $configuration = Get-DemoConfiguration -HerePath $here
 
-        $configuration.SwitchByOs.centos.ServerSide.EntryPoint | Should -Be "InstallerServer.ps1"
+        $configuration.SwitchByOs.centos.ServerSide.EntryPoint | Should -Be "installer-server.ps1"
 
         Get-ChangedHashtable -customob $configuration -OneLevelHashTable @{"SwitchByOs.centos.ServerSide.EntryPoint"=55}
         $configuration.SwitchByOs.centos.ServerSide.EntryPoint | Should -Be 55

@@ -1,10 +1,9 @@
 ﻿$here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
-# . "$here\deploy-util.ps1"
 . "$here\$sut"
 
-$kv = Get-Content "$here\properties-for-test.json" | ConvertFrom-Json
+$kv = Get-Content "$here\common-util.t.json" | ConvertFrom-Json
 
 Describe "SshInvoker" {
     $parent = "TestDrive:\folder"
@@ -25,15 +24,24 @@ Describe "SshInvoker" {
     }
     It "shoud invoke bash command." {
         $o = [SshInvoker]::new($kv.HostName, $kv.ifile)
-        $r = $o.InvokeBash("echo a");
+        $r = $o.InvokeBash("echo a", $false);
         $o.result | Should -Be $r
         $o.ExitCode | Should -Be 0
         $r | Should -Be "a"
     }
     It "shoud handle command not found." {
         $o = [SshInvoker]::new($kv.HostName, $kv.ifile)
-        $r = $o.InvokeBash("echo001 a");
+        $r = $o.InvokeBash("echo001 a", $true);
         $o.IsCommandNotFound() | Should -BeTrue
+    }
+
+    It "shoud contains new lines." {
+        $o = [SshInvoker]::new($kv.HostName, $kv.ifile)
+        $r = $o.InvokeBash("ls -lh /", $true)
+
+        "a" | should -BeOfType [string]
+        $r | Should -BeOfType [string] # first item.
+        $r.Count |Should -BeGreaterThan 2
     }
 }
 
@@ -64,9 +72,9 @@ Describe "SshInvoker scp" {
     }
 
     It "should handle scp to unreachable destination." {
-        $uploladed = $sshInvoker.scp($kkvFileInSrcFolder, "$remoteFolderNoEndSlash/aa/bb/cc", $true)
-        $uploladed | Should -Be "/tmp/folder/aa/bb/cc/kkv.txt"
-        $sshInvoker.isFileExists("/tmp/folder/aa/bb/cc/kkv.txt") | Should -BeTrue
+        { $sshInvoker.scp($kkvFileInSrcFolder, "$remoteFolderNoEndSlash/aa/bb/cc", $true)} | Should -Throw "scp: /tmp/folder/aa/bb/cc: No such file or directory"
+        # $uploladed | Should -Be "/tmp/folder/aa/bb/cc/kkv.txt"
+        # $sshInvoker.isFileExists("/tmp/folder/aa/bb/cc/kkv.txt") | Should -BeTrue
     }
 
     It "should scp a file to target no end slash." {
@@ -124,7 +132,7 @@ Describe "SshInvoker scp" {
         $sshInvoker.isFileExists($rr) | Should -BeTrue
 
         $rr = "${remoteFolderNoEndSlash}/kkv1.txt"
-        $rr =  $sshInvoker.isFileExists($rr) 
+        $rr = $sshInvoker.isFileExists($rr) 
         $rr | Should -BeTrue
     }
 }

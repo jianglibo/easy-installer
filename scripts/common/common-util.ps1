@@ -274,7 +274,7 @@ function Install-SoftwareByExpression {
     )
     if ($OneSoftware -and $OneSoftware.Install -and $OneSoftware.Install.Command) {
         $cmd = $OneSoftware.Install.Command
-        $cmd = $cmd -replace '{filepath}',$OneSoftware.LocalPath
+        $cmd = $cmd -replace '{filepath}', $OneSoftware.LocalPath
         Invoke-Expression -Command $cmd
     }
 }
@@ -305,7 +305,8 @@ function Test-SoftwareInstalled {
     if ($idt.expect) {
         if ($idt.expect -eq 'aru') {
             $r
-        } else {
+        }
+        else {
             $r -match $idt.expect
         }
     }
@@ -951,7 +952,12 @@ function Get-FileFromBase64 {
     if (-not $OutFile) {
         $OutFile = New-TemporaryFile
     }
-    Set-Content -Path $OutFile -Value $bytes -Encoding Byte
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+        Set-Content -Path $OutFile -Value $bytes -AsByteStream
+    }
+    else {
+        Set-Content -Path $OutFile -Value $bytes -Encoding Byte
+    }
     $OutFile
 }
 
@@ -998,6 +1004,7 @@ function UnProtect-PasswordByOpenSSLPublicKey {
             $PrivateKeyFile = $Global:configuration.PrivateKeyFile
         }
         $cmd = "& '${OpenSSL}' pkeyutl -decrypt -inkey $PrivateKeyFile -in $f -out $outf"
+        $cmd | Write-Verbose
         Invoke-Expression -Command $cmd
         $s = Get-Content -Path $outf -Encoding Ascii
         $s

@@ -141,12 +141,8 @@ function Copy-PsScriptToServer {
         $rmcmd | Write-Verbose
 
         $sshInvoker.Invoke($rmcmd)
-
         $r = $sshInvoker.scp($filesToCopy, $dst, $true)
-
         "files copied: $r" | Write-Verbose
-
-        $r
     }
     finally {
         Remove-Item -Path $td -Recurse -Force
