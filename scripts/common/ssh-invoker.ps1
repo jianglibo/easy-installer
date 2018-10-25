@@ -4,7 +4,7 @@
 }
 
 class SshInvoker {
-    [string]$UserName="root"
+    [string]$UserName = "root"
     [string]$HostName
     [string]$ifile
 
@@ -14,14 +14,14 @@ class SshInvoker {
     [string] hidden $ShellName
     [string]$commandName
 
-    SshInvoker([string]$HostName, [string]$ifile){
+    SshInvoker([string]$HostName, [string]$ifile) {
         $this.HostName = $HostName
         $this.ShellName = [ShellName]::bash
         $this.ifile = $ifile
         $this.sshStr = "ssh -i $ifile $($this.UserName)@${HostName}"
     }
 
-    SshInvoker([string]$HostName, [string]$ifile, [ShellName]$ShellName){
+    SshInvoker([string]$HostName, [string]$ifile, [ShellName]$ShellName) {
         $this.HostName = $HostName
         $this.ShellName = $ShellName
         $this.ifile = $ifile
@@ -32,7 +32,7 @@ class SshInvoker {
         switch ($this.ShellName) {
             bash { 
                 return ($this.result -like "*command not found*")
-             }
+            }
             Default {}
         }
         return $false
@@ -59,7 +59,7 @@ class SshInvoker {
         switch ($this.ShellName) {
             bash { 
                 return $this.InvokeBash($cmd, $combineError)
-             }
+            }
             Default {}
         }
         return null
@@ -67,9 +67,10 @@ class SshInvoker {
 
     [string[]] hidden invokeBash([string]$cmd, [bool]$combineError) {
         if ($combineError) {
-            $c =  "$($this.sshStr) `"$cmd 2>&1`""
-        } else {
-            $c =  "$($this.sshStr) `"$cmd`""
+            $c = "$($this.sshStr) `"$cmd 2>&1`""
+        }
+        else {
+            $c = "$($this.sshStr) `"$cmd`""
         }
         $c | Write-Verbose
         $this.commandName = $c
@@ -87,7 +88,7 @@ class SshInvoker {
     <#
         remotePath maybe point to a directory or name a file.
     #>
-    [string] hidden scpInternal([string]$localPathes, [string]$remotePath, [bool]$targetIsDir, [bool]$retry) {
+    [string[]] hidden scpInternalTo([string]$localPathes, [string]$remotePath, [bool]$targetIsDir, [bool]$retry) {
         [array]$ary = $localPathes -split ' '
 
         if ($ary.Count -eq 0) {
@@ -109,7 +110,7 @@ class SshInvoker {
 
         $roption = if ($hasDir) {'-r'} else {''}
 
-        $scpStr = "scp -i {0} {1} {2} {3}@{4}:{5} 2>&1" -f $this.ifile,$roption,$localPathes,$this.UserName,$this.HostName,$remotePath
+        $scpStr = "scp -i {0} {1} {2} {3}@{4}:{5} 2>&1" -f $this.ifile, $roption, $localPathes, $this.UserName, $this.HostName, $remotePath
 
         $this.commandName = $scpStr
 
@@ -125,21 +126,46 @@ class SshInvoker {
             }
             if ($targetIsDir) {
                 $this.invoke("mkdir -p ${remotePath}")
-            } else {
+            }
+            else {
                 $this.invoke("mkdir -p $(Split-UniversalPath -Parent $remotePath)")
             }
             return $this.scpInternal($localPathes, $remotePath, $targetIsDir, $true)
-        } else {
+        }
+        else {
             if ($targetIsDir) {
                 return $ary | ForEach-Object {Join-UniversalPath -Path $remotePath -ChildPath (Split-UniversalPath -Path $_)}
-            } else {
+            }
+            else {
                 return $remotePath
             }
         }
     }
 
-    [string[]]scp([string]$localPathes, [string]$remotePath, [bool]$targetIsDir) {
-        return $this.scpInternal($localPathes, $remotePath, $targetIsDir, $false)
+    [string[]] hidden scpInternalFrom([string]$remotePath, [string]$localPath, [bool]$RemoteIsDir) {
+
+        $roption = if ($RemoteIsDir) {'-r'} else {''}
+        $scpStr = "scp -i {0} {1} {2}@{3}:{4} {5} 2>&1" -f $this.ifile, $roption, $this.UserName, $this.HostName, $remotePath, $localPath
+
+        $scpStr | Write-Verbose
+
+        $this.commandName = $scpStr
+
+        $r = Invoke-Expression -Command $scpStr
+        $this.result = $r
+        $this.ExitCode = $LASTEXITCODE
+        if ($this.ExitCode -ne 0) {
+            throw $r
+        }
+        return $r
+    }
+
+    [string[]]ScpTo([string]$localPathes, [string]$remotePath, [bool]$targetIsDir) {
+        return $this.scpInternalTo($localPathes, $remotePath, $targetIsDir, $false)
+    }
+
+    [string[]]ScpFrom([string]$remotePath, [string]$localPath, [bool]$RemoteIsDir) {
+        return $this.scpInternalFrom($remotePath, $localPath, $RemoteIsDir)
     }
 
     [string]unzip([string]$zipFile, [string]$expandDir) {

@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "Start", "Stop", "Restart", "GetDemoConfigFile","Status", "DownloadPackages","SendPackages", "Remove")]
+    [ValidateSet("Install", "Start", "Stop", "Restart", "GetDemoConfigFile","Status", "DownloadPackages","SendPackages", "Remove", "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,
@@ -74,6 +74,14 @@ else {
             else {
                 "canceled."
             }
+            break
+        }
+        "DownloadPublicKey" {
+            $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action | Receive-LinesFromServer
+            $sshInvoker = Get-SshInvoker
+            $f = Get-PublicKeyFile -NotResolve
+            $sshInvoker.ScpFrom($r, $f, $false)
+            break
         }
         Default {
             Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action $Version

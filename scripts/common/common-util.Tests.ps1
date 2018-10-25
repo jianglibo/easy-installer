@@ -233,6 +233,15 @@ Describe "hash table" {
     }
 }
 
+Describe "data between client and server." {
+    it "should parse result" {
+       "abc", "for-easyinstaller-client-use-start","123","for-easyinstaller-client-use-end" | Receive-LinesFromServer | Should -Be "123"
+
+       Send-LinesToClient -InputObject "123" | Receive-LinesFromServer | Should -Be "123"
+       "123" | Send-LinesToClient | Receive-LinesFromServer | Should -Be "123"
+    }
+}
+
 # Describe "process control" {
 #     it "should start cmd" {
 #         # Start-PasswordPromptCommand -Command "mysql"  -Arguments "-uroot -p" -mysqlpwd "123456"

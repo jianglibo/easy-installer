@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "Start", "Stop", "Restart","Status", "GetMycnf", "GetVariables", "Uninstall", "Echo")]
+    [ValidateSet("Install", "Start", "Stop", "Restart","Status", "GetMycnf", "GetVariables", "Uninstall", "Echo", "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false,
         ValueFromRemainingArguments = $true)]
@@ -60,6 +60,11 @@ try {
         }
         {$PSItem -in "Start", "Stop", "Status","Restart"} {
             Update-MysqlStatus -StatusTo $Action
+            break
+        }
+        "DownloadPublicKey" {
+            Get-OpenSSLPublicKey
+            break
         }
         Default {
             $configuration | ConvertTo-Json -Depth 10

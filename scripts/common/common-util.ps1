@@ -961,6 +961,54 @@ function Get-FileFromBase64 {
     $OutFile
 }
 
+function Send-LinesToClient {
+    param (
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline=$true)]$InputObject
+    )
+    Begin {
+        "for-easyinstaller-client-use-start"
+    }
+    Process {
+        $InputObject
+    }
+    End {
+        "for-easyinstaller-client-use-end"
+    }
+}
+
+function Receive-LinesFromServer {
+    param (
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline=$true)]$toClient
+    )
+    Begin {
+        $r = @()
+        $started = $false
+    }
+    Process {
+        if ($_ -eq "for-easyinstaller-client-use-end") {
+            $started = $false
+        }
+        if ($started) {
+            $_
+        }
+        if ($_ -eq "for-easyinstaller-client-use-start") {
+            $started = $true
+        }
+    }
+}
+
+# openssl rsa -in C:\Users\Administrator\192.168.33.110.ifile -pubout -out public_key.pem
+function Get-OpenSSLPublicKey {
+    $ossl = $Global:configuration.openssl
+    $prik = $Global:configuration.PrivateKeyFile
+    $tmp = (New-TemporaryFile).FullName
+    $cmd = "$ossl rsa -in $prik -pubout -out $tmp"
+    $cmd | Write-Verbose
+    $r = Invoke-Expression -Command $cmd
+    $r | Write-Verbose
+    $tmp | Send-LinesToClient
+}
+
 # $SecurePassword = Get-Content C:\Users\tmarsh\Documents\securePassword.txt | ConvertTo-SecureString
 # $UnsecurePassword = (New-Object PSCredential "user",$SecurePassword).GetNetworkCredential().Password
 

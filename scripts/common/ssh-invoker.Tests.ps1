@@ -45,7 +45,7 @@ Describe "SshInvoker" {
     }
 }
 
-Describe "SshInvoker scp" {
+Describe "SshInvoker ScpTo" {
     $parent = Join-Path $TestDrive 'folder'
 
     $noversionFolder = "${parent}\noversions\nov"
@@ -68,33 +68,33 @@ Describe "SshInvoker scp" {
     }
 
     It "should throw exception." {
-        {$sshInvoker.scp($kkvFileInSrcFolder + "kkv", $remoteFolderNoEndSlash, $true)} | Should -Throw "doesn't exist"
+        {$sshInvoker.ScpTo($kkvFileInSrcFolder + "kkv", $remoteFolderNoEndSlash, $true)} | Should -Throw "doesn't exist"
     }
 
-    It "should handle scp to unreachable destination." {
-        { $sshInvoker.scp($kkvFileInSrcFolder, "$remoteFolderNoEndSlash/aa/bb/cc", $true)} | Should -Throw "scp: /tmp/folder/aa/bb/cc: No such file or directory"
+    It "should handle ScpTo to unreachable destination." {
+        { $sshInvoker.ScpTo($kkvFileInSrcFolder, "$remoteFolderNoEndSlash/aa/bb/cc", $true)} | Should -Throw "scp: /tmp/folder/aa/bb/cc: No such file or directory"
         # $uploladed | Should -Be "/tmp/folder/aa/bb/cc/kkv.txt"
         # $sshInvoker.isFileExists("/tmp/folder/aa/bb/cc/kkv.txt") | Should -BeTrue
     }
 
-    It "should scp a file to target no end slash." {
-        $sshInvoker.scp($kkvFileInSrcFolder, $remoteFolderNoEndSlash, $true)
+    It "should ScpTo a file to target no end slash." {
+        $sshInvoker.ScpTo($kkvFileInSrcFolder, $remoteFolderNoEndSlash, $true)
         $fn = Split-Path -Path $kkvFileInSrcFolder -Leaf
         $fn | Should -Be 'kkv.txt'
         $rr = "${remoteFolderNoEndSlash}/${fn}"
         $sshInvoker.isFileExists($rr) | Should -BeTrue
     }
 
-    It "should scp a file to target with end slash." {
-        $sshInvoker.scp($kkvFileInSrcFolder, $remoteFolderNoEndSlash + '/', $true)
+    It "should ScpTo a file to target with end slash." {
+        $sshInvoker.ScpTo($kkvFileInSrcFolder, $remoteFolderNoEndSlash + '/', $true)
         $fn = Split-Path -Path $kkvFileInSrcFolder -Leaf
         $fn | Should -Be 'kkv.txt'
         $rr = "${remoteFolderNoEndSlash}/${fn}"
         $sshInvoker.isFileExists($rr) | Should -BeTrue
     }
 
-    It "should scp a file to target with another name." {
-        $sshInvoker.scp($kkvFileInSrcFolder, $remoteFolderNoEndSlash + '/aaa.txt', $false)
+    It "should ScpTo a file to target with another name." {
+        $sshInvoker.ScpTo($kkvFileInSrcFolder, $remoteFolderNoEndSlash + '/aaa.txt', $false)
         $fn = Split-Path -Path $kkvFileInSrcFolder -Leaf
         $fn | Should -Be 'kkv.txt'
         $rr = "${remoteFolderNoEndSlash}/${fn}"
@@ -104,30 +104,30 @@ Describe "SshInvoker scp" {
         $sshInvoker.isFileExists($rr) | Should -BeTrue
     }
 
-    It "should scp a folder to target no lastslash." {
+    It "should ScpTo a folder to target no lastslash." {
         # xx/src -> /tmp/folder, => /tmp/folder/src/kkv.txt
-        $sshInvoker.scp($srcFolder, $remoteFolderNoEndSlash, $true)
+        $sshInvoker.ScpTo($srcFolder, $remoteFolderNoEndSlash, $true)
         $rr = "${remoteFolderNoEndSlash}/src/kkv.txt"
         $sshInvoker.isFileExists($rr) | Should -BeTrue
     }
 
-    It "should scp a folder to target with lastslash." {
+    It "should ScpTo a folder to target with lastslash." {
         # xx/src -> /tmp/folder, => /tmp/folder/src/kkv.txt
-        $sshInvoker.scp($srcFolder, $remoteFolderNoEndSlash + '/', $true)
+        $sshInvoker.ScpTo($srcFolder, $remoteFolderNoEndSlash + '/', $true)
         $rr = "${remoteFolderNoEndSlash}/src/kkv.txt"
         $sshInvoker.isFileExists($rr) | Should -BeTrue
     }
-    It "should scp a folder to target with asterisk." {
+    It "should ScpTo a folder to target with asterisk." {
         # xx/src -> /tmp/folder, => /tmp/folder/src/kkv.txt
-        $sshInvoker.scp($parent + '/*', $remoteFolderNoEndSlash + '/', $true)
+        $sshInvoker.ScpTo($parent + '/*', $remoteFolderNoEndSlash + '/', $true)
         $rr = "${remoteFolderNoEndSlash}/src/kkv.txt"
         $sshInvoker.isFileExists($rr) | Should -BeTrue
 
         $rr = "${remoteFolderNoEndSlash}/noversions/nov"
         $sshInvoker.isFileExists($rr) | Should -BeTrue
     }
-    It "should scp 2 files to target folder." {
-        $sshInvoker.scp("$kkvFileInSrcFolder $kkvFileInSrcFolder1", $remoteFolderNoEndSlash + '/', $true)
+    It "should ScpTo 2 files to target folder." {
+        $sshInvoker.ScpTo("$kkvFileInSrcFolder $kkvFileInSrcFolder1", $remoteFolderNoEndSlash + '/', $true)
         $rr = "${remoteFolderNoEndSlash}/kkv.txt"
         $sshInvoker.isFileExists($rr) | Should -BeTrue
 

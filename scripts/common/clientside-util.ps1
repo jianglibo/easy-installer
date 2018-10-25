@@ -33,6 +33,9 @@ function Copy-DemoConfigFile {
     "The demo config file created at ${tofile}`n"
 }
 function Get-PublicKeyFile {
+    param (
+        [switch]$NotResolve
+    )
     $c = $Global:configuration
 
     if ($c.PublicKeyFile -like "default*") {
@@ -40,15 +43,19 @@ function Get-PublicKeyFile {
             Join-Path -ChildPath "myconfigs" |
             Join-Path -ChildPath $c.HostName |
             Join-Path -ChildPath "public_key.pem"
-        $pkrsolved = Resolve-Path -Path $pk -ErrorAction SilentlyContinue
     }
     else {
-        $pkrsolved = Resolve-Path -Path $c.PublicKeyFile -ErrorAction SilentlyContinue
+        $pk = $c.PublicKeyFile
     }
-    if (-not $pkrsolved) {
-        Write-ParameterWarning -wstring "${pk} does'nt exists. If you don't want to encrypt the config file leave either of PrivateKeyFile or PublicKeyFile empty."
+    $pkrsolved = Resolve-Path -Path $pk -ErrorAction SilentlyContinue
+    if ($NotResolve) {
+        $pk
+    } else {
+        if (-not $pkrsolved) {
+            Write-ParameterWarning -wstring "${pk} does'nt exists. If you don't want to encrypt the config file leave either of PrivateKeyFile or PublicKeyFile empty."
+        }
+        $pkrsolved
     }
-    $pkrsolved
 }
 
 
@@ -79,7 +86,7 @@ function Send-SoftwarePackages {
             Write-ParameterWarning -wstring "There must have a value for ServerSide.PackageDir in configuration file: $ConfigFile"
             return
         }
-        $r = $sshInvoker.scp($localFileNames, $dst, $true) 
+        $r = $sshInvoker.ScpTo($localFileNames, $dst, $true) 
     }
 }
 
@@ -123,7 +130,7 @@ function Copy-PsScriptToServer {
 
         $tf = Resolve-Path -Path $tf | Select-Object -ExpandProperty ProviderPath
 
-        $files +=  $tf
+        $files += $tf
 
         $filesToCopy = $files -join ' '
         "files to copy: $filesToCopy" | Write-Verbose
@@ -141,7 +148,7 @@ function Copy-PsScriptToServer {
         $rmcmd | Write-Verbose
 
         $sshInvoker.Invoke($rmcmd)
-        $r = $sshInvoker.scp($filesToCopy, $dst, $true)
+        $r = $sshInvoker.ScpTo($filesToCopy, $dst, $true)
         "files copied: $r" | Write-Verbose
     }
     finally {
@@ -156,7 +163,7 @@ function Copy-PsScriptToServer {
 
     # #copy configfile to fixed server name.
     # $cfgServer = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
-    # $rc = $sshInvoker.scp($ConfigFile, $cfgServer, $false)
+    # $rc = $sshInvoker.ScpTo($ConfigFile, $cfgServer, $false)
     # $sshInvoker | Out-String | Write-Verbose
     # $r += $rc
 }
