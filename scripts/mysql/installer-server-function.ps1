@@ -1,6 +1,8 @@
 class MysqlVariableNames {
     static [string]$DATA_DIR = "datadir"
 }
+
+$Global:EmptyPassword="USE-EMPTY-PASSWORD"
 function Enable-RepoVersion {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$RepoFile,
@@ -67,6 +69,29 @@ function Update-MysqlStatus {
     Invoke-Expression -Command $cmd
 }
 
+function Update-MysqlPassword {
+    param (
+        [parameter(Mandatory = $true)][string]$EncryptedNewPassword,
+        [parameter(Mandatory = $false)][string]$EncryptedOldPassword
+    )
+    # [xml]$r = Invoke-MysqlSQLCommand -sql "select 1" -UsePassword $Global:EmptyPassword
+
+    $plainp = UnProtect-PasswordByOpenSSLPublicKey -base64 $EncryptedNewPassword
+    if (-not $EncryptedOldPassword) {
+        $sql = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${plainp}');" # old
+        $r = Invoke-MysqlSQLCommand -sql $sql -UsePassword $Global:EmptyPassword
+        $r = $r | Where-Object {$PSItem -like "*mysql_upgrade*"} | Select-Object -First 1
+
+        if ($r) {
+            $sql = "ALTER USER 'root'@'localhost' IDENTIFIED BY '${plainp}';" #new > 5.7.6
+            $r = Invoke-MysqlSQLCommand -sql $sql -UsePassword $Global:EmptyPassword
+        }
+    }
+    else {
+
+    }
+}
+
 function Install-Mysql {
     param (
         [parameter(Mandatory = $false)][string]$Version
@@ -84,22 +109,7 @@ function Install-Mysql {
         $cmd | Write-Verbose
         Invoke-Expression -Command $cmd
         Update-MysqlStatus -StatusTo Start
-
-        [xml]$r = Invoke-MysqlSQLCommand -sql "select 1" -EmptyPassword
-
-        if ($r.resultset.row.field.name -eq 1) {
-            # empty password.
-            $plainp = UnProtect-PasswordByOpenSSLPublicKey -base64 $Global:configuration.MysqlPassword
-            $sql = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${plainp}');" # old
-
-            $r = Invoke-MysqlSQLCommand -sql $sql -EmptyPassword
-            $r = $r | Where-Object {$PSItem -like "*mysql_upgrade*"} | Select-Object -First 1
-
-            if ($r) {
-                $sql = "ALTER USER 'root'@'localhost' IDENTIFIED BY '${plainp}';" #new > 5.7.6
-                $r = Invoke-MysqlSQLCommand -sql $sql -EmptyPassword
-            }
-        }
+        Update-MysqlPassword -EncryptedNewPassword $Global:configuration.MysqlPassword
         "Mission accomplished."
     }
 }
@@ -130,29 +140,62 @@ function Test-EmptyMysqlPassword {
     Invoke-Expression -Command $cmd | Where-Object {$PSItem -like "*Access denied*"} | Select-Object -First 1
 }
 
+<#
+.SYNOPSIS
+Short description
+
+.DESCRIPTION
+Long description
+
+.PARAMETER sql
+Parameter description
+
+.PARAMETER UsePassword
+The value 'USE-EMPTY-PASSWORD' has special meaning.
+
+.PARAMETER SQLFromFile
+Parameter description
+
+.PARAMETER combineError
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function Get-SQLCommandLine {
     param (
         [parameter(Mandatory = $true, Position = 0)]$sql,
-        [parameter()][switch]$EmptyPassword,
+        [parameter(Mandatory = $false)][string]$UsePassword,
         [parameter()][switch]$SQLFromFile,
         [switch]$combineError
     )
     $c = $Global:configuration
-    if ($EmptyPassword) {
+
+    if ($UsePassword) {
+        if ($UsePassword -eq $Global:EmptyPassword) {
+            $pw = ""
+        }
+        else {
+            $pw = $UsePassword
+        }
         $t = New-TemporaryFile
-        "[client]", "user=$($c.MysqlUser)", "password=" | Out-File -FilePath $t -Encoding ascii
+        "[client]", "user=$($c.MysqlUser)", "password=$pw" | Out-File -FilePath $t -Encoding ascii
     }
     else {
         if (-not $Global:MysqlExtraFile) {
+            $pw = UnProtect-PasswordByOpenSSLPublicKey -base64 $c.MysqlPassword
             $t = New-TemporaryFile
-            $p = UnProtect-PasswordByOpenSSLPublicKey -base64 $c.MysqlPassword
-            "[client]", "user=$($c.MysqlUser)", "password=$p" | Out-File -FilePath $t -Encoding ascii
-            $Global:MysqlExtraFile = $t
+            "[client]", "user=$($c.MysqlUser)", "password=$pw" | Out-File -FilePath $t -Encoding ascii
+            $t = $Global:MysqlExtraFile
         }
         else {
             $t = $Global:MysqlExtraFile
         }
     }
+    
     #  mysql  --defaults-extra-file=extra.txt -X  -e "select 1"
     if ($SQLFromFile) {
         $sqltmp = New-TemporaryFile
@@ -162,7 +205,7 @@ function Get-SQLCommandLine {
     }
     else {
         $cmdline = "{0} --defaults-extra-file={1} -X -e `"{2}`"{3}" -f $c.clientBin, $t, $sql, $(if ($combineError) {" 2>&1"} else {""})
-        if ($EmptyPassword) {
+        if ($UsePassword) {
             @{cmdline = $cmdline; extrafile = $t; nopass = $true}
         }
         else {
@@ -171,15 +214,40 @@ function Get-SQLCommandLine {
     }
 }
 
+<#
+ .SYNOPSIS
+ Short description
+ 
+ .DESCRIPTION
+ Long description
+ 
+ .PARAMETER sql
+ Parameter description
+ 
+ .PARAMETER UsePassword
+ The value 'USE-EMPTY-PASSWORD' has special meaning.
+ 
+ .PARAMETER SQLFromFile
+ Parameter description
+ 
+ .PARAMETER combineError
+ Parameter description
+ 
+ .EXAMPLE
+ An example
+ 
+ .NOTES
+ General notes
+ #>
 function Invoke-MysqlSQLCommand {
     param (
         [parameter(Mandatory = $true, Position = 0)]$sql,
-        [parameter()][switch]$EmptyPassword,
+        [parameter(Mandatory = $false)][string]$UsePassword,
         [parameter()][switch]$SQLFromFile,
         [parameter()][switch]$combineError
     )
 
-    $cmdline = Get-SQLCommandLine -sql $sql -combineError:$combineError -EmptyPassword:$EmptyPassword -SQLFromFile:$SQLFromFile
+    $cmdline = Get-SQLCommandLine -sql $sql -combineError:$combineError -UsePassword $UsePassword -SQLFromFile:$SQLFromFile
     $cmdline | Write-Verbose
     $r = Invoke-Expression -Command $cmdline.cmdline | Where-Object {-not ($_ -like 'Warning:*')}
     $r | Write-Verbose

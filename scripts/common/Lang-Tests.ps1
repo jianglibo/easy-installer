@@ -100,3 +100,25 @@ Describe "switch case" {
         $y | Should -Be 5
     }
 }
+
+function Test-NullParameter {
+    Param(
+        [string]$s = $null
+    )
+
+    if ($s -eq $null) {
+        "null"
+    } elseif ($s -eq "") {
+        "empty"
+    } else {
+        $s
+    }
+}
+
+Describe "null parameter." {
+    it "should handle null" {
+        Test-NullParameter | Should -Be "empty"
+        Test-NullParameter -s ""| Should -Be "empty"
+        Test-NullParameter -s "a"| Should -Be "a"
+    }
+}
