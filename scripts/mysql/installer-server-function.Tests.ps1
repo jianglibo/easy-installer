@@ -102,6 +102,15 @@ Describe "install" {
     }
 }
 
+Describe "update mysql password." {
+    it "should update password." {
+        $PSDefaultParameterValues['*:Verbose'] = $true
+        $ht = Copy-TestPsScriptToServer -HerePath $here
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action UpdateMysqlPassword
+        $r | Should -Be '/etc/my.cnf'
+    }
+}
+
 Describe "getmycnf" {
     it "should return already installed." {
         $ht = Copy-TestPsScriptToServer -HerePath $here

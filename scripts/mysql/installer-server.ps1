@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "Start", "Stop", "Restart","Status", "GetMycnf", "GetVariables", "Uninstall", "Echo", "DownloadPublicKey", "RunSQL")]
+    [ValidateSet("Install", "Start", "Stop", "Restart","Status", "GetMycnf", "GetVariables", "Uninstall", "Echo", "DownloadPublicKey", "RunSQL", "UpdateMysqlPassword")]
     [string]$Action,
     [parameter(Mandatory = $false,
         ValueFromRemainingArguments = $true)]
@@ -64,6 +64,12 @@ try {
         }
         "DownloadPublicKey" {
             Get-OpenSSLPublicKey
+            break
+        }
+        "UpdateMysqlPassword" {
+            if ($hints) {
+                Update-MysqlPassword -EncryptedNewPassword $hints[0] -EncryptedOldPassword $hints[1]
+            }
             break
         }
         "RunSQL" {

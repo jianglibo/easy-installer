@@ -40,6 +40,27 @@ Describe "common-util" {
         "/tmp/sciprt" | Split-UniversalPath -Leaf | Should -Be 'sciprt'
         "https://cdn.mysql.com//Downloads/MySQL-5.7/mysql-community-common-5.7.23-1.el7.x86_64.rpm" | Split-UniversalPath -Leaf | Should -Be "mysql-community-common-5.7.23-1.el7.x86_64.rpm"
     }
+
+    it "should handle remain parameters" {
+        $ht = Get-RemainParameterHashtable -hints "-a",1,3,34
+        $ht.a |Should -Be 1
+        ($ht._orphans) | Should -Be 3,34
+
+        $ht = fr-rm a b -c d e
+        $ht.c | Should -Be 'd'
+
+        $ht = "-a", 1,3,34 | Get-RemainParameterHashtable
+        $ht.a |Should -Be 1
+        ($ht._orphans) | Should -Be 3,34
+    }
+}
+
+function fr-rm {
+    param(
+        [Parameter(ValueFromRemainingArguments=$true)]
+        $pp
+    )
+    Get-RemainParameterHashtable -hints $pp
 }
 
 function split($inFile,  $outPrefix, [Int32] $bufSize){

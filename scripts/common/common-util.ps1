@@ -963,7 +963,7 @@ function Get-FileFromBase64 {
 
 function Send-LinesToClient {
     param (
-        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline=$true)]$InputObject
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]$InputObject
     )
     Begin {
         "for-easyinstaller-client-use-start"
@@ -978,7 +978,7 @@ function Send-LinesToClient {
 
 function Receive-LinesFromServer {
     param (
-        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline=$true)]$toClient
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]$toClient
     )
     Begin {
         $r = @()
@@ -1007,6 +1007,78 @@ function Get-OpenSSLPublicKey {
     $r = Invoke-Expression -Command $cmd
     $r | Write-Verbose
     $tmp | Send-LinesToClient
+}
+
+<#
+.SYNOPSIS
+Convert Remains parameters to a hashtable.
+
+.DESCRIPTION
+Long description
+
+.PARAMETER hints
+Parameter description
+
+.PARAMETER InputObject
+From pipeline.
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
+function Get-RemainParameterHashtable {
+    param (
+        [Parameter(Mandatory = $false, Position = 0, ValueFromPipeline = $true)]$hints,
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]$InputObject
+    )
+    
+    Begin {
+        $htvars = @{_orphans = @()}
+        $lastvar = $null
+    } 
+    Process {
+        if ($hints) {
+            $hints | ForEach-Object {
+                if ($_ -match '^-') {
+                    #New parameter
+                    $lastvar = $_ -replace '^-'
+                    $htvars[$lastvar] = $null
+                }
+                else {
+                    #Value
+                    if ($lastvar) {
+                        $htvars[$lastvar] = $_
+                        $lastvar = $null
+                    }
+                    else {
+                        $htvars._orphans += $_
+                    }
+                }
+            }
+        }
+        else {
+            if ($InputObject -match '^-') {
+                #New parameter
+                $lastvar = $InputObject -replace '^-'
+                $htvars[$lastvar] = $null
+            }
+            else {
+                #Value
+                if ($lastvar) {
+                    $htvars[$lastvar] = $InputObject
+                    $lastvar = $null
+                }
+                else {
+                    $htvars._orphans += $InputObject
+                }
+            }
+        }
+    } 
+    End {
+        $htvars
+    }
 }
 
 # $SecurePassword = Get-Content C:\Users\tmarsh\Documents\securePassword.txt | ConvertTo-SecureString
@@ -1061,4 +1133,8 @@ function UnProtect-PasswordByOpenSSLPublicKey {
     finally {
         Remove-Item -Force -Path $f, $outf 
     }
+}
+
+trap {
+    $Error[0].TargetObject | Send-LinesToClient
 }

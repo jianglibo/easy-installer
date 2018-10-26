@@ -74,8 +74,6 @@ function Update-MysqlPassword {
         [parameter(Mandatory = $true)][string]$EncryptedNewPassword,
         [parameter(Mandatory = $false)][string]$EncryptedOldPassword
     )
-    # [xml]$r = Invoke-MysqlSQLCommand -sql "select 1" -UsePassword $Global:EmptyPassword
-
     $plainp = UnProtect-PasswordByOpenSSLPublicKey -base64 $EncryptedNewPassword
     if (-not $EncryptedOldPassword) {
         $sql = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${plainp}');" # old
@@ -110,7 +108,7 @@ function Install-Mysql {
         Invoke-Expression -Command $cmd
         Update-MysqlStatus -StatusTo Start
         Update-MysqlPassword -EncryptedNewPassword $Global:configuration.MysqlPassword
-        "Mission accomplished."
+        "Install Succcess." | Send-LinesToClient
     }
 }
 
