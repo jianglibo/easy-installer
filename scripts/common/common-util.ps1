@@ -1030,7 +1030,7 @@ General notes
 #>
 function Get-RemainParameterHashtable {
     param (
-        [Parameter(Mandatory = $false, Position = 0, ValueFromPipeline = $true)]$hints,
+        [Parameter(Mandatory = $false, Position = 0)]$hints,
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]$InputObject
     )
     
@@ -1040,23 +1040,7 @@ function Get-RemainParameterHashtable {
     } 
     Process {
         if ($hints) {
-            $hints | ForEach-Object {
-                if ($_ -match '^-') {
-                    #New parameter
-                    $lastvar = $_ -replace '^-'
-                    $htvars[$lastvar] = $null
-                }
-                else {
-                    #Value
-                    if ($lastvar) {
-                        $htvars[$lastvar] = $_
-                        $lastvar = $null
-                    }
-                    else {
-                        $htvars._orphans += $_
-                    }
-                }
-            }
+            $hints | Get-RemainParameterHashtable
         }
         else {
             if ($InputObject -match '^-') {

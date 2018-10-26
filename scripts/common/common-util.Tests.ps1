@@ -42,44 +42,45 @@ Describe "common-util" {
     }
 
     it "should handle remain parameters" {
-        $ht = Get-RemainParameterHashtable -hints "-a",1,3,34
+        function fr-rm {
+            param(
+                [Parameter(ValueFromRemainingArguments = $true)]
+                $pp
+            )
+            Get-RemainParameterHashtable -hints $pp
+        }
+
+        $ht = Get-RemainParameterHashtable -hints "-a", 1, 3, 34
         $ht.a |Should -Be 1
-        ($ht._orphans) | Should -Be 3,34
+        ($ht._orphans) | Should -Be 3, 34
 
         $ht = fr-rm a b -c d e
         $ht.c | Should -Be 'd'
 
-        $ht = "-a", 1,3,34 | Get-RemainParameterHashtable
+        $ht = "-a", 1, 3, 34 | Get-RemainParameterHashtable
         $ht.a |Should -Be 1
-        ($ht._orphans) | Should -Be 3,34
+        ($ht._orphans) | Should -Be 3, 34
     }
 }
 
-function fr-rm {
-    param(
-        [Parameter(ValueFromRemainingArguments=$true)]
-        $pp
-    )
-    Get-RemainParameterHashtable -hints $pp
-}
 
-function split($inFile,  $outPrefix, [Int32] $bufSize){
+function split($inFile, $outPrefix, [Int32] $bufSize) {
 
     $stream = [System.IO.File]::OpenRead($inFile)
     $chunkNum = 1
     $barr = New-Object byte[] $bufSize
   
-    while( $bytesRead = $stream.Read($barr,0,$bufsize)){
-      $outFile = "$outPrefix$chunkNum"
-      $ostream = [System.IO.File]::OpenWrite($outFile)
-      $ostream.Write($barr,0,$bytesRead);
-      $ostream.close();
-      echo "wrote $outFile"
-      $chunkNum += 1
+    while ( $bytesRead = $stream.Read($barr, 0, $bufsize)) {
+        $outFile = "$outPrefix$chunkNum"
+        $ostream = [System.IO.File]::OpenWrite($outFile)
+        $ostream.Write($barr, 0, $bytesRead);
+        $ostream.close();
+        echo "wrote $outFile"
+        $chunkNum += 1
     }
 
     $stream
-  }
+}
 
 #   https://docs.microsoft.com/en-us/dotnet/api/system.io.filestream?view=netframework-4.7.2
   
@@ -99,7 +100,7 @@ Describe "open io" {
 
         $instream = [System.IO.File]::OpenRead($outFile)
         $barr = New-Object byte[] 100
-        $c = $instream.Read($barr,0, 100)
+        $c = $instream.Read($barr, 0, 100)
         $c | Should -Be $bytes.Length
         $instream.close()
         $instream.dispose()
@@ -130,7 +131,7 @@ Describe "open io" {
     it "should join renamed 1 small file" {
         "abc" | Out-File -FilePath $outFile1 -Encoding ascii -NoNewline # for test only
         $hash1 = Get-FileHash -Path $outFile1
-        $combined = Join-Files -FileNamePairs @{file=$outFile1;name="hello.txt1"}
+        $combined = Join-Files -FileNamePairs @{file = $outFile1; name = "hello.txt1"}
         # 4 + 10(filename) + 4 + 3(file content)
         (Get-Item -Path $combined).Length | Should -Be 21
 
@@ -146,7 +147,7 @@ Describe "open io" {
     it "should join renamed 1 large file" {
         1..50000 -join ' ' | Out-File -FilePath $outFile1 -Encoding ascii -NoNewline # for test only
         $hash1 = Get-FileHash -Path $outFile1
-        $combined = Join-Files -FileNamePairs @{file=$outFile1;name="hello.txt1"}
+        $combined = Join-Files -FileNamePairs @{file = $outFile1; name = "hello.txt1"}
 
         # plain.bin1
         $dst = Split-Files -CombinedFile $combined
@@ -159,7 +160,7 @@ Describe "open io" {
         "akl1234" | Out-File -FilePath $outFile1 -Encoding ascii -NoNewline # for test only
         "llluukv" | Out-File -FilePath $outFile -Encoding ascii -NoNewline # for test only
         $hash1 = Get-FileHash -Path $outFile1
-        $combined = Join-Files -FileNamePairs @{file=$outFile1;name="hello.txt1"}, $outFile
+        $combined = Join-Files -FileNamePairs @{file = $outFile1; name = "hello.txt1"}, $outFile
 
         # plain.bin1
         $dst = Split-Files -CombinedFile $combined
@@ -177,7 +178,7 @@ Describe "open io" {
         1..50000 -join ' ' | Out-File -FilePath $outFile1 -Encoding ascii -NoNewline # for test only
         1..23457 -join ' ' | Out-File -FilePath $outFile -Encoding ascii -NoNewline # for test only
         $hash1 = Get-FileHash -Path $outFile1
-        $combined = Join-Files -FileNamePairs @{file=$outFile1;name="hello.txt1"}, $outFile
+        $combined = Join-Files -FileNamePairs @{file = $outFile1; name = "hello.txt1"}, $outFile
 
         # plain.bin1
         $dst = Split-Files -CombinedFile $combined
@@ -247,7 +248,8 @@ Describe "hash table" {
         $ms = '.*>$'
         if ($ht.ContainsKey($ms)) {
             $ht[$ms] += 1
-        } else {
+        }
+        else {
             $ht[$ms] = 0
         }
         $ht[$ms] | Should -Be 0
@@ -256,10 +258,10 @@ Describe "hash table" {
 
 Describe "data between client and server." {
     it "should parse result" {
-       "abc", "for-easyinstaller-client-use-start","123","for-easyinstaller-client-use-end" | Receive-LinesFromServer | Should -Be "123"
+        "abc", "for-easyinstaller-client-use-start", "123", "for-easyinstaller-client-use-end" | Receive-LinesFromServer | Should -Be "123"
 
-       Send-LinesToClient -InputObject "123" | Receive-LinesFromServer | Should -Be "123"
-       "123" | Send-LinesToClient | Receive-LinesFromServer | Should -Be "123"
+        Send-LinesToClient -InputObject "123" | Receive-LinesFromServer | Should -Be "123"
+        "123" | Send-LinesToClient | Receive-LinesFromServer | Should -Be "123"
     }
 }
 
