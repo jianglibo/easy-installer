@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "Start", "Stop", "Restart", "GetDemoConfigFile","Status", "DownloadPackages","SendPackages", "Remove", "DownloadPublicKey")]
+    [ValidateSet("Install", "Start", "Stop", "Restart", "GetDemoConfigFile","Status", "DownloadPackages","SendPackages", "Uninstall", "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,
@@ -67,9 +67,9 @@ else {
             Send-SoftwarePackages
             break
         }
-        "Remove" {
+        "Uninstall" {
             if ($PSCmdlet.ShouldContinue("Are you sure?", "")) {
-                "removed."
+                Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action $Version
             }
             else {
                 "canceled."

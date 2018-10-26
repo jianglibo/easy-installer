@@ -75,7 +75,8 @@ function Install-Mysql {
         Invoke-MysqlSQLCommand -sql "select 1"
         "AlreadyInstalled"
         return
-    } else {
+    }
+    else {
         $OsConfig = $Global:configuration.OsConfig
         Get-SoftwarePackages -TargetDir $OsConfig.ServerSide.PackageDir -Softwares $OsConfig.Softwares
         Enable-RepoVersion -RepoFile "/etc/yum.repos.d/mysql-community.repo" -Version $Version
@@ -84,10 +85,21 @@ function Install-Mysql {
         Invoke-Expression -Command $cmd
         Update-MysqlStatus -StatusTo Start
 
-        Invoke-MysqlSQLCommand -sql "select 1"
-        
+        [xml]$r = Invoke-MysqlSQLCommand -sql "select 1" -EmptyPassword
 
+        if ($r.resultset.row.field.name -eq 1) {
+            # empty password.
+            $plainp = UnProtect-PasswordByOpenSSLPublicKey -base64 $Global:configuration.MysqlPassword
+            $sql = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${plainp}');" # old
 
+            $r = Invoke-MysqlSQLCommand -sql $sql -EmptyPassword
+            $r = $r | Where-Object {$PSItem -like "*mysql_upgrade*"} | Select-Object -First 1
+
+            if ($r) {
+                $sql = "ALTER USER 'root'@'localhost' IDENTIFIED BY '${plainp}';" #new > 5.7.6
+                $r = Invoke-MysqlSQLCommand -sql $sql -EmptyPassword
+            }
+        }
         "Mission accomplished."
     }
 }
@@ -112,31 +124,72 @@ function Get-MycnfFile {
     ([string]$r).Trim() -split '\s+' | Where-Object {Test-Path -Path $_} | Select-Object -First 1
 }
 
+function Test-EmptyMysqlPassword {
+    $c = $Global:configuration
+    $cmd = "{0} -X -e `"select 1`"" -f $c.clientBin
+    Invoke-Expression -Command $cmd | Where-Object {$PSItem -like "*Access denied*"} | Select-Object -First 1
+}
+
 function Get-SQLCommandLine {
     param (
         [parameter(Mandatory = $true, Position = 0)]$sql,
+        [parameter()][switch]$EmptyPassword,
+        [parameter()][switch]$SQLFromFile,
         [switch]$combineError
     )
     $c = $Global:configuration
-    if (-not $Global:MysqlExtraFile) {
+    if ($EmptyPassword) {
         $t = New-TemporaryFile
-        $p = UnProtect-PasswordByOpenSSLPublicKey -base64 $c.MysqlPassword
-        "[client]", "user=$($c.MysqlUser)","password=$p" | Out-File -FilePath $t -Encoding ascii
-        $Global:MysqlExtraFile = $t
+        "[client]", "user=$($c.MysqlUser)", "password=" | Out-File -FilePath $t -Encoding ascii
+    }
+    else {
+        if (-not $Global:MysqlExtraFile) {
+            $t = New-TemporaryFile
+            $p = UnProtect-PasswordByOpenSSLPublicKey -base64 $c.MysqlPassword
+            "[client]", "user=$($c.MysqlUser)", "password=$p" | Out-File -FilePath $t -Encoding ascii
+            $Global:MysqlExtraFile = $t
+        }
+        else {
+            $t = $Global:MysqlExtraFile
+        }
     }
     #  mysql  --defaults-extra-file=extra.txt -X  -e "select 1"
-    "{0} {1} -X -e `"{2}`"{3}" -f $c.clientBin, $mp, $Global:MysqlExtraFile, $(if ($combineError) {" 2>&1"} else {""})
+    if ($SQLFromFile) {
+        $sqltmp = New-TemporaryFile
+        $sql | Out-File -FilePath $sqltmp -Encoding ascii
+        $cmdline = "Get-Content -Path {0} | {1} --defaults-extra-file={2} -X {3}" -f $sqltmp.FullName, $c.clientBin, $t, $(if ($combineError) {" 2>&1"} else {""})
+        @{cmdline = $cmdline; extrafile = $t; sqltmp = $sqltmp}
+    }
+    else {
+        $cmdline = "{0} --defaults-extra-file={1} -X -e `"{2}`"{3}" -f $c.clientBin, $t, $sql, $(if ($combineError) {" 2>&1"} else {""})
+        if ($EmptyPassword) {
+            @{cmdline = $cmdline; extrafile = $t; nopass = $true}
+        }
+        else {
+            @{cmdline = $cmdline; extrafile = $t}
+        }
+    }
 }
 
 function Invoke-MysqlSQLCommand {
     param (
         [parameter(Mandatory = $true, Position = 0)]$sql,
+        [parameter()][switch]$EmptyPassword,
+        [parameter()][switch]$SQLFromFile,
         [parameter()][switch]$combineError
     )
 
-    $sql = Get-SQLCommandLine -sql $sql -combineError:$combineError
-    $r = Invoke-Expression -Command $sql | Where-Object {-not ($_ -like 'Warning:*')}
+    $cmdline = Get-SQLCommandLine -sql $sql -combineError:$combineError -EmptyPassword:$EmptyPassword -SQLFromFile:$SQLFromFile
+    $cmdline | Write-Verbose
+    $r = Invoke-Expression -Command $cmdline.cmdline | Where-Object {-not ($_ -like 'Warning:*')}
     $r | Write-Verbose
+    if ($cmdline.sqltmp -and (Test-Path -Path $cmdline.sqltmp)) {
+        "deleting tmp sqlfile: $($cmdline.sqltmp)" | Write-Verbose
+        Remove-Item -Path $cmdline.sqltmp -Force
+    }
+    if ($cmdline.nopass -and $cmdline.extrafile -and (Test-Path -Path $cmdline.extrafile)) {
+        "deleting emptypass extrafile: $($cmdline.sqltmp)" | Write-Verbose
+    }
     if ($r -like "*Access Denied*") {
         throw "Mysql Access Denied."
     }
@@ -147,7 +200,6 @@ function Invoke-MysqlSQLCommand {
 }
 
 <#
-    
 #>
 function Get-MysqlVariables {
     param (
@@ -163,27 +215,33 @@ function Get-MysqlVariables {
 }
 
 function Uninstall-Mysql {
-    $osDetail = Get-OsDetail
-    if ($osDetail.isUnix()) {
-        try {
-            $vh = Get-MysqlVariables -VariableNames [MysqlVariableNames]::DATA_DIR
-            $r = systemctl stop mysqld
-            Start-Sleep -Seconds 3
-            if (Test-MysqlIsRunning) {
-                "Fail to stop mysqld."
-            } else {
-                $r = "$(yum list installed | grep mysql | ForEach-Object {($_ -split "\s+",3)[0]} | Where-Object {$_ -like 'mysql-community*'})"
-                $r = Invoke-Expression "yum remove -y $r"
-                $nx = Backup-LocalDirectory -Path $vh.value
-                if ($r -like "*Complete!*") {
-                    "Uninstall successly."
-                } else {
-                    $r
-                }
-            }
-        }
-        catch {
-            $Error[0].TargetObject
-        }
-    }
+    $UninstallCommand = $Global:configuration.OsConfig.ServerSide.UninstallCommand
+    $StopCommand = $Global:configuration.OsConfig.ServerSide.StopCommand
+    $vh = Get-MysqlVariables -VariableNames [MysqlVariableNames]::DATA_DIR
+    Invoke-Expression -Command $StopCommand
+    $r = Invoke-Expression -Command $UninstallCommand
+    Backup-LocalDirectory -Path $vh.value
+    # $osDetail = Get-OsDetail
+    # if ($osDetail.isUnix()) {
+    #     try {
+    #         $vh = Get-MysqlVariables -VariableNames [MysqlVariableNames]::DATA_DIR
+    #         $r = systemctl stop mysqld
+    #         Start-Sleep -Seconds 3
+    #         if (Test-MysqlIsRunning) {
+    #             "Fail to stop mysqld."
+    #         } else {
+    #             $r = "$(yum list installed | grep mysql | ForEach-Object {($_ -split "\s+",3)[0]} | Where-Object {$_ -like 'mysql-community*'})"
+    #             $r = Invoke-Expression "yum remove -y $r"
+    #             $nx = Backup-LocalDirectory -Path $vh.value
+    #             if ($r -like "*Complete!*") {
+    #                 "Uninstall successly."
+    #             } else {
+    #                 $r
+    #             }
+    #         }
+    #     }
+    #     catch {
+    #         $Error[0].TargetObject
+    #     }
+    # }
 }

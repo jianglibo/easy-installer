@@ -1,6 +1,6 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "Start", "Stop", "Restart","Status", "GetMycnf", "GetVariables", "Uninstall", "Echo", "DownloadPublicKey")]
+    [ValidateSet("Install", "Start", "Stop", "Restart","Status", "GetMycnf", "GetVariables", "Uninstall", "Echo", "DownloadPublicKey", "RunSQL")]
     [string]$Action,
     [parameter(Mandatory = $false,
         ValueFromRemainingArguments = $true)]
@@ -66,16 +66,25 @@ try {
             Get-OpenSSLPublicKey
             break
         }
+        "RunSQL" {
+            $sql = $hints | Where-Object {$PSItem -notmatch '^-.*'}
+            $sql = "`"$sql`""
+            $opts = $hints | Where-Object {$PSItem -match '^-.*'}
+            $line = "Invoke-MysqlSQLCommand -sql $sql $opts"
+            $line | Write-Verbose
+            Invoke-Expression -Command $line
+        }
         Default {
             $configuration | ConvertTo-Json -Depth 10
         }
     }
-    
 }
 finally {
     if ($Global:MysqlExtraFile) {
         if (Test-Path -Path $Global:MysqlExtraFile) {
             Remove-Item -Path $Global:MysqlExtraFile -Force
         }
+        $Global:MysqlExtraFile=$null
     }
+    $PSDefaultParameterValues['*:Verbose'] = $false
 }

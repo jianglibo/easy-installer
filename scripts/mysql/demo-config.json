@@ -36,14 +36,15 @@
         "StopCommand": "systemctl stop mysqld",
         "RestartCommand": "systemctl restart mysqld",
         "StatusCommand": "systemctl status mysqld",
+        "UninstallCommand": "yum remove -y (Invoke-Expression -Command '& yum list installed' | ForEach-Object {$_ -split '\\s+' | Select-Object -First 1 }| Where-Object {$PSItem -like '*mysql*server.x86_64'})",
         "ScriptDir": "/tmp/easyinstaller-scripts/mysql",
         "PackageDir": "/tmp/easyinstaller-scripts/packages",
         "EntryPoint": "installer-server.ps1",
         "Software": {
           "InstallDetect": {
-            "command": "which mysql",
+            "command": "systemctl status mysqld",
             "expect": "",
-            "unexpect": "\\("
+            "unexpect": "not-found"
           }
         }
       }

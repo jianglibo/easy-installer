@@ -1027,6 +1027,7 @@ function Protect-PasswordByOpenSSLPublicKey {
         $plainPassword | Out-File -FilePath $f -NoNewline -Encoding ascii
         $openssl = $Global:configuration.ClientOpenssl
         $cmd = "& '${openssl}' pkeyutl -encrypt -inkey $PublicKeyFile -pubin -in $f -out $outf"
+        $cmd | Write-Verbose
         Invoke-Expression -Command $cmd
         $s = Get-Base64FromFile $outf
         $s
