@@ -82,9 +82,9 @@ Describe "switch case" {
         $y = 0
         $x = "yw"
         switch ($x) {
-            ({($PSItem -eq 'yw') -or ($PSItem -eq 'yy')}) { 
+            ( {($PSItem -eq 'yw') -or ($PSItem -eq 'yy')}) { 
                 $y = 5
-             }
+            }
             Default {}
         }
         $y | Should -Be 5
@@ -92,9 +92,9 @@ Describe "switch case" {
         $y = 0
         $x = "yw"
         switch ($x) {
-            ({$PSItem -in "k","yw"}) { 
+            ( {$PSItem -in "k", "yw"}) { 
                 $y = 5
-             }
+            }
             Default {}
         }
         $y | Should -Be 5
@@ -108,9 +108,11 @@ function Test-NullParameter {
 
     if ($s -eq $null) {
         "null"
-    } elseif ($s -eq "") {
+    }
+    elseif ($s -eq "") {
         "empty"
-    } else {
+    }
+    else {
         $s
     }
 }
@@ -122,3 +124,78 @@ Describe "null parameter." {
         Test-NullParameter -s "a"| Should -Be "a"
     }
 }
+
+function BreakInPorcess {
+    param(
+        [Parameter(ValueFromPipeline=$true)]
+        [string]
+        $InputObject
+    )
+    Begin
+    {"a"}
+
+    process {
+        $_
+        if ($_ -eq 4)
+        {break}
+    }
+
+    End
+    {"b"}
+}
+
+function ContinueInPorcess {
+    param(
+        [Parameter(ValueFromPipeline=$true)]
+        [string]
+        $InputObject
+    )
+    Begin
+    {"a"}
+
+    process {
+        if ($_ -gt 3) {
+            continue
+        }
+        $_
+    }
+
+    End
+    {"b"}
+}
+
+function InputObjectParameters {
+    param(
+        [Parameter(ValueFromPipeline=$true)]
+        [string[]]
+        $InputObject
+    )
+    Begin
+    {"a"}
+    process {
+        $_
+    }
+
+    End
+    {"b"}
+}
+
+Describe "break or continue the pipeline" {
+    it "should break" {
+        $result = 1..10 | BreakInPorcess | Out-Host
+        $result | Should -Be 'z'
+    }
+
+    it "should continue" {
+        1..10 | ContinueInPorcess | Out-Host
+    }
+
+    it "input objects should work by pipe" {
+        1..2 | InputObjectParameters | Should -Be 'a',1,2,'b'
+    }
+
+    it "input objects should work by parameter" {
+        InputObjectParameters -InputObject @('1','2') | Should -Be 'a',1,2,'b'
+    }
+}
+

@@ -2,7 +2,7 @@ class MysqlVariableNames {
     static [string]$DATA_DIR = "datadir"
 }
 
-$Global:EmptyPassword="USE-EMPTY-PASSWORD"
+$Global:EmptyPassword = "USE-EMPTY-PASSWORD"
 function Enable-RepoVersion {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$RepoFile,
@@ -112,6 +112,161 @@ function Install-Mysql {
     }
 }
 
+<#
+.SYNOPSIS
+Modify Mysql's my.cnf file.
+
+.DESCRIPTION
+If a key didn't exist,  when the value is not empty, add new item, when the value is empty, do nothing.
+If a key did exist, when the value is not empty, update item, when the value is empty, delete item.
+
+.PARAMETER Path
+The path of my.cnf file.
+
+.PARAMETER Key
+The item's key name.
+
+.PARAMETER Value
+new value to be assigned.
+
+.PARAMETER BlockName
+Default block is [mysqld].
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
+function Update-Mycnf {
+    param (
+        [parameter(Mandatory = $false)][string]$Path,
+        [parameter(Mandatory = $false)][string[]]$Lines,
+        [parameter(Mandatory = $false, ValueFromPipeline = $true)][string]$piped,
+        [parameter(Mandatory = $true)][string]$Key,
+        [parameter(Mandatory = $false)][string]$Value,
+        [parameter(Mandatory = $false)][string]$BlockName = 'mysqld'
+    )
+
+    Begin {
+        if (-not ($Path -or $Lines)) {
+            if ($BlockName -notmatch '^\[') {
+                $BlockName = "[${BlockName}]"
+            }
+            $CurrentBlockName = $null
+            $Done = $false
+
+        }
+    }
+
+    Process {
+        if ($Path) {
+            Get-Content -Path $Path | Update-Mycnf -Key $Key -Value $Value -BlockName $BlockName
+        }
+        elseif ($Lines) {
+            $Lines | Update-Mycnf -Key $Key -Value $Value -BlockName $BlockName
+        }
+        else {
+            if ($Done) {
+                $PSItem 
+            }
+            else {
+                if ($PSItem -match '^\s*(\[.*\])\s*$') {
+                    $NewBlockName = $Matches[1]
+                    if ($BlockName -eq $CurrentBlockName) {
+                        if (-not $Done) {
+                            "${Key}=$Value"
+                            $Done = $true
+                        }
+                    }
+                    $CurrentBlockName = $NewBlockName
+                    $PSItem
+                }
+                elseif ($CurrentBlockName -eq $BlockName) {
+                    if ($PSItem -match '^\s*#\s*([^=]+)=(.+)$') {
+                        if ($Matches[1] -eq $Key) {
+                            if ($Value) {
+                                "${Key}=$Value"
+                            }
+                            else {
+                                $PSItem
+                            }
+                            $Done = $true
+                        }
+                        else {
+                            $PSItem
+                        }
+                    }
+                    elseif ($PSItem -match '^\s*([^=]+)=(.+)$') {
+                        if ($Matches[1] -eq $Key) {
+                            if ($Value) {
+                                "$($Matches[1])=$Value"
+                            }
+                            else {
+                                "#$PSItem"
+                            }
+                            $Done = $true
+                        }
+                        else {
+                            $PSItem
+                        }
+                    }
+                    else {
+                        $PSItem
+                    }
+                }
+                else {
+                    $PSItem
+                }
+            }
+        }
+    }
+    End {
+        if (-not ($Path -or $Lines)) {
+            if (-not $Done) {
+                if ($CurrentBlockName -eq $BlockName) {
+                    "${Key}=$Value"
+                }
+                else {
+                    $BlockName
+                    "${Key}=$Value"
+                }
+            }
+        }
+    }
+}
+<#
+.SYNOPSIS
+log-bin=hm-log-bin will enable logbin.
+
+.DESCRIPTION
+Long description
+
+.PARAMETER LogbinBasename
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
+function Enable-Logbin {
+    param (
+        [parameter(Mandatory = $true, ValueFromPipeline=$true)][string]$MycnfFile,
+        [parameter(Mandatory = $false)][string]$LogbinBasename='hm-log-bin'
+    )
+    if (-not $LogbinBasename) {
+        $LogbinBasename = 'hm-log-bin'
+    }
+    $r = Backup-LocalDirectory -Path $MycnfFile -keepOrigin
+    "backuped file: $r" | Write-Verbose
+    "updating mycnf: $MycnfFile" | Write-Verbose
+    "logbin basename is: $LogbinBasename" | Write-Verbose
+    $r = Update-Mycnf -Path $MycnfFile -Key "log-bin" -Value $LogbinBasename
+    $r | Write-Verbose
+    $r | Out-File -FilePath $MycnfFile -Encoding ascii
+}
 function Get-MycnfFile {
     $r = Invoke-Expression -Command "$($Global:configuration.clientBin) --help"
     $r = $r | ForEach-Object -Begin {

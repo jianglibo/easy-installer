@@ -360,7 +360,7 @@ may run in remote server.
 #>
 function Backup-LocalDirectory {
     param (
-        [Parameter(Mandatory = $false, Position = 1)][string]$Path,
+        [Parameter(Mandatory = $true, Position = 1, ValueFromPipeline=$true)][string]$Path,
         [switch]$keepOrigin
     )
     $nx = Get-NextBackup -Path $Path

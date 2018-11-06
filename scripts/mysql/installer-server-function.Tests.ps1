@@ -152,3 +152,12 @@ Describe "uninstall mysql successly." {
         $r | should -Be 'Uninstall successly.'
     }
 }
+
+Describe "enable logbin" {
+    it "should enable logbin" {
+        $PSDefaultParameterValues['*:Verbose'] = $true
+        $ht = Copy-TestPsScriptToServer -HerePath $here
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action EnableLogbin
+        $r
+    }
+}

@@ -1,6 +1,18 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "Start", "Stop", "Restart","Status", "GetMycnf", "GetVariables", "Uninstall", "Echo", "DownloadPublicKey", "RunSQL", "UpdateMysqlPassword")]
+    [ValidateSet("Install",
+        "Start",
+        "Stop", 
+        "Restart", 
+        "Status", 
+        "GetMycnf", 
+        "EnableLogbin",
+        "GetVariables", 
+        "Uninstall", 
+        "Echo", 
+        "DownloadPublicKey", 
+        "RunSQL", 
+        "UpdateMysqlPassword")]
     [string]$Action,
     [parameter(Mandatory = $false,
         ValueFromRemainingArguments = $true)]
@@ -58,7 +70,7 @@ try {
             Uninstall-Mysql
             break
         }
-        {$PSItem -in "Start", "Stop", "Status","Restart"} {
+        {$PSItem -in "Start", "Stop", "Status", "Restart"} {
             Update-MysqlStatus -StatusTo $Action
             break
         }
@@ -80,6 +92,10 @@ try {
             $line | Write-Verbose
             Invoke-Expression -Command $line
         }
+        "EnableLogbin" {
+            Get-MycnfFile | Enable-Logbin -LogbinBasename "$hints"
+            break
+        }
         Default {
             $configuration | ConvertTo-Json -Depth 10
         }
@@ -90,7 +106,7 @@ finally {
         if (Test-Path -Path $Global:MysqlExtraFile) {
             Remove-Item -Path $Global:MysqlExtraFile -Force
         }
-        $Global:MysqlExtraFile=$null
+        $Global:MysqlExtraFile = $null
     }
     $PSDefaultParameterValues['*:Verbose'] = $false
 }

@@ -117,9 +117,6 @@ class SshInvoker {
         $r = Invoke-Expression -Command $scpStr
         $this.result = $r
         $this.ExitCode = $LASTEXITCODE
-        if ($this.ExitCode -ne 0) {
-            throw $r
-        }
         if ($r -like "*No such file or directory*") {
             if ($retry) {
                 throw 1000
@@ -130,9 +127,12 @@ class SshInvoker {
             else {
                 $this.invoke("mkdir -p $(Split-UniversalPath -Parent $remotePath)")
             }
-            return $this.scpInternal($localPathes, $remotePath, $targetIsDir, $true)
+            return $this.scpInternalTo($localPathes, $remotePath, $targetIsDir, $true)
         }
         else {
+            if ($this.ExitCode -ne 0) {
+                throw $r
+            }
             if ($targetIsDir) {
                 return $ary | ForEach-Object {Join-UniversalPath -Path $remotePath -ChildPath (Split-UniversalPath -Path $_)}
             }
