@@ -77,12 +77,12 @@ function Update-MysqlPassword {
     $plainp = UnProtect-PasswordByOpenSSLPublicKey -base64 $EncryptedNewPassword
     if (-not $EncryptedOldPassword) {
         $sql = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${plainp}');" # old
-        $r = Invoke-MysqlSQLCommand -sql $sql -UsePassword $Global:EmptyPassword
+        $r = Invoke-MysqlSQLCommand -sql $sql -UsePlainPwd $Global:EmptyPassword
         $r = $r | Where-Object {$PSItem -like "*mysql_upgrade*"} | Select-Object -First 1
 
         if ($r) {
             $sql = "ALTER USER 'root'@'localhost' IDENTIFIED BY '${plainp}';" #new > 5.7.6
-            $r = Invoke-MysqlSQLCommand -sql $sql -UsePassword $Global:EmptyPassword
+            $r = Invoke-MysqlSQLCommand -sql $sql -UsePlainPwd $Global:EmptyPassword
         }
     }
     else {
@@ -175,7 +175,9 @@ function Update-Mycnf {
                     $NewBlockName = $Matches[1]
                     if ($BlockName -eq $CurrentBlockName) {
                         if (-not $Done) {
-                            "${Key}=$Value"
+                            if ($Value) {
+                                "${Key}=$Value"
+                            }
                             $Done = $true
                         }
                     }
@@ -223,7 +225,7 @@ function Update-Mycnf {
     }
     End {
         if (-not ($Path -or $Lines)) {
-            if (-not $Done) {
+            if ((-not $Done) -and $Value) {
                 if ($CurrentBlockName -eq $BlockName) {
                     "${Key}=$Value"
                 }
@@ -253,8 +255,8 @@ General notes
 #>
 function Enable-Logbin {
     param (
-        [parameter(Mandatory = $true, ValueFromPipeline=$true)][string]$MycnfFile,
-        [parameter(Mandatory = $false)][string]$LogbinBasename='hm-log-bin'
+        [parameter(Mandatory = $true, ValueFromPipeline = $true)][string]$MycnfFile,
+        [parameter(Mandatory = $false)][string]$LogbinBasename = 'hm-log-bin'
     )
     if (-not $LogbinBasename) {
         $LogbinBasename = 'hm-log-bin'
@@ -303,7 +305,7 @@ Long description
 .PARAMETER sql
 Parameter description
 
-.PARAMETER UsePassword
+.PARAMETER UsePlainPwd
 The value 'USE-EMPTY-PASSWORD' has special meaning.
 
 .PARAMETER SQLFromFile
@@ -321,18 +323,43 @@ General notes
 function Get-SQLCommandLine {
     param (
         [parameter(Mandatory = $true, Position = 0)]$sql,
-        [parameter(Mandatory = $false)][string]$UsePassword,
+        [parameter(Mandatory = $false)][string]$UsePlainPwd,
         [parameter()][switch]$SQLFromFile,
         [switch]$combineError
     )
     $c = $Global:configuration
+    $t = New-MysqlExtraFile -UsePlainPwd $UsePlainPwd
+    
+    #  mysql  --defaults-extra-file=extra.txt -X  -e "select 1"
+    if ($SQLFromFile) {
+        $sqltmp = New-TemporaryFile
+        $sql | Out-File -FilePath $sqltmp -Encoding ascii
+        $cmdline = "Get-Content -Path {0} | {1} --defaults-extra-file={2} -X {3}" -f $sqltmp.FullName, $c.clientBin, $t, $(if ($combineError) {" 2>&1"} else {""})
+        @{cmdline = $cmdline; extrafile = $t; sqltmp = $sqltmp}
+    }
+    else {
+        $cmdline = "{0} --defaults-extra-file={1} -X -e `"{2}`"{3}" -f $c.clientBin, $t, $sql, $(if ($combineError) {" 2>&1"} else {""})
+        if ($UsePlainPwd) {
+            @{cmdline = $cmdline; extrafile = $t; nopass = $true}
+        }
+        else {
+            @{cmdline = $cmdline; extrafile = $t}
+        }
+    }
+}
 
-    if ($UsePassword) {
-        if ($UsePassword -eq $Global:EmptyPassword) {
+function New-MysqlExtraFile {
+    param (
+        [parameter(Mandatory = $false)][string]$UsePlainPwd
+    )
+    $c = $Global:configuration
+
+    if ($UsePlainPwd) {
+        if ($UsePlainPwd -eq $Global:EmptyPassword) {
             $pw = ""
         }
         else {
-            $pw = $UsePassword
+            $pw = $UsePlainPwd
         }
         $t = New-TemporaryFile
         "[client]", "user=$($c.MysqlUser)", "password=$pw" | Out-File -FilePath $t -Encoding ascii
@@ -348,23 +375,7 @@ function Get-SQLCommandLine {
             $t = $Global:MysqlExtraFile
         }
     }
-    
-    #  mysql  --defaults-extra-file=extra.txt -X  -e "select 1"
-    if ($SQLFromFile) {
-        $sqltmp = New-TemporaryFile
-        $sql | Out-File -FilePath $sqltmp -Encoding ascii
-        $cmdline = "Get-Content -Path {0} | {1} --defaults-extra-file={2} -X {3}" -f $sqltmp.FullName, $c.clientBin, $t, $(if ($combineError) {" 2>&1"} else {""})
-        @{cmdline = $cmdline; extrafile = $t; sqltmp = $sqltmp}
-    }
-    else {
-        $cmdline = "{0} --defaults-extra-file={1} -X -e `"{2}`"{3}" -f $c.clientBin, $t, $sql, $(if ($combineError) {" 2>&1"} else {""})
-        if ($UsePassword) {
-            @{cmdline = $cmdline; extrafile = $t; nopass = $true}
-        }
-        else {
-            @{cmdline = $cmdline; extrafile = $t}
-        }
-    }
+    $t
 }
 
 <#
@@ -377,7 +388,7 @@ function Get-SQLCommandLine {
  .PARAMETER sql
  Parameter description
  
- .PARAMETER UsePassword
+ .PARAMETER UsePlainPwd
  The value 'USE-EMPTY-PASSWORD' has special meaning.
  
  .PARAMETER SQLFromFile
@@ -395,12 +406,12 @@ function Get-SQLCommandLine {
 function Invoke-MysqlSQLCommand {
     param (
         [parameter(Mandatory = $true, Position = 0)]$sql,
-        [parameter(Mandatory = $false)][string]$UsePassword,
+        [parameter(Mandatory = $false)][string]$UsePlainPwd,
         [parameter()][switch]$SQLFromFile,
         [parameter()][switch]$combineError
     )
 
-    $cmdline = Get-SQLCommandLine -sql $sql -combineError:$combineError -UsePassword $UsePassword -SQLFromFile:$SQLFromFile
+    $cmdline = Get-SQLCommandLine -sql $sql -combineError:$combineError -UsePlainPwd $UsePlainPwd -SQLFromFile:$SQLFromFile
     $cmdline | Write-Verbose
     $r = Invoke-Expression -Command $cmdline.cmdline | Where-Object {-not ($_ -like 'Warning:*')}
     $r | Write-Verbose

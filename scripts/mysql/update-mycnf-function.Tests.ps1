@@ -22,6 +22,10 @@ Describe "update my.cnf" {
 
         Update-Mycnf -Path $fixture -Key "a" -Value 1 -BlockName  'aaab' | Where-Object {$_ -eq '[aaab]'} | Should -BeTrue
         Update-Mycnf -Path $fixture -Key "a" -Value 1 -BlockName  'aaab' | Where-Object {$_ -eq 'a=1'} | Should -BeTrue
+
+        Update-Mycnf -Path $fixture -Key "a" | Where-Object {$_ -eq 'a='} | Should -BeFalse
+        Update-Mycnf -Path $fixture -Key "datadir" | Where-Object {$_ -eq '#datadir=/var/lib/mysql'} | Should -BeTrue
+        Update-Mycnf -Path $fixture -Key "datadir" | Where-Object {$_ -eq 'datadir=/var/lib/mysql'} | Should -BeFalse
     }
 }
 
