@@ -43,6 +43,7 @@
         "ScriptDir": "/tmp/easyinstaller-scripts/mysql",
         "PackageDir": "/tmp/easyinstaller-scripts/packages",
         "EntryPoint": "installer-server.ps1",
+        "MysqlLogFile": "/var/log/mysqld.log",
         "Software": {
           "InstallDetect": {
             "command": "systemctl status mysqld",

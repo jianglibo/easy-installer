@@ -306,6 +306,14 @@ Describe "String convert" {
     }
 }
 
+Describe "Format-List out" {
+    it "should parse out" {
+        $f = "$here\listout.txt"
+        [array]$r = Get-Content -Path $f | ConvertFrom-ListFormatOutput
+        
+        $r.Count | Should -Be 2
+    }
+}
 # Describe "process control executable" {
 #     it "should start cmd" {
 #         Invoke-Executable -sExeFile "cmd" -cArgs "/C", "dir"

@@ -178,10 +178,17 @@ Describe "mysql extra file" {
 }
 
 Describe "dump mysql" {
+    $df = Join-Path $TestDrive "dump.sql"
     it "should dump" {
-        $PSDefaultParameterValues['*:Verbose'] = $true
+        $PSDefaultParameterValues['*:Verbose'] = $false
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlDump
-        $r | Out-Host
+        $ht = $r | ConvertFrom-ListFormatOutput
+        $ht | Out-Host
+        $ht.Path | Should -Be $Global:configuration.DumpFilename
+        [SshInvoker]$sshinvoker = Get-SshInvoker
+        $sshinvoker.ScpFrom($ht.Path, $df, $false)
+        (Get-FileHash -Path $df).Hash | Should -Be $ht.Hash
+        # Get-Content -Path $df | Out-Host
     }
 }

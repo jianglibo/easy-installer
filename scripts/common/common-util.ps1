@@ -961,6 +961,32 @@ function Get-FileFromBase64 {
     $OutFile
 }
 
+function ConvertFrom-ListFormatOutput {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]$ListFormatOutput
+    )
+    Begin {
+        $ht = @{}
+    }
+    Process {
+        if ($PSItem) {
+            if ($PSItem -match '^\s*(.*?)\s*:\s*(.*?)\s*$') {
+                $ht[$Matches[1]] = $Matches[2]
+            }
+        } else {
+            if ($ht.Keys.Count) {
+                $ht
+                $ht = @{}
+            }
+        }
+    }
+    End {
+        if ($ht.Keys.Count) {
+            $ht
+        }
+    }
+}
+
 function Send-LinesToClient {
     param (
         [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]$InputObject

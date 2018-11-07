@@ -112,7 +112,13 @@ function Install-Mysql {
         $cmd | Write-Verbose
         Invoke-Expression -Command $cmd
         Update-MysqlStatus -StatusTo Start
-        Update-MysqlPassword -EncryptedNewPwd $Global:configuration.MysqlPassword
+        $MysqlLogFile = $OsConfig.MysqlLogFile
+        $line = Get-Content -Path $MysqlLogFile | Where-Object {$_ -match 'A temporary password is generated for.*?:\s*(.*)\s*$'} | Select-Object -First 1
+        if ($line) {
+            Update-MysqlPassword -EncryptedNewPwd $Global:configuration.MysqlPassword -OldPwdNotEncrypted -EncryptedOldPwd $Matches[1]
+        } else {
+            Update-MysqlPassword -EncryptedNewPwd $Global:configuration.MysqlPassword
+        }
         "Install Succcess." | Send-LinesToClient
     }
 }
@@ -363,7 +369,7 @@ function New-MysqlDump {
         [parameter(Mandatory = $false)][string]$UsePlainPwd
     )
     $ExtraFile = New-MysqlExtraFile -UsePlainPwd $UsePlainPwd
-    "New created ExtraFile $ExtraFile"
+    "New created ExtraFile $ExtraFile" | Write-Verbose
     $c = $Global:configuration
     $dumpcmd = "{0} --defaults-extra-file={1} --max_allowed_packet=512M --quick --events --all-databases --flush-logs --delete-master-logs --single-transaction > {2}" -f $c.DumpBin, $ExtraFile, $c.DumpFilename
     $dumpcmd | Write-Verbose
@@ -372,7 +378,7 @@ function New-MysqlDump {
     if ($deny) {
         throw $r
     }
-    $r
+    Get-FileHash -Path $c.DumpFilename | Format-List | Send-LinesToClient
 }
 <#
 .SYNOPSIS
