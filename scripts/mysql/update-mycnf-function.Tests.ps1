@@ -26,6 +26,8 @@ Describe "update my.cnf" {
         Update-Mycnf -Path $fixture -Key "a" | Where-Object {$_ -eq 'a='} | Should -BeFalse
         Update-Mycnf -Path $fixture -Key "datadir" | Where-Object {$_ -eq '#datadir=/var/lib/mysql'} | Should -BeTrue
         Update-Mycnf -Path $fixture -Key "datadir" | Where-Object {$_ -eq 'datadir=/var/lib/mysql'} | Should -BeFalse
+
+        Update-Mycnf -Path $fixture -Key "datadir" | Update-Mycnf -Key "server-id" -Value '2' | Out-Host
     }
 }
 

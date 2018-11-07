@@ -177,6 +177,7 @@ function Invoke-ServerRunningPs1 {
         [Parameter(Mandatory = $true, Position = 1)]
         [string]$Action,
         [parameter(Mandatory = $false)][switch]$notCombineError,
+        [parameter(Mandatory = $false)][switch]$NotCleanUp,
         [parameter(Mandatory = $false,
             ValueFromRemainingArguments = $true)]
         [String[]]
@@ -191,8 +192,14 @@ function Invoke-ServerRunningPs1 {
     # $toServerConfigFile = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
 
     $entryPoint = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath $osConfig.ServerSide.EntryPoint
+
+    if ($NotCleanUp) {
+        $ncp = "-NotCleanUp"
+    } else {
+        $ncp = ""
+    }
     
-    $rcmd = "pwsh -f {0} -action {1} {2} {3}" -f $entryPoint, $action, (Get-Verbose), ($hints -join ' ')
+    $rcmd = "pwsh -f {0} -action {1} {2} {3} {4}" -f $entryPoint, $action, $ncp, (Get-Verbose), ($hints -join ' ')
     $rcmd | Out-String | Write-Verbose
     $sshInvoker.Invoke($rcmd, (-not $notCombineError))
 }

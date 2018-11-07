@@ -71,22 +71,27 @@ function Update-MysqlStatus {
 
 function Update-MysqlPassword {
     param (
-        [parameter(Mandatory = $true)][string]$EncryptedNewPassword,
-        [parameter(Mandatory = $false)][string]$EncryptedOldPassword
+        [parameter(Mandatory = $true)][string]$EncryptedNewPwd,
+        [parameter(Mandatory = $false)][string]$EncryptedOldPwd,
+        [parameter(Mandatory = $false)][switch]$OldPwdNotEncrypted
     )
-    $plainp = UnProtect-PasswordByOpenSSLPublicKey -base64 $EncryptedNewPassword
-    if (-not $EncryptedOldPassword) {
-        $sql = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${plainp}');" # old
-        $r = Invoke-MysqlSQLCommand -sql $sql -UsePlainPwd $Global:EmptyPassword
-        $r = $r | Where-Object {$PSItem -like "*mysql_upgrade*"} | Select-Object -First 1
-
-        if ($r) {
-            $sql = "ALTER USER 'root'@'localhost' IDENTIFIED BY '${plainp}';" #new > 5.7.6
-            $r = Invoke-MysqlSQLCommand -sql $sql -UsePlainPwd $Global:EmptyPassword
+    $plainp = UnProtect-PasswordByOpenSSLPublicKey -base64 $EncryptedNewPwd
+    if ($EncryptedOldPwd) {
+        if ($OldPwdNotEncrypted) {
+            $plainop = $EncryptedOldPwd
+        } else {
+            $plainop = UnProtect-PasswordByOpenSSLPublicKey -base64 $EncryptedOldPwd
         }
+    } else {
+        $plainop = $Global:EmptyPassword
     }
-    else {
+    $sql = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${plainp}');" # old
+    $r = Invoke-MysqlSQLCommand -sql $sql -UsePlainPwd $plainop
+    $r = $r | Where-Object {$PSItem -like "*mysql_upgrade*"} | Select-Object -First 1
 
+    if ($r) {
+        $sql = "ALTER USER 'root'@'localhost' IDENTIFIED BY '${plainp}';" #new > 5.7.6
+        $r = Invoke-MysqlSQLCommand -sql $sql -UsePlainPwd $plainop
     }
 }
 
@@ -107,7 +112,7 @@ function Install-Mysql {
         $cmd | Write-Verbose
         Invoke-Expression -Command $cmd
         Update-MysqlStatus -StatusTo Start
-        Update-MysqlPassword -EncryptedNewPassword $Global:configuration.MysqlPassword
+        Update-MysqlPassword -EncryptedNewPwd $Global:configuration.MysqlPassword
         "Install Succcess." | Send-LinesToClient
     }
 }
@@ -256,18 +261,23 @@ General notes
 function Enable-Logbin {
     param (
         [parameter(Mandatory = $true, ValueFromPipeline = $true)][string]$MycnfFile,
-        [parameter(Mandatory = $false)][string]$LogbinBasename = 'hm-log-bin'
+        [parameter(Mandatory = $false)][string]$LogbinBasename = 'hm-log-bin',
+        [parameter(Mandatory = $false)][string]$ServerId = '1'
     )
     if (-not $LogbinBasename) {
         $LogbinBasename = 'hm-log-bin'
+    }
+    if (-not $ServerId) {
+        $ServerId = '1'
     }
     $r = Backup-LocalDirectory -Path $MycnfFile -keepOrigin
     "backuped file: $r" | Write-Verbose
     "updating mycnf: $MycnfFile" | Write-Verbose
     "logbin basename is: $LogbinBasename" | Write-Verbose
-    $r = Update-Mycnf -Path $MycnfFile -Key "log-bin" -Value $LogbinBasename
+    $r = Update-Mycnf -Path $MycnfFile -Key "log-bin" -Value $LogbinBasename | Update-Mycnf -Key 'server-id' -Value $ServerId
     $r | Write-Verbose
     $r | Out-File -FilePath $MycnfFile -Encoding ascii
+    Update-MysqlStatus -StatusTo Restart
 }
 function Get-MycnfFile {
     $r = Invoke-Expression -Command "$($Global:configuration.clientBin) --help"
@@ -340,7 +350,7 @@ function Get-SQLCommandLine {
     else {
         $cmdline = "{0} --defaults-extra-file={1} -X -e `"{2}`"{3}" -f $c.clientBin, $t, $sql, $(if ($combineError) {" 2>&1"} else {""})
         if ($UsePlainPwd) {
-            @{cmdline = $cmdline; extrafile = $t; nopass = $true}
+            @{cmdline = $cmdline; extrafile = $t; DeleteExtraFile = $true}
         }
         else {
             @{cmdline = $cmdline; extrafile = $t}
@@ -348,13 +358,50 @@ function Get-SQLCommandLine {
     }
 }
 
+function New-MysqlDump {
+    param (
+        [parameter(Mandatory = $false)][string]$UsePlainPwd
+    )
+    $ExtraFile = New-MysqlExtraFile -UsePlainPwd $UsePlainPwd
+    "New created ExtraFile $ExtraFile"
+    $c = $Global:configuration
+    $dumpcmd = "{0} --defaults-extra-file={1} --max_allowed_packet=512M --quick --events --all-databases --flush-logs --delete-master-logs --single-transaction > {2}" -f $c.DumpBin, $ExtraFile, $c.DumpFilename
+    $dumpcmd | Write-Verbose
+    $r = Invoke-Expression -Command $dumpcmd
+    $deny = $r | Where-Object {$_ -match 'Access denied'} | Select-Object -First 1
+    if ($deny) {
+        throw $r
+    }
+    $r
+}
+<#
+.SYNOPSIS
+Short description
+
+.DESCRIPTION
+Long description
+
+.PARAMETER UsePlainPwd
+When UsePlainPwd, the extra file is created for every invoking. So delete it after invoking.
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function New-MysqlExtraFile {
     param (
         [parameter(Mandatory = $false)][string]$UsePlainPwd
     )
     $c = $Global:configuration
 
+    if (-not $c.MysqlUser) {
+        throw 'MysqlUser property in configuration file is empty.'
+    }
+
     if ($UsePlainPwd) {
+        "use plain password: $UsePlainPwd" | Write-Verbose
         if ($UsePlainPwd -eq $Global:EmptyPassword) {
             $pw = ""
         }
@@ -365,17 +412,18 @@ function New-MysqlExtraFile {
         "[client]", "user=$($c.MysqlUser)", "password=$pw" | Out-File -FilePath $t -Encoding ascii
     }
     else {
+        "Did'nt use plain password." | Write-Verbose
         if (-not $Global:MysqlExtraFile) {
             $pw = UnProtect-PasswordByOpenSSLPublicKey -base64 $c.MysqlPassword
             $t = New-TemporaryFile
             "[client]", "user=$($c.MysqlUser)", "password=$pw" | Out-File -FilePath $t -Encoding ascii
-            $t = $Global:MysqlExtraFile
+            $Global:MysqlExtraFile = $t
         }
         else {
             $t = $Global:MysqlExtraFile
         }
     }
-    $t
+    $t.FullName
 }
 
 <#
@@ -419,7 +467,7 @@ function Invoke-MysqlSQLCommand {
         "deleting tmp sqlfile: $($cmdline.sqltmp)" | Write-Verbose
         Remove-Item -Path $cmdline.sqltmp -Force
     }
-    if ($cmdline.nopass -and $cmdline.extrafile -and (Test-Path -Path $cmdline.extrafile)) {
+    if ($cmdline.DeleteExtraFile -and $cmdline.extrafile -and (Test-Path -Path $cmdline.extrafile)) {
         "deleting emptypass extrafile: $($cmdline.sqltmp)" | Write-Verbose
     }
     if ($r -like "*Access Denied*") {

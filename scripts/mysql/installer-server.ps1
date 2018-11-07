@@ -8,12 +8,15 @@ param (
         "GetMycnf", 
         "EnableLogbin",
         "GetVariables", 
+        "MysqlDump", 
+        "MysqlExtraFile", 
         "Uninstall", 
         "Echo", 
         "DownloadPublicKey", 
         "RunSQL", 
         "UpdateMysqlPassword")]
     [string]$Action,
+    [parameter(Mandatory = $false)][switch]$NotCleanUp,
     [parameter(Mandatory = $false,
         ValueFromRemainingArguments = $true)]
     [String[]]
@@ -80,7 +83,7 @@ try {
         }
         "UpdateMysqlPassword" {
             if ($hints) {
-                Update-MysqlPassword -EncryptedNewPassword $hints[0] -EncryptedOldPassword $hints[1]
+                Update-MysqlPassword -EncryptedNewPwd $hints[0] -EncryptedOldPwd $hints[1]
             }
             break
         }
@@ -91,6 +94,14 @@ try {
             $line = "Invoke-MysqlSQLCommand -sql $sql $opts"
             $line | Write-Verbose
             Invoke-Expression -Command $line
+        }
+        "MysqlDump" {
+            New-MysqlDump -UsePlainPwd "$hints"
+            break
+        }
+        "MysqlExtraFile" {
+            New-MysqlExtraFile -UsePlainPwd "$hints"
+            break
         }
         "EnableLogbin" {
             Get-MycnfFile | Enable-Logbin -LogbinBasename "$hints"
@@ -103,8 +114,10 @@ try {
 }
 finally {
     if ($Global:MysqlExtraFile) {
-        if (Test-Path -Path $Global:MysqlExtraFile) {
-            Remove-Item -Path $Global:MysqlExtraFile -Force
+        if (-not $NotCleanUp) {
+            if (Test-Path -Path $Global:MysqlExtraFile) {
+                Remove-Item -Path $Global:MysqlExtraFile -Force
+            }
         }
         $Global:MysqlExtraFile = $null
     }

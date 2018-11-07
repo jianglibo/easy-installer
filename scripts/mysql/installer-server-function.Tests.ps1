@@ -158,6 +158,30 @@ Describe "enable logbin" {
         $PSDefaultParameterValues['*:Verbose'] = $true
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action EnableLogbin
-        $r
+        $r | Out-Host
+        $r | Should -BeNullOrEmpty
+    }
+}
+
+Describe "mysql extra file" {
+    it "should create" {
+        $PSDefaultParameterValues['*:Verbose'] = $false
+        $ht = Copy-TestPsScriptToServer -HerePath $here
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlExtraFile -NotCleanUp
+        $r | Out-Host
+
+        $sshinvoker = Get-SshInvoker
+        $r = $sshinvoker.Invoke("cat $r")
+        $r | Where-Object {$_ -eq '[client]'} | should -BeTrue
+        $r | Where-Object {$_ -eq 'user=root'} | should -BeTrue
+    }
+}
+
+Describe "dump mysql" {
+    it "should dump" {
+        $PSDefaultParameterValues['*:Verbose'] = $true
+        $ht = Copy-TestPsScriptToServer -HerePath $here
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlDump
+        $r | Out-Host
     }
 }
