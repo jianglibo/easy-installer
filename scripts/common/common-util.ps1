@@ -989,7 +989,7 @@ function ConvertFrom-ListFormatOutput {
 
 function Send-LinesToClient {
     param (
-        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]$InputObject
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]$InputObject
     )
     Begin {
         "for-easyinstaller-client-use-start"
@@ -1004,7 +1004,7 @@ function Send-LinesToClient {
 
 function Receive-LinesFromServer {
     param (
-        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]$toClient
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]$toClient
     )
     Begin {
         $r = @()
@@ -1147,4 +1147,5 @@ function UnProtect-PasswordByOpenSSLPublicKey {
 
 trap {
     $Error[0].TargetObject | Send-LinesToClient
+    break
 }

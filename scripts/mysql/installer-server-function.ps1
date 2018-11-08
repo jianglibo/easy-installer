@@ -112,7 +112,7 @@ function Install-Mysql {
         $cmd | Write-Verbose
         Invoke-Expression -Command $cmd
         Update-MysqlStatus -StatusTo Start
-        $MysqlLogFile = $OsConfig.MysqlLogFile
+        $MysqlLogFile = $Global:configuration.MysqlLogFile
         $line = Get-Content -Path $MysqlLogFile | Where-Object {$_ -match 'A temporary password is generated for.*?:\s*(.*)\s*$'} | Select-Object -First 1
         if ($line) {
             Update-MysqlPassword -EncryptedNewPwd $Global:configuration.MysqlPassword -OldPwdNotEncrypted -EncryptedOldPwd $Matches[1]
@@ -364,7 +364,26 @@ function Get-SQLCommandLine {
     }
 }
 
-function New-MysqlDump {
+function Invoke-MysqlFlushLogs {
+    param (
+        [parameter(Mandatory = $false)][string]$UsePlainPwd
+    )
+    # mysqladmin -u%s -p flush-logs
+    $ExtraFile = New-MysqlExtraFile -UsePlainPwd $UsePlainPwd
+    "New created ExtraFile $ExtraFile" | Write-Verbose
+    $c = $Global:configuration
+    $flushcmd = "{0} --defaults-extra-file={1} flush-logs 2>&1" -f $c.MysqlAdminBin, $ExtraFile
+    $flushcmd | Write-Verbose
+    $r = Invoke-Expression -Command $flushcmd
+    "Invoke flushcmd output:" | Write-Verbose
+    $r | Write-Verbose
+    $deny = $r | Where-Object {$_ -match 'Access denied'} | Select-Object -First 1
+    if ($deny) {
+        throw $r
+    }
+    Get-FileHash -Path $c.DumpFilename | Format-List | Send-LinesToClient
+}
+function Invoke-MysqlDump {
     param (
         [parameter(Mandatory = $false)][string]$UsePlainPwd
     )
@@ -415,14 +434,14 @@ function New-MysqlExtraFile {
             $pw = $UsePlainPwd
         }
         $t = New-TemporaryFile
-        "[client]", "user=$($c.MysqlUser)", "password=$pw" | Out-File -FilePath $t -Encoding ascii
+        "[client]", "user=$($c.MysqlUser)", "password=$`"{pw}`"" | Out-File -FilePath $t -Encoding ascii
     }
     else {
         "Did'nt use plain password." | Write-Verbose
         if (-not $Global:MysqlExtraFile) {
             $pw = UnProtect-PasswordByOpenSSLPublicKey -base64 $c.MysqlPassword
             $t = New-TemporaryFile
-            "[client]", "user=$($c.MysqlUser)", "password=$pw" | Out-File -FilePath $t -Encoding ascii
+            "[client]", "user=$($c.MysqlUser)", "password=`"${pw}`"" | Out-File -FilePath $t -Encoding ascii
             $Global:MysqlExtraFile = $t
         }
         else {

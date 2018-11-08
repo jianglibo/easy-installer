@@ -183,7 +183,25 @@ Describe "dump mysql" {
         $PSDefaultParameterValues['*:Verbose'] = $false
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlDump
-        $ht = $r | ConvertFrom-ListFormatOutput
+        $r | Out-Host
+        $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
+        $ht | Out-Host
+        $ht.Path | Should -Be $Global:configuration.DumpFilename
+        [SshInvoker]$sshinvoker = Get-SshInvoker
+        $sshinvoker.ScpFrom($ht.Path, $df, $false)
+        (Get-FileHash -Path $df).Hash | Should -Be $ht.Hash
+        # Get-Content -Path $df | Out-Host
+    }
+}
+
+Describe "flush mysql" {
+    $df = Join-Path $TestDrive "dump.sql"
+    it "should flush" {
+        $PSDefaultParameterValues['*:Verbose'] = $false
+        $ht = Copy-TestPsScriptToServer -HerePath $here
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlFlushLogs
+        $r | Out-Host
+        $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
         $ht | Out-Host
         $ht.Path | Should -Be $Global:configuration.DumpFilename
         [SshInvoker]$sshinvoker = Get-SshInvoker

@@ -1,5 +1,6 @@
 {
   "AppName": "mysql",
+  "MysqlVersion": "57",
   "openssl": "openssl",
   "ClientOpenssl": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.exe",
   "ClientEnv": {
@@ -17,6 +18,8 @@
   "ClientBin": "mysql",
   "DumpBin": "mysqldump",
   "DumpFilename": "/tmp/mysqldump.sql",
+  "MysqlAdminBin": "mysqladmin",
+  "MysqlLogFile": "/var/log/mysqld.log",
   "OsType": "centos",
   "SwitchByOs": {
     "centos": {
@@ -43,7 +46,6 @@
         "ScriptDir": "/tmp/easyinstaller-scripts/mysql",
         "PackageDir": "/tmp/easyinstaller-scripts/packages",
         "EntryPoint": "installer-server.ps1",
-        "MysqlLogFile": "/var/log/mysqld.log",
         "Software": {
           "InstallDetect": {
             "command": "systemctl status mysqld",

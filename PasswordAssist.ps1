@@ -20,6 +20,7 @@ switch ($Action) {
         Get-Configuration -ConfigFile $ConfigFile
         $s = Protect-PasswordByOpenSSLPublicKey -PublicKeyFile $PublicKeyFile
         $Global:configuration.MysqlPassword = $s
+        $Global:configuration.PSObject.Properties.Remove('OsConfig')
         $Global:configuration | ConvertTo-Json -Depth 10 | Out-File $ConfigFile
         break
      }
