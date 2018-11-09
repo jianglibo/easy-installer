@@ -317,7 +317,7 @@ function Test-SoftwareInstalled {
 
 function Get-MaxBackupNumber {
     param (
-        [Parameter(Mandatory = $false, Position = 1)][string]$Path
+        [Parameter(Mandatory = $true, Position = 1)][string]$Path
     )
     $r = Get-ChildItem -Path "${Path}*" | 
         # Where-Object Name -Match ".*\.\d+$" |
@@ -386,7 +386,25 @@ function Backup-LocalDirectory {
     }
     $nx
 }
+<#
+.SYNOPSIS
+Given a hashtable and an one level depth hashtable, Alter the vaule in the hashtable by the value in the one level hashtable.
 
+.DESCRIPTION
+Given a hashtable and an one level depth hashtable. if onelevelhashtable is {'a.b.c'=5}, then the hashtable.a.b.c will change to value 5.
+
+.PARAMETER customob
+Parameter description
+
+.PARAMETER OneLevelHashTable
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function Get-ChangedHashtable {
     param (
         [Parameter(Mandatory = $true, Position = 0)]$customob,
@@ -961,6 +979,44 @@ function Get-FileFromBase64 {
     $OutFile
 }
 
+function ConvertFrom-NameValuePair {
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]$piped
+    )
+    Begin {
+        $ht = @{}
+    }
+    Process {
+        foreach ($item in $_) {
+            $ht[$item.name] = $item.value
+        }
+    }
+    End {
+        $ht
+    }
+}
+
+<#
+.SYNOPSIS
+convert output like bellow to hash table.
+Id      : 21860
+Handles : 277
+CPU     : 1
+SI      : 2
+Name    : YunDetectService
+
+.DESCRIPTION
+Long description
+
+.PARAMETER ListFormatOutput
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function ConvertFrom-ListFormatOutput {
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]$ListFormatOutput

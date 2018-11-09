@@ -119,19 +119,32 @@ Describe "getmycnf" {
     }
 }
 
+Describe "should convert namevalue pair" {
+    it "should convert" {
+        $r = @{name='a';value=2},@{name='b';value=3} | ConvertFrom-NameValuePair
+        $r.a | Should -Be 2
+        $r.b | Should -Be 3
+    }
+}
 Describe "get mysql variables" {
     it "should return variables hashtable." {
+        $PSDefaultParameterValues['*:Verbose'] = $false
         $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "auto_increment_offset"
-        $r = $r | ConvertFrom-Json
-        $r.value | Should -Be '1'
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "auto_increment_offset" "datadir"
+        $r | Out-Host
+        $r = $r | ConvertFrom-Json | ConvertFrom-NameValuePair
+        $r | Out-Host
+        $r.auto_increment_offset | Should -Be '1'
+        $r.datadir | Should -Be '/var/lib/mysql/'
 
-        $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "auto_increment_offset1"
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "auto_increment_offset1"
+        $r | Out-Host
         $r | Should -BeFalse
 
-        $r = Invoke-ServerRunningPs1 -configuration $ht.configuration -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "datadir"
-        $r = $r | ConvertFrom-Json
-        $r.value | Should -Be '/var/lib/mysql/'
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "datadir"
+        $r | Out-Host
+        $r = $r | ConvertFrom-Json | ConvertFrom-NameValuePair
+        $r.datadir | Should -Be '/var/lib/mysql/'
 
     }
 }
@@ -203,10 +216,5 @@ Describe "flush mysql" {
         $r | Out-Host
         $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
         $ht | Out-Host
-        $ht.Path | Should -Be $Global:configuration.DumpFilename
-        [SshInvoker]$sshinvoker = Get-SshInvoker
-        $sshinvoker.ScpFrom($ht.Path, $df, $false)
-        (Get-FileHash -Path $df).Hash | Should -Be $ht.Hash
-        # Get-Content -Path $df | Out-Host
     }
 }

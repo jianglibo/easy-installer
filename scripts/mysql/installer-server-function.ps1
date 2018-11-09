@@ -363,7 +363,22 @@ function Get-SQLCommandLine {
         }
     }
 }
+<#
+.SYNOPSIS
+Flush mysql logbin.
 
+.DESCRIPTION
+Flush Mysql login and get the content of logbin-index file, for each item in this index file, calculate the hash and return to client.
+
+.PARAMETER UsePlainPwd
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function Invoke-MysqlFlushLogs {
     param (
         [parameter(Mandatory = $false)][string]$UsePlainPwd
@@ -381,7 +396,23 @@ function Invoke-MysqlFlushLogs {
     if ($deny) {
         throw $r
     }
-    Get-FileHash -Path $c.DumpFilename | Format-List | Send-LinesToClient
+    $idxfile = Get-MysqlVariables -VariableNames 'log_bin_index' -UsePlainPwd $UsePlainPwd
+
+    "found idxfile: $idxfile" | Write-Verbose
+    if (-not $idxfile) {
+        throw 'cannot find log_bin_index variable.'
+    }
+
+    $idxfile = $idxfile | ConvertFrom-Json
+
+    if (-not (Test-Path -Path $idxfile.value -PathType Leaf)) {
+        throw 'cannot find log_bin_index file.'
+    }
+    $pf = Split-Path -Path $idxfile.value -Parent
+    "log folder is: $pf" | Write-Verbose
+    Get-Content -Path $idxfile.value | ForEach-Object {Join-Path -Path $pf -ChildPath $_} |
+        ForEach-Object {Get-FileHash -Path $_} |
+        Format-List | Send-LinesToClient
 }
 function Invoke-MysqlDump {
     param (
@@ -508,14 +539,18 @@ function Invoke-MysqlSQLCommand {
 #>
 function Get-MysqlVariables {
     param (
-        [parameter(Mandatory = $false, Position = 1)][string[]]$VariableNames
+        [parameter(Mandatory = $false, Position = 1)][string[]]$VariableNames,
+        [parameter(Mandatory = $false)][string]$UsePlainPwd
     )
     $r = Invoke-MysqlSQLCommand -sql "show variables" -combineError
     if ($VariableNames.Count -gt 0) {
-        ([xml]$r).resultset.row | ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | Where-Object {$_.name -in $VariableNames} | ConvertTo-Json -Depth 10
+        ([xml]$r).resultset.row |
+         ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} |
+         Where-Object {$_.name -in $VariableNames} | ConvertTo-Json -Depth 10
     }
     else {
-        ([xml]$r).resultset.row | ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | ConvertTo-Json -Depth 10
+        ([xml]$r).resultset.row |
+         ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | ConvertTo-Json -Depth 10
     }
 }
 

@@ -67,7 +67,7 @@ try {
             break
         }
         "GetVariables" {
-            Get-MysqlVariables "$hints"
+            Get-MysqlVariables $hints
             break
         }
         "Uninstall" {

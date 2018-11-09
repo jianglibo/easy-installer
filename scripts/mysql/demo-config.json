@@ -14,12 +14,12 @@
   "ServerPassword": null,
   "MysqlUser": "root",
   "MysqlPassword": "ULPUFGwFuK05qk3AaMOWJyUg7FSxOY1wX3ZvgVkETOZqdJPH8QCWs0irYgzxOhYdD0OJSAcL/zs2tI3q5lJ6K67O3reRMDsRUtTeB/rVecwKDcS5nOQUUMKzqpcweOWxxjM1epmmPEmTXmol4CJNSi1Eg4TbRFn12fc8lu/Ol+HIOxsQ43yePzvoOEMU8w7Fsj+NDq2r+zXzwEVk1IyD6Rb9vL7giOjF3hnYlHvnyjP0zjSnx/A0mLgNp+n6hKL9xFXVW+W+lvb8OOLNNrW5AfrrE7rjOhEMcP+YIlTMLZtABwo913I/kkUxUGlg8ri6EmVTXS3k98T/Erl2ShxefQ==",
-  "MysqlLogFile": "/var/log/mysqld.log",
   "ClientBin": "mysql",
   "DumpBin": "mysqldump",
   "DumpFilename": "/tmp/mysqldump.sql",
   "MysqlAdminBin": "mysqladmin",
   "MysqlLogFile": "/var/log/mysqld.log",
+  "LocalDir": "e:/backups/mysql",
   "OsType": "centos",
   "SwitchByOs": {
     "centos": {
