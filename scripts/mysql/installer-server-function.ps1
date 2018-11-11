@@ -377,7 +377,7 @@ Parameter description
 An example
 
 .NOTES
-General notes
+
 #>
 function Invoke-MysqlFlushLogs {
     param (
@@ -404,6 +404,10 @@ function Invoke-MysqlFlushLogs {
     }
 
     $idxfile = $idxfile | ConvertFrom-Json
+
+    if (-not $idxfile.value) {
+        throw "log_bin_index variable is null. Did logbin be enabled?"
+    }
 
     if (-not (Test-Path -Path $idxfile.value -PathType Leaf)) {
         throw 'cannot find log_bin_index file.'
@@ -518,7 +522,9 @@ function Invoke-MysqlSQLCommand {
     $cmdline = Get-SQLCommandLine -sql $sql -combineError:$combineError -UsePlainPwd $UsePlainPwd -SQLFromFile:$SQLFromFile
     $cmdline | Write-Verbose
     $r = Invoke-Expression -Command $cmdline.cmdline | Where-Object {-not ($_ -like 'Warning:*')}
-    $r | Write-Verbose
+    if (-not ($sql -match 'show variables')) {
+        $r | Write-Verbose
+    }
     if ($cmdline.sqltmp -and (Test-Path -Path $cmdline.sqltmp)) {
         "deleting tmp sqlfile: $($cmdline.sqltmp)" | Write-Verbose
         Remove-Item -Path $cmdline.sqltmp -Force

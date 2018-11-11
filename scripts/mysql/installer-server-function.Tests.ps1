@@ -172,7 +172,8 @@ Describe "enable logbin" {
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action EnableLogbin
         $r | Out-Host
-        $r | Should -BeNullOrEmpty
+        $rr = $r | Receive-LinesFromServer
+        $rr | Should -BeNullOrEmpty
     }
 }
 
@@ -210,7 +211,7 @@ Describe "dump mysql" {
 Describe "flush mysql" {
     $df = Join-Path $TestDrive "dump.sql"
     it "should flush" {
-        $PSDefaultParameterValues['*:Verbose'] = $false
+        $PSDefaultParameterValues['*:Verbose'] = $true
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlFlushLogs
         $r | Out-Host

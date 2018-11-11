@@ -199,3 +199,12 @@ Describe "break or continue the pipeline" {
     }
 }
 
+Describe "list of list" {
+    it "should handle arrays" {
+        @(1,2),@(3,4) | Measure-Object | Out-Host
+
+        foreach ($item in "abc") {
+            $item | Out-Host
+        }
+    }
+}

@@ -1051,7 +1051,9 @@ function Send-LinesToClient {
         "for-easyinstaller-client-use-start"
     }
     Process {
-        $InputObject
+        foreach ($item in $InputObject) {
+           $item 
+        }
     }
     End {
         "for-easyinstaller-client-use-end"
@@ -1060,21 +1062,26 @@ function Send-LinesToClient {
 
 function Receive-LinesFromServer {
     param (
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]$toClient
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]$toClient,
+        [Parameter(Mandatory = $false)][int]$section=0
     )
     Begin {
         $r = @()
         $started = $false
+        $idx = -1
     }
     Process {
         if ($_ -eq "for-easyinstaller-client-use-end") {
             $started = $false
         }
-        if ($started) {
-            $_
+        if ($started -and ($section -eq $idx)) {
+            if ($_ -notmatch '^VERBOSE:\s{1}') {
+                $_
+            }
         }
         if ($_ -eq "for-easyinstaller-client-use-start") {
             $started = $true
+            $idx += 1
         }
     }
 }

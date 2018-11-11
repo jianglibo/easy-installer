@@ -262,6 +262,10 @@ Describe "data between client and server." {
 
         Send-LinesToClient -InputObject "123" | Receive-LinesFromServer | Should -Be "123"
         "123" | Send-LinesToClient | Receive-LinesFromServer | Should -Be "123"
+
+        
+        ("1","2" | Send-LinesToClient),("3", "4" | Send-LinesToClient) | ForEach-Object {$_} | Receive-LinesFromServer -section 0 | Should -Be 1,2
+        ("1","2" | Send-LinesToClient),("3", "4" | Send-LinesToClient) | ForEach-Object {$_} | Receive-LinesFromServer -section 1 | Should -Be 3,4
     }
 }
 
