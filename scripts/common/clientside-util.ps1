@@ -108,8 +108,8 @@ function  Get-SshInvoker {
 
 function Copy-PsScriptToServer {
     param (
-        [Parameter(Mandatory = $true, Position = 1)][string]$ConfigFile,
-        [Parameter(Mandatory = $true, Position = 2)][string]$ServerSideFileListFile
+        [Parameter(Mandatory = $true, Position = 0)][string]$ConfigFile,
+        [Parameter(Mandatory = $true, Position = 1)][string]$ServerSideFileListFile
     )
 
     try {

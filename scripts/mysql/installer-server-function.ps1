@@ -545,7 +545,7 @@ function Invoke-MysqlSQLCommand {
 #>
 function Get-MysqlVariables {
     param (
-        [parameter(Mandatory = $false, Position = 1)][string[]]$VariableNames,
+        [parameter(Mandatory = $false, Position = 0)][string[]]$VariableNames,
         [parameter(Mandatory = $false)][string]$UsePlainPwd
     )
     $r = Invoke-MysqlSQLCommand -sql "show variables" -combineError

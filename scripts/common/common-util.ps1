@@ -201,10 +201,37 @@ function Join-UniversalPath {
     "${pp}${sp}${cp}"
 }
 
+function Copy-FilesFromServer {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string[]]$RemotePathes,
+        [Parameter(Mandatory = $true, Position = 0)][string]$LocalDirectory,
+        [Parameter(Mandatory = $false)]$configuration
+    )
+    if (-not (Test-Path -Path $LocalDirectory -PathType Container)) {
+        throw "${LocalDirectory} does'nt exist or is'nt a directory."
+    }
+    if (-not $configuration) {
+        $configuration = $Global:configuration
+    }
+    $sshInvoker = [SshInvoker]::new($configuration.HostName, $configuration.IdentityFile)
+    # discard return value.
+    $r = $sshInvoker.ScpFrom($RemotePathes, $LocalDirectory)
+    $r = $RemotePathes | ForEach-Object {
+        Join-UniversalPath -Path $LocalDirectory -ChildPath (Split-UniversalPath -Path $_ -Leaf)
+    }
+    $r | Write-Verbose
+    $r
+}
+
 function sanitizePath {
     param (
         [Parameter(Mandatory = $true, Position = 0)]$Path
     )
+    if ($Path -match "^'(.*)'$") {
+        $Path = $Matches[1]
+    } elseif ($Path -match '^"(.*)"$') {
+        $Path = $Matches[1]
+    }
     $separator = '\'
     $ptn = '\\+'
     if ($Path.Contains("/")) {
@@ -317,7 +344,7 @@ function Test-SoftwareInstalled {
 
 function Get-MaxBackupNumber {
     param (
-        [Parameter(Mandatory = $true, Position = 1)][string]$Path
+        [Parameter(Mandatory = $true, Position = 0)][string]$Path
     )
     $r = Get-ChildItem -Path "${Path}*" | 
         # Where-Object Name -Match ".*\.\d+$" |
@@ -335,16 +362,31 @@ function Get-MaxBackupNumber {
 }
 function Get-NextBackup {
     param (
-        [Parameter(Mandatory = $false, Position = 1)][string]$Path
+        [Parameter(Mandatory = $false, Position = 0)][string]$Path
     )
     $mn = 1 + (Get-MaxBackupNumber -Path $Path)
     "${Path}.${mn}"
 }
 
+<#
+.SYNOPSIS
+Given path /tmp/abc, get max abc.xxx folder.
 
+.DESCRIPTION
+Long description
+
+.PARAMETER Path
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function Get-MaxBackup {
     param (
-        [Parameter(Mandatory = $false, Position = 1)][string]$Path
+        [Parameter(Mandatory = $false, Position = 0)][string]$Path
     )
     $mn = Get-MaxBackupNumber -Path $Path
     if ($mn -eq 0) {
@@ -360,7 +402,7 @@ may run in remote server.
 #>
 function Backup-LocalDirectory {
     param (
-        [Parameter(Mandatory = $true, Position = 1, ValueFromPipeline=$true)][string]$Path,
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline=$true)][string]$Path,
         [switch]$keepOrigin
     )
     $nx = Get-NextBackup -Path $Path

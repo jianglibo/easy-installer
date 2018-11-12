@@ -1,6 +1,8 @@
 {
   "AppName": "mysql",
   "MysqlVersion": "57",
+  "ClientScp": "scp",
+  "ClientSsh": "ssh",
   "openssl": "openssl",
   "ClientOpenssl": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.exe",
   "ClientEnv": {

@@ -2,6 +2,7 @@
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 . "$here\$sut"
+. "$here\common-util.ps1"
 
 $kv = Get-Content "$here\common-util.t.json" | ConvertFrom-Json
 
@@ -42,6 +43,44 @@ Describe "SshInvoker" {
         "a" | should -BeOfType [string]
         $r | Should -BeOfType [string] # first item.
         $r.Count |Should -BeGreaterThan 2
+    }
+}
+
+Describe "SshInvoker ScpFrom" {
+    $tg = Join-Path $TestDrive 'folder'
+    $tf = Join-Path $TestDrive -ChildPath "tf"
+    $tf1 = Join-Path $TestDrive -ChildPath "tf1"
+    $tf2 = Join-Path $TestDrive -ChildPath "tf2"
+    BeforeEach {
+        $remoteFolderNoEndSlash = '/tmp/folder'
+        $sshInvoker = [SshInvoker]::new($kv.HostName, $kv.ifile)
+    }
+
+    It "should copy one file." {
+        $PSDefaultParameterValues['*:Verbose'] = $true
+        $r = $sshInvoker.ScpFrom("/var/lib/mysql/hm-log-bin.index", $tg, $false)
+        Test-Path -Path $r| Should -BeTrue
+    }
+    It "should copy files by command." {
+        $PSDefaultParameterValues['*:Verbose'] = $true
+        New-Item -Path $tf2 -ItemType 'Directory'
+        [array]$r = Copy-FilesFromServer -RemotePathes "/var/lib/mysql/hm-log-bin.000008", "/var/lib/mysql/hm-log-bin.000009" -LocalDirectory $tf2 -configuration @{HostName=$kv.HostName;IdentityFile=$kv.ifile}
+        $r.Count | Should -Be 2
+        $r | Test-Path -PathType Leaf | Should -BeTrue
+    }
+
+    It "should copy files." {
+        $PSDefaultParameterValues['*:Verbose'] = $true
+        New-Item -Path $tf -ItemType 'Directory'
+        $r = $sshInvoker.ScpFrom(@("/var/lib/mysql/hm-log-bin.000008", "/var/lib/mysql/hm-log-bin.000009"), $tf)
+        $r | Test-Path -PathType Leaf | Should -BeTrue
+    }
+
+    It "should copy files with space in name." {
+        $PSDefaultParameterValues['*:Verbose'] = $true
+        New-Item -Path $tf1 -ItemType 'Directory'
+        $r = $sshInvoker.ScpFrom(@("'/root/a b/1.txt'", "'/root/a b/2.txt'"), $tf1)
+        $r | Test-Path -PathType Leaf | Should -BeTrue
     }
 }
 

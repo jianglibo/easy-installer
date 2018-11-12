@@ -144,6 +144,12 @@ class SshInvoker {
 
     [string[]] hidden scpInternalFrom([string]$remotePath, [string]$localPath, [bool]$RemoteIsDir) {
 
+        $p = Split-Path -Path $localPath -Parent
+
+        if (-not (Test-Path -Path $p)) {
+            throw "${p} does'nt exist."
+        }
+
         $roption = if ($RemoteIsDir) {'-r'} else {''}
         $scpStr = "scp -i {0} {1} {2}@{3}:{4} {5} 2>&1" -f $this.ifile, $roption, $this.UserName, $this.HostName, $remotePath, $localPath
 
@@ -157,6 +163,37 @@ class SshInvoker {
         if ($this.ExitCode -ne 0) {
             throw $r
         }
+        if (Test-Path -Path $localPath -PathType Container) {
+            return (Join-UniversalPath -Path $localPath -ChildPath (Split-UniversalPath -Path $remotePath -Leaf))
+        } else {
+            return $localPath
+        }
+    }
+
+    [string[]] hidden scpInternalFroms([string[]]$RemotePathes, [string]$LocalDirectory) {
+
+        if (-not (Test-Path -Path $LocalDirectory -PathType Container)) {
+            throw "${LocalDirectory} does'nt exist or is'nt a directory."
+        }
+
+        $fns = $RemotePathes -join ' '
+
+        $scpStr = "scp -i {0} {1}@{2}:{3} {4} 2>&1" -f $this.ifile, $this.UserName, $this.HostName, "`"$fns`"", $LocalDirectory
+
+        $scpStr | Write-Verbose
+
+        $this.commandName = $scpStr
+
+        $r = Invoke-Expression -Command $scpStr
+        $this.result = $r
+        $this.ExitCode = $LASTEXITCODE
+        if ($this.ExitCode -ne 0) {
+            throw $r
+        }
+        $r = @()
+        foreach ($rp in $RemotePathes) {
+            $r += Join-UniversalPath -Path $LocalDirectory -ChildPath (Split-UniversalPath -Path $rp -Leaf)
+        }
         return $r
     }
 
@@ -166,6 +203,10 @@ class SshInvoker {
 
     [string[]]ScpFrom([string]$remotePath, [string]$localPath, [bool]$RemoteIsDir) {
         return $this.scpInternalFrom($remotePath, $localPath, $RemoteIsDir)
+    }
+
+    [string[]]ScpFrom([string[]]$RemotePathes, [string]$LocalDirectory) {
+        return $this.scpInternalFroms($RemotePathes, $LocalDirectory)
     }
 
     [string]unzip([string]$zipFile, [string]$expandDir) {

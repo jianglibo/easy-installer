@@ -5,6 +5,8 @@ $ScriptDir = $here | Split-Path -Parent
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
+. "$here\mysql-clientside.ps1"
+
 $fixture = "${here}\fixtures\mysql-community.repo"
 
 ".\ssh-invoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1", "common-for-t.ps1" | ForEach-Object {
@@ -209,13 +211,22 @@ Describe "dump mysql" {
 }
 
 Describe "flush mysql" {
-    $df = Join-Path $TestDrive "dump.sql"
+    $idxfolder = Join-Path $TestDrive "localdir"
     it "should flush" {
-        $PSDefaultParameterValues['*:Verbose'] = $true
+        $PSDefaultParameterValues['*:Verbose'] = $false
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlFlushLogs
-        $r | Out-Host
         $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
-        $ht | Out-Host
+        Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht
+
+        $maxb = Get-MysqlMaxDump
+
+        $idxfile = Join-Path -Path $maxb -ChildPath 'logbin.index'
+
+        [array]$lines = Get-Content -Path $idxfile
+
+        [array]$files = Get-ChildItem -Path $maxb -Exclude '*.index'
+
+        $lines.Count | Should -Be $files.Count
     }
 }
