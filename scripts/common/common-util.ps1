@@ -81,7 +81,7 @@ function Get-SoftwarePackages {
         [Parameter(Mandatory = $true, Position = 1)]$Softwares
     )
     if (-not (Test-Path -Path $TargetDir -PathType Container)) {
-        New-Item -Path $TargetDir -ItemType "directory"
+        New-Item -Path $TargetDir -ItemType "directory" | Out-Null
     }
     $Softwares | ForEach-Object {
         $url = $_.PackageUrl
@@ -223,6 +223,85 @@ function Copy-FilesFromServer {
     $r
 }
 
+$Global:ResizeFormatStrings = @(
+            '{0:yyyyMMddHHmm}',
+            '{0:yyyyMMddHH}',
+            '{0:yyyyMMdd}',
+            '{0:yyyyMM}',
+            '{0:yyyy}',
+            '{0:yyyy}',
+            '{0:yyyy}'
+)
+
+<#
+.SYNOPSIS
+Prune backup files.
+
+.DESCRIPTION
+Prune backup files.
+
+.PARAMETER BasePath
+For files /a/a, /a/a.0, /a/a.1, /a/a is the base path.
+
+.PARAMETER Pattern
+7 segments, second, minute, hour, day, week, month, year.
+
+.EXAMPLE
+2 0 0 0 0 0 0, keep last 2 sencondly copies in last minutes.
+4 4 0 0 0 0 0, keep last 4 secondly copies in last minutes, keep 4 minutely copies in last hour.
+when decide how many copies to keep, think it over carefully.
+
+.NOTES
+General notes
+#>
+function Resize-BackupFiles {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]$BasePath,
+        [Parameter(Mandatory = $false, Position = 1)][string]$Pattern
+    )
+    [array]$pts = $Pattern.Trim() -split '\s+'
+    $pts = $pts | ForEach-Object {[int]$_}
+
+    $p = Split-Path -Path $BasePath -Parent
+
+    if ($pts.Count -ne 7) {
+        throw 'wrong prune pattern, must have 7 fields.'
+    }
+    if (($pts[4] -gt 0) -and ($pts[5] -gt 0)) {
+        throw 'one of week and month field must be 0.'
+    }
+
+    for ($i = 0; $i -lt $pts.Count; $i++) {
+        $pt = $pts[$i]
+        $mftstr = $Global:ResizeFormatStrings[$i]
+        if ($pt -gt 0) {
+            switch ($i) {
+                {$i -ne 4} { 
+                    $grps = Get-ChildItem -Path $p | Sort-Object -Property CreationTime | Group-Object -Property {$mftstr -f $_.CreationTime}
+                    break
+                } else {
+                    $grps = Get-ChildItem -Path $p | Sort-Object -Property CreationTime | Group-Object -Property {($mftstr -f $_.CreationTime) + [int]($_.CreationTime.DayOfYear / 7)}
+                }
+                Default {
+                    throw 'impossible.'
+                }
+            }
+            $lastgrp = $grps | Select-Object -Last 1
+
+            if ($lastgrp.Count -gt $pt) {
+                $lastgrp.Group | Select-Object -SkipLast $pt | ForEach-Object {
+                    $fn = $_.FullName
+                    if (Test-Path -Path $fn -PathType Container) {
+                        Remove-Item -Recurse -Path $fn -Force
+                    } else {
+                        Remove-Item -Path $fn -Force
+                    }
+                }
+            }
+        }
+    }
+}
+
 function sanitizePath {
     param (
         [Parameter(Mandatory = $true, Position = 0)]$Path
@@ -346,6 +425,10 @@ function Get-MaxBackupNumber {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$Path
     )
+    $p = Split-Path -Path $Path -Parent
+    if (-not (Test-Path -Path $p -PathType Container)) {
+        New-Item -Path $p -ItemType Directory | Out-Null
+    }
     $r = Get-ChildItem -Path "${Path}*" | 
         # Where-Object Name -Match ".*\.\d+$" |
     Foreach-Object {@{base = $_; dg = [int](Select-String -InputObject $_.Name -Pattern '(\d*)$' -AllMatches).matches.groups[1].Value}} |
@@ -775,7 +858,7 @@ function Split-Files {
     }
     else {
         if (-not (Test-Path -Path $dstFolder -PathType Container)) {
-            New-Item -Path $dstFolder -ItemType "directory"
+            New-Item -Path $dstFolder -ItemType "directory" | Out-Null
         }
     }
 

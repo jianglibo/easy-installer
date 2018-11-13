@@ -6,15 +6,39 @@ function Get-MysqlMaxDump {
         $configuration = $Global:configuration
     }
     if (-not (Test-Path -Path $configuration.LocalDir -PathType Container)) {
-        New-Item -Path $configuration.LocalDir -ItemType 'Directory'
+        New-Item -Path $configuration.LocalDir -ItemType 'Directory' | Out-Null
     }
-    $bd = Join-Path -Path $configuration.LocalDir -ChildPath "dump"
+    $bd = Join-Path -Path $configuration.LocalDir -ChildPath "dumps" | Join-Path -ChildPath "dump"
     $maxb = Get-MaxBackup -Path $bd
 
     if (-not (Test-Path -Path $maxb -PathType Container)) {
-        New-Item -Path $maxb -ItemType 'Directory'
+        New-Item -Path $maxb -ItemType 'Directory' | Out-Null
     }
     $maxb
+}
+
+function Copy-MysqlDumpFile {
+    param (
+        [parameter(Mandatory = $true, Position = 0)]$RemoteDumpFileWithHashValue,
+        [Parameter(Mandatory = $false)]$configuration
+    )
+    if (-not $configuration) {
+        $configuration = $Global:configuration
+    }
+    $maxb = Get-MysqlMaxDump -configuration $configuration
+
+    $fn = Split-UniversalPath -Path $RemoteDumpFileWithHashValue.Path -Leaf
+    $tf = Join-UniversalPath $maxb $fn
+    $RemoteDumpFileWithHashValue.LocalFile = $tf
+    $r = Copy-FilesFromServer -RemotePathes $RemoteDumpFileWithHashValue.Path -LocalDirectory $maxb
+
+    $fh = Get-FileHash -Path $RemoteDumpFileWithHashValue.LocalFile
+    if ($fh.Hash -ne $RemoteDumpFileWithHashValue.Hash) {
+        throw "$($fh.Hash) Hash value doesn't match the server side file's."
+    }
+    $tdump = Join-Path -Path $maxb -ChildPath "dump.sql"
+    Move-Item -Path $RemoteDumpFileWithHashValue.LocalFile -Destination $tdump
+    $tdump
 }
 
 function Copy-MysqlLogFiles {
@@ -48,7 +72,8 @@ function Copy-MysqlLogFiles {
             $localfileHash = Get-FileHash -Path $_.LocalFile
             $b = $localfileHash.Hash -ne $_.Hash
             $b
-        } else {
+        }
+        else {
             $true
         }
     } | ForEach-Object {$_.Path} | Sort-Object

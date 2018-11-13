@@ -208,6 +208,15 @@ Describe "dump mysql" {
         (Get-FileHash -Path $df).Hash | Should -Be $ht.Hash
         # Get-Content -Path $df | Out-Host
     }
+
+    it "should dump and verify hash" {
+        $PSDefaultParameterValues['*:Verbose'] = $false
+        $ht = Copy-TestPsScriptToServer -HerePath $here
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlDump
+        $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
+        $tdump = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht
+        Test-Path -Path $tdump -PathType Leaf | Should -BeTrue
+    }
 }
 
 Describe "flush mysql" {
