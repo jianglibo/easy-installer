@@ -1,6 +1,8 @@
 function Get-MysqlMaxDump {
     param (
-        [Parameter(Mandatory = $false)]$configuration
+        [Parameter(Mandatory = $false)]$configuration,
+        [Parameter(Mandatory = $false)][switch]$Next
+
     )
     if (-not $configuration) {
         $configuration = $Global:configuration
@@ -9,14 +11,36 @@ function Get-MysqlMaxDump {
         New-Item -Path $configuration.LocalDir -ItemType 'Directory' | Out-Null
     }
     $bd = Join-Path -Path $configuration.LocalDir -ChildPath "dumps" | Join-Path -ChildPath "dump"
-    $maxb = Get-MaxBackup -Path $bd
+    if ($Next) {
+        $maxb = Get-NextBackup -Path $bd
+    } else {
+        $maxb = Get-MaxBackup -Path $bd
+    }
 
     if (-not (Test-Path -Path $maxb -PathType Container)) {
         New-Item -Path $maxb -ItemType 'Directory' | Out-Null
     }
     $maxb
 }
+<#
+.SYNOPSIS
+Short description
 
+.DESCRIPTION
+Dumpping mysql will create a new backup directory.
+
+.PARAMETER RemoteDumpFileWithHashValue
+Parameter description
+
+.PARAMETER configuration
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function Copy-MysqlDumpFile {
     param (
         [parameter(Mandatory = $true, Position = 0)]$RemoteDumpFileWithHashValue,
@@ -25,7 +49,7 @@ function Copy-MysqlDumpFile {
     if (-not $configuration) {
         $configuration = $Global:configuration
     }
-    $maxb = Get-MysqlMaxDump -configuration $configuration
+    $maxb = Get-MysqlMaxDump -configuration $configuration -Next
 
     $fn = Split-UniversalPath -Path $RemoteDumpFileWithHashValue.Path -Leaf
     $tf = Join-UniversalPath $maxb $fn

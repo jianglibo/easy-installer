@@ -7,7 +7,7 @@ $scriptDir = $here | Split-Path -Parent
 
 $tcfg = Get-Content -Path ($here | Join-Path -ChildPath "common-util.t.json") | ConvertFrom-Json
 
-Describe "openssl" {
+Describe "should backup" {
     $plainfile = Join-Path $TestDrive "plain.txt"
     1..5 -join ' ' | Out-File $plainfile
     it "should do right." {
@@ -23,7 +23,11 @@ Describe "openssl" {
 
         $m = Get-NextBackup -Path $plainfile
         $m | Should -Be "${plainfile}.2"
-        
+
+        $m = Backup-LocalDirectory -Path "${plainfile}.1" -keepOrigin
+        $m | Should -Be "${plainfile}.2"
+        $m = Backup-LocalDirectory -Path "${plainfile}.1"
+        $m | Should -Be "${plainfile}.3"
     }
 }
 

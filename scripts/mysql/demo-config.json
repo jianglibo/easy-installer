@@ -22,6 +22,7 @@
   "MysqlAdminBin": "mysqladmin",
   "MysqlLogFile": "/var/log/mysqld.log",
   "LocalDir": "e:/backups/mysql",
+  "DumpPrunePattern": "0 3 0 3 0 0 0",
   "OsType": "centos",
   "SwitchByOs": {
     "centos": {

@@ -223,15 +223,61 @@ function Copy-FilesFromServer {
     $r
 }
 
-$Global:ResizeFormatStrings = @(
-            '{0:yyyyMMddHHmm}',
-            '{0:yyyyMMddHH}',
-            '{0:yyyyMMdd}',
-            '{0:yyyyMM}',
-            '{0:yyyy}',
-            '{0:yyyy}',
-            '{0:yyyy}'
-)
+function Find-BackupFilesToDelete {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][array]$FileOrFolders,
+        [Parameter(Mandatory = $false, Position = 1)][string]$Pattern
+    )
+    [array]$pts = $Pattern.Trim() -split '\s+'
+    $pts = $pts | ForEach-Object {[int]$_}
+
+    if ($pts.Count -ne 7) {
+        throw 'wrong prune pattern, must have 7 fields.'
+    }
+    if (($pts[1] -gt 0) -and ($pts[2] -gt 0)) {
+        throw 'one of week and month field must be 0.'
+    }
+    $ga = @(
+        '{0:yyyy}',
+        '{0:yyyyMM}',
+        '{0:yyyy}',
+        '{0:yyyyMMdd}',
+        '{0:yyyyMMddHH}',
+        '{0:yyyyMMddHHmm}',
+        '{0:yyyyMMddHHmmss}'
+    )
+
+    $ToIterator = $FileOrFolders
+    for ($i = 0; $i -lt $pts.Count; $i++) {
+        $pt = $pts[$i]
+        $mftstr = $ga[$i]
+        if ($pt -gt 0) {
+            if ($i -ne 2) {
+                $grps = $ToIterator |
+                    Sort-Object -Property CreationTime | 
+                    Group-Object -Property {$mftstr -f $_.CreationTime} |
+                    Sort-Object -Property Name
+            }
+            else {
+                $grps = $ToIterator |
+                    Sort-Object -Property CreationTime |
+                    Group-Object -Property {($mftstr -f $_.CreationTime) + [int]($_.CreationTime.DayOfYear / 7)} |
+                    Sort-Object -Property Name
+            }
+            $toDeleteGrps = $grps | Select-Object -SkipLast $pt
+            $remainGrpsButLast = $grps | Select-Object -Last $pt | Select-Object -SkipLast 1
+            $lastGrp = $grps | Select-Object -Last 1
+
+            $toDeleteGrps | ForEach-Object {
+                $PSItem.Group | ForEach-Object {$_}
+            }
+            $remainGrpsButLast | ForEach-Object {
+                $PSItem.Group | Select-Object -SkipLast 1
+            }
+            $ToIterator = $lastGrp.Group
+        }
+    }
+}
 
 <#
 .SYNOPSIS
@@ -244,12 +290,11 @@ Prune backup files.
 For files /a/a, /a/a.0, /a/a.1, /a/a is the base path.
 
 .PARAMETER Pattern
-7 segments, second, minute, hour, day, week, month, year.
+7 segments, year,month,week,day,hour,minute, second.
 
 .EXAMPLE
-2 0 0 0 0 0 0, keep last 2 sencondly copies in last minutes.
-4 4 0 0 0 0 0, keep last 4 secondly copies in last minutes, keep 4 minutely copies in last hour.
-when decide how many copies to keep, think it over carefully.
+2 0 0 0 0 0 0, keep last 2 yearly copies in last minutes.
+4 4 0 0 0 0 0, keep last 4 yearly and lastest monthly copies.
 
 .NOTES
 General notes
@@ -259,45 +304,17 @@ function Resize-BackupFiles {
         [Parameter(Mandatory = $true, Position = 0)]$BasePath,
         [Parameter(Mandatory = $false, Position = 1)][string]$Pattern
     )
-    [array]$pts = $Pattern.Trim() -split '\s+'
-    $pts = $pts | ForEach-Object {[int]$_}
-
     $p = Split-Path -Path $BasePath -Parent
+    $FilesOrFolders = Get-ChildItem -Path $p
 
-    if ($pts.Count -ne 7) {
-        throw 'wrong prune pattern, must have 7 fields.'
-    }
-    if (($pts[4] -gt 0) -and ($pts[5] -gt 0)) {
-        throw 'one of week and month field must be 0.'
-    }
-
-    for ($i = 0; $i -lt $pts.Count; $i++) {
-        $pt = $pts[$i]
-        $mftstr = $Global:ResizeFormatStrings[$i]
-        if ($pt -gt 0) {
-            switch ($i) {
-                {$i -ne 4} { 
-                    $grps = Get-ChildItem -Path $p | Sort-Object -Property CreationTime | Group-Object -Property {$mftstr -f $_.CreationTime}
-                    break
-                } else {
-                    $grps = Get-ChildItem -Path $p | Sort-Object -Property CreationTime | Group-Object -Property {($mftstr -f $_.CreationTime) + [int]($_.CreationTime.DayOfYear / 7)}
-                }
-                Default {
-                    throw 'impossible.'
-                }
-            }
-            $lastgrp = $grps | Select-Object -Last 1
-
-            if ($lastgrp.Count -gt $pt) {
-                $lastgrp.Group | Select-Object -SkipLast $pt | ForEach-Object {
+    $toDeletes = Find-BackupFilesToDelete -FileOrFolders $FilesOrFolders -Pattern $Pattern
+    $toDeletes | ForEach-Object {
                     $fn = $_.FullName
                     if (Test-Path -Path $fn -PathType Container) {
                         Remove-Item -Recurse -Path $fn -Force
-                    } else {
-                        Remove-Item -Path $fn -Force
                     }
-                }
-            }
+                    else {
+                        Remove-Item -Path $fn -Force
         }
     }
 }
@@ -308,7 +325,8 @@ function sanitizePath {
     )
     if ($Path -match "^'(.*)'$") {
         $Path = $Matches[1]
-    } elseif ($Path -match '^"(.*)"$') {
+    }
+    elseif ($Path -match '^"(.*)"$') {
         $Path = $Matches[1]
     }
     $separator = '\'
@@ -430,10 +448,8 @@ function Get-MaxBackupNumber {
         New-Item -Path $p -ItemType Directory | Out-Null
     }
     $r = Get-ChildItem -Path "${Path}*" | 
-        # Where-Object Name -Match ".*\.\d+$" |
     Foreach-Object {@{base = $_; dg = [int](Select-String -InputObject $_.Name -Pattern '(\d*)$' -AllMatches).matches.groups[1].Value}} |
         Sort-Object -Property @{Expression = {$_.dg}; Descending = $true} |
-        # Where-Object {$_ -is [System.IO.DirectoryInfo]} |
     # We can not handle this situation, mixed files and directories.
     Select-Object -First 1 | ForEach-Object {$_.dg}
     if (-not $r) {
@@ -485,10 +501,15 @@ may run in remote server.
 #>
 function Backup-LocalDirectory {
     param (
-        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline=$true)][string]$Path,
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)][string]$Path,
         [switch]$keepOrigin
     )
-    $nx = Get-NextBackup -Path $Path
+    if ($Path -match '^(.*)\.\d+$') {
+        $nx = Get-NextBackup -Path $Matches[1]
+    } else {
+        $nx = Get-NextBackup -Path $Path
+    }
+
     if (-not (Test-Path -Path $Path)) {
         throw "$Path does'nt exists."
     }
@@ -1154,7 +1175,8 @@ function ConvertFrom-ListFormatOutput {
             if ($PSItem -match '^\s*(.*?)\s*:\s*(.*?)\s*$') {
                 $ht[$Matches[1]] = $Matches[2]
             }
-        } else {
+        }
+        else {
             if ($ht.Keys.Count) {
                 $ht
                 $ht = @{}
@@ -1177,7 +1199,7 @@ function Send-LinesToClient {
     }
     Process {
         foreach ($item in $InputObject) {
-           $item 
+            $item 
         }
     }
     End {
@@ -1188,7 +1210,7 @@ function Send-LinesToClient {
 function Receive-LinesFromServer {
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]$toClient,
-        [Parameter(Mandatory = $false)][int]$section=0
+        [Parameter(Mandatory = $false)][int]$section = 0
     )
     Begin {
         $r = @()

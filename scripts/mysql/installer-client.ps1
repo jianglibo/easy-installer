@@ -1,6 +1,18 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Install", "Start", "Stop", "Restart", "GetDemoConfigFile","Status", "DownloadPackages","SendPackages", "Uninstall", "DownloadPublicKey")]
+    [ValidateSet("Install",
+        "Start",
+        "Stop", 
+        "Restart",
+        "GetDemoConfigFile",
+        "Status", 
+        "DownloadPackages",
+        "SendPackages", 
+        "Uninstall", 
+        "MysqlFlushLogs",
+        "MysqlDump",
+        "MysqlBackupDump",
+        "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,
@@ -20,19 +32,22 @@ param (
 $vb = $PSBoundParameters.ContainsKey('Verbose')
 if ($vb) {
     $PSDefaultParameterValues['*:Verbose'] = $true
-} else {
+}
+else {
     $PSDefaultParameterValues['*:Verbose'] = $false
 }
 
 $myself = $MyInvocation.MyCommand.Path
 $here = $myself | Split-Path -Parent
 $ScriptDir = $here | Split-Path -Parent
+$CommonDir = $ScriptDir | Join-Path -ChildPath "common"
 
 $Global:ProjectRoot = $ScriptDir | Split-Path -Parent
 
-".\ssh-invoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1" | ForEach-Object {
-    . "${ScriptDir}\common\$_"
-}
+. (Join-Path -Path $here -ChildPath 'mysql-clientside.ps1')
+. (Join-Path -Path $CommonDir -ChildPath 'ssh-invoker.ps1')
+. (Join-Path -Path $CommonDir -ChildPath 'common-util.ps1')
+. (Join-Path -Path $CommonDir -ChildPath 'clientside-util.ps1')
 
 $isInstall = $Action -eq "Install"
 
@@ -81,6 +96,24 @@ else {
             $sshInvoker = Get-SshInvoker
             $f = Get-PublicKeyFile -NotResolve
             $sshInvoker.ScpFrom($r, $f, $false)
+            break
+        }
+        "MysqlDump" {
+            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlDump
+            $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
+            $df = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht
+            break
+        }
+        "MysqlFlushLogs" {
+            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlFlushLogs
+            $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
+            Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht
+            break
+        }
+        "MysqlBackupDump" {
+            $d = Get-MysqlMaxDump
+            Backup-LocalDirectory -Path $d -keepOrigin
+            Resize-BackupFiles -BasePath $d -Pattern $configuration.DumpPrunePattern
             break
         }
         Default {
