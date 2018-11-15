@@ -1,4 +1,4 @@
 ..\..\common\common-util.ps1
 ..\..\common\ssh-invoker.ps1
-..\installer-server.ps1
-..\installer-server-function.ps1
+..\mysql-server-side.ps1
+..\mysql-server-function.ps1

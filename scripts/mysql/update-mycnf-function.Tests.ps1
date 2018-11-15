@@ -2,7 +2,7 @@ $myself = $MyInvocation.MyCommand.Path
 $here = $myself | Split-Path -Parent
 $ScriptDir = $here | Split-Path -Parent
 
-. "$here\installer-server-function.ps1"
+. "$here\mysql-server-function.ps1"
 
 $fixture = "${here}\fixtures\my.cnf"
 

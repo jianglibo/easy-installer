@@ -1,8 +1,0 @@
-1. split config.ini to dict of line list.
-NDB_MGMD DEFAULT
-NDB_MGMD
-NDBD DEFAULT
-NDBD
-MYSQLD DEFAULT
-MYSQLD
-API

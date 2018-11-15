@@ -1,5 +1,0 @@
-DownFrom: http://mirror.bit.edu.cn/apache/hbase/0.98.19/hbase-0.98.19-hadoop2-bin.tar.gz
-MasterIp: 10.74.111.62
-NameServer: 10.74.111.61
-DstFolder: /opt/hbase-0.98.19-hadoop2
-ConfFolder: conf/office-0.98.19-hadoop2
