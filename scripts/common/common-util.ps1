@@ -75,6 +75,25 @@ function Split-Url {
     }
 }
 
+<#
+.SYNOPSIS
+This function may invoke both at client and server side.
+
+.DESCRIPTION
+Long description
+
+.PARAMETER TargetDir
+Parameter description
+
+.PARAMETER Softwares
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function Get-SoftwarePackages {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$TargetDir,
@@ -95,12 +114,32 @@ function Get-SoftwarePackages {
         }
     }
 }
+
+function Get-SoftwarePackagePath {
+    param (
+        [Parameter(Mandatory = $false, Position = 0)]$SoftwareName
+    )
+
+    $TargetDir = $Global:configuration.OsConfig.ServerSide.PackageDir
+
+    if (-not $SoftwareName) {
+        $SoftwareName = $Global:configuration.OsConfig.Softwares | ForEach-Object {
+            $url = $_.PackageUrl
+            $ln = $_.LocalName
+            if (-not $ln) {
+                $ln = Split-Url -Url $url
+            }
+            $ln
+       } | Select-Object -First 1
+    }
+    Get-ChildItem -Path $TargetDir | Where-Object {$_.Name -eq $SoftwareName} | Select-Object -First 1
+}
+
+
 function Get-Configuration {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$ConfigFile,
         [Parameter()][switch]$ServerSide
-        # [Parameter(Mandatory = $false)][string]$PrivateKeyFile,
-        # [Parameter(Mandatory = $false)][string]$OpenSSL
     )
     $vcf = Resolve-Path -Path $ConfigFile -ErrorAction SilentlyContinue
     if (-not $vcf) {
@@ -109,15 +148,7 @@ function Get-Configuration {
         return
     }
 
-    # if ($PrivateKeyFile) {
-    #     $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $PrivateKeyFile -CombinedEncriptedFile $vcf -OpenSSL $OpenSSL
-    #     $c = Get-Content -Path $decrypted | ConvertFrom-Json
-    #     Remove-Item -Path $decrypted -Force
-    # }
-    # else {
     $c = Get-Content -Path $vcf | ConvertFrom-Json
-    # }
-
     if (-not $ServerSide) {
 
         if (-not ($c.IdentityFile -or $c.ServerPassword)) {
@@ -128,14 +159,6 @@ function Get-Configuration {
                 Write-ParameterWarning -wstring "IdentityFile property in $vcf point to an unexist file." -ThrowIt
             }
         }
-        # $capp = Get-Content -Path ($ProjectRoot | Join-Path -ChildPath "app.json") | ConvertFrom-Json
-        # if (-not (Get-Command $capp.openssl)) {
-        #     $s = "$($capp.openssl) does'nt exists."
-        #     Write-ParameterWarning -wstring $s    
-        #     throw $s        
-        # } else {
-        #     $c | Add-Member -MemberType NoteProperty -Name "ClientOpenssl" -Value $capp.openssl
-        # }
         $c | Add-Member -MemberType ScriptMethod -Name "DownloadPackages" -Value {
             $dl = Join-Path -Path $ProjectRoot -ChildPath "downloads" | Join-Path -ChildPath $this.AppName
             $osConfig = $this.SwitchByOs.($this.OsType)
