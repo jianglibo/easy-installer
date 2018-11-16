@@ -310,6 +310,16 @@ Describe "String convert" {
     }
 }
 
+Describe "relativelize path." {
+    it "should work." {
+        Resolve-RelativePathToAnotherPath -ParentPath '/a/' -FullPath '/a/b/c' | Should -Be 'b/c'
+        Resolve-RelativePathToAnotherPath -ParentPath 'c:/a/' -FullPath 'c:/a/b/c' | Should -Be 'b/c'
+        Resolve-RelativePathToAnotherPath -ParentPath 'c:\a\' -FullPath 'c:/a/b/c' | Should -Be 'b\c'
+        Resolve-RelativePathToAnotherPath -ParentPath 'c:\a\' -FullPath 'c:/a/b/c' -Separator '/' | Should -Be 'b/c'
+        {Resolve-RelativePathToAnotherPath -ParentPath 'c:\a\' -FullPath 'a/b/c'}| Should -Throw 'Path is not absolute:'
+    }
+}
+
 Describe "Format-List out" {
     it "should parse out" {
         $f = "$here\listout.txt"

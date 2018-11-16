@@ -1,21 +1,11 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
     [ValidateSet("Install",
-        "Start",
-        "Stop", 
-        "Restart", 
-        "Status", 
-        "GetMycnf", 
-        "EnableLogbin",
-        "GetVariables", 
-        "MysqlDump", 
-        "MysqlFlushLogs", 
-        "MysqlExtraFile", 
-        "Uninstall", 
-        "Echo", 
-        "DownloadPublicKey", 
-        "RunSQL", 
-        "UpdateMysqlPassword")]
+        "Uninstall",
+        "InitializeRepo",
+        "Archive",
+        "Prune",
+        "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)][switch]$NotCleanUp,
     [parameter(Mandatory = $false,
@@ -40,7 +30,7 @@ $ConfigFile | Write-Verbose
 
 # directories are flatten.
 . (Join-Path -Path $here -ChildPath "common-util.ps1")
-. (Join-Path -Path $here -ChildPath "mysql-server-function.ps1")
+. (Join-Path -Path $here -ChildPath "borg-server-function.ps1")
 
 $configuration = Get-Configuration -ConfigFile $ConfigFile -ServerSide
 $osConfig = $configuration.OsConfig
@@ -54,62 +44,28 @@ Get-ChildItem -Path (Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -Ch
 }
 try {
     switch ($Action) {
-        "Echo" {
-            $hints -join ' '
-            break
-        }
         "Install" {
-            Install-Mysql -Version "$hints"
-            break
-        }
-        "GetMycnf" {
-            Get-MycnfFile
-            break
-        }
-        "GetVariables" {
-            Get-MysqlVariables $hints
+            Install-Borg
             break
         }
         "Uninstall" {
-            Uninstall-Mysql
+            Uninstall-Borg
             break
         }
-        {$PSItem -in "Start", "Stop", "Status", "Restart"} {
-            Update-MysqlStatus -StatusTo $Action
+        "InitializeRepo" {
+            Initialize-BorgRepo
+            break
+        }
+        "Archive" {
+            New-BorgArchive
+            break
+        }
+        "Prune" {
+            Invoke-BorgPrune
             break
         }
         "DownloadPublicKey" {
             Get-OpenSSLPublicKey
-            break
-        }
-        "UpdateMysqlPassword" {
-            if ($hints) {
-                Update-MysqlPassword -EncryptedNewPwd $hints[0] -EncryptedOldPwd $hints[1]
-            }
-            break
-        }
-        "RunSQL" {
-            $sql = $hints | Where-Object {$PSItem -notmatch '^-.*'}
-            $sql = "`"$sql`""
-            $opts = $hints | Where-Object {$PSItem -match '^-.*'}
-            $line = "Invoke-MysqlSQLCommand -sql $sql $opts"
-            $line | Write-Verbose
-            Invoke-Expression -Command $line
-        }
-        "MysqlDump" {
-            Invoke-MysqlDump -UsePlainPwd "$hints"
-            break
-        }
-        "MysqlFlushLogs" {
-            Invoke-MysqlFlushLogs -UsePlainPwd "$hints"
-            break
-        }
-        "MysqlExtraFile" {
-            New-MysqlExtraFile -UsePlainPwd "$hints"
-            break
-        }
-        "EnableLogbin" {
-            Get-MycnfFile | Enable-Logbin -LogbinBasename "$hints"
             break
         }
         Default {
@@ -118,13 +74,5 @@ try {
     }
 }
 finally {
-    if ($Global:MysqlExtraFile) {
-        if (-not $NotCleanUp) {
-            if (Test-Path -Path $Global:MysqlExtraFile) {
-                Remove-Item -Path $Global:MysqlExtraFile -Force
-            }
-        }
-        $Global:MysqlExtraFile = $null
-    }
     $PSDefaultParameterValues['*:Verbose'] = $false
 }

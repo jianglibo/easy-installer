@@ -6,6 +6,15 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 $kv = Get-Content "$here\common-util.t.json" | ConvertFrom-Json
 
+
+Describe "SshInvoker pwsh" {
+    it "should right" {
+        $o = [SshInvoker]::new($kv.HostName, $kv.ifile)
+        $o | Should -Not -BeNullOrEmpty
+        $o.sshStr | Should -BeLike "ssh -i *"
+    }
+}
+
 Describe "SshInvoker" {
     $parent = "TestDrive:\folder"
 

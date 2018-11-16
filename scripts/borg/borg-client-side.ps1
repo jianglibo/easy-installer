@@ -1,24 +1,13 @@
 param (
     [parameter(Mandatory = $true, Position = 0)]
     [ValidateSet("Install",
-        "Start",
-        "Stop", 
-        "Restart",
-        "GetDemoConfigFile",
-        "Status", 
         "DownloadPackages",
         "SendPackages", 
         "Uninstall", 
-        "MysqlFlushLogs",
-        "MysqlDump",
-        "MysqlBackupDump",
         "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,
-    [parameter(Mandatory = $false)]
-    [ValidateSet("55", "56", "57", "80")]
-    [string]$Version,
     [switch]$CopyScripts
 )
 
@@ -49,16 +38,8 @@ $Global:ProjectRoot = $ScriptDir | Split-Path -Parent
 . (Join-Path -Path $CommonDir -ChildPath 'common-util.ps1')
 . (Join-Path -Path $CommonDir -ChildPath 'clientside-util.ps1')
 
-$isInstall = $Action -eq "Install"
-
-
-if ($isInstall -and (-not $Version)) {
-    Write-ParameterWarning -wstring "If action is Install then Version parameter is required."
-    return
-}
-
 if ($Action -eq "GetDemoConfigFile") {
-    Copy-DemoConfigFile -MyDir $here -ToFileName "mysql-config.json"
+    Copy-DemoConfigFile -MyDir $here -ToFileName "borg-config.json"
 }
 else {
     if (-not $ConfigFile) {
@@ -84,7 +65,7 @@ else {
         }
         "Uninstall" {
             if ($PSCmdlet.ShouldContinue("Are you sure?", "")) {
-                Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action $Version
+                Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
             }
             else {
                 "canceled."
@@ -98,29 +79,8 @@ else {
             $sshInvoker.ScpFrom($r, $f, $false)
             break
         }
-        "MysqlDump" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlDump
-            $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
-            $ht | Write-Verbose
-            $df = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht
-            break
-        }
-        "MysqlFlushLogs" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlFlushLogs
-            $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
-            Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht
-            break
-        }
-        "MysqlBackupDump" {
-            $d = Get-MysqlMaxDump
-            Backup-LocalDirectory -Path $d -keepOrigin
-            Resize-BackupFiles -BasePath $d -Pattern $configuration.DumpPrunePattern
-            break
-        }
         Default {
-            Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action $Version
-            # $configuration = Get-Configuration -ConfigFile $ConfigFile
-            # $configuration | ConvertTo-Json -Depth 10
+            Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
         }
     }
 }

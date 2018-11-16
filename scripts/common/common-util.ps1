@@ -122,6 +122,8 @@ function Get-SoftwarePackagePath {
 
     $TargetDir = $Global:configuration.OsConfig.ServerSide.PackageDir
 
+    "Server Side package dir: $TargetDir" | Write-Verbose
+
     if (-not $SoftwareName) {
         $SoftwareName = $Global:configuration.OsConfig.Softwares | ForEach-Object {
             $url = $_.PackageUrl
@@ -132,7 +134,9 @@ function Get-SoftwarePackagePath {
             $ln
        } | Select-Object -First 1
     }
-    Get-ChildItem -Path $TargetDir | Where-Object {$_.Name -eq $SoftwareName} | Select-Object -First 1
+    $d = Get-ChildItem -Path $TargetDir | Where-Object {$_.Name -eq $SoftwareName} | Select-Object -First 1
+    "found package file: $($d.FullName)" | Write-Verbose
+    $d.FullName
 }
 
 
@@ -224,10 +228,30 @@ function Join-UniversalPath {
     "${pp}${sp}${cp}"
 }
 
+function Copy-ChangedFiles {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$RemoteDirectory,
+        [Parameter(Mandatory = $true, Position = 1)][string]$LocalDirectory,
+        [Parameter(Mandatory = $false)]$configuration
+    )
+    if (-not (Test-Path -Path $LocalDirectory -PathType Container)) {
+        throw "${LocalDirectory} does'nt exist or is'nt a directory."
+    }
+    if (-not $configuration) {
+        $configuration = $Global:configuration
+    }
+    $sshInvoker = [SshInvoker]::new($configuration.HostName, $configuration.IdentityFile)
+
+    $str = "Get-ChildItem -Recurse $RemoteDirectory | Where-Object {`$_ -is [System.IO.FileInfo]} | Get-FileHash | ConvertTo-Json"
+    $bytes = [System.Text.Encoding]::Unicode.GetBytes($str)
+    $encodedCommand = [Convert]::ToBase64String($bytes)
+    $cmd = "pwsh -e '${encodedCommand}'"
+    $sshInvoker.invoke($cmd)
+}
 function Copy-FilesFromServer {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string[]]$RemotePathes,
-        [Parameter(Mandatory = $true, Position = 0)][string]$LocalDirectory,
+        [Parameter(Mandatory = $true, Position = 1)][string]$LocalDirectory,
         [Parameter(Mandatory = $false)]$configuration
     )
     if (-not (Test-Path -Path $LocalDirectory -PathType Container)) {
@@ -397,6 +421,29 @@ function Get-Verbose {
     }
     else {
         ""
+    }
+}
+
+function Resolve-RelativePathToAnotherPath {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$ParentPath,
+        [Parameter(Mandatory = $true)]$FullPath,
+        [Parameter(Mandatory = $false)]$Separator
+    )
+    if (-not [System.IO.Path]::IsPathRooted($FullPath)) {
+        throw "Path is not absolute: $FullPath"
+    } else {
+        $pp = $ParentPath -replace '\\','/'
+        $FullPath = $FullPath -replace "^${pp}",''
+        $FullPath = $FullPath -replace '^/',''
+
+        if ($Separator -and ($Separator -in '/','\')) {
+            $FullPath -replace '/',$Separator
+        } elseif($ParentPath.IndexOf('\') -ne -1) {
+            $FullPath -replace '/','\'
+        } else {
+            $FullPath
+        }
     }
 }
 
