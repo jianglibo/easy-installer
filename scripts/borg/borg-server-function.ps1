@@ -3,10 +3,10 @@ function Install-Borg {
         [parameter(Mandatory = $false)][string]$Version
     )
     if (-not $Global:configuration.BorgBin) {
-        throw "configuration file error: BorgBin property does'nt exists."
+        "Configuration file error: BorgBin property does'nt exists." | Send-LinesToClient
     }
-    if (Test-Path -Path $Global:configuration.BorgBin -PathType Leaf) {
-        "AlreadyInstalled"
+    elseif (Test-Path -Path $Global:configuration.BorgBin -PathType Leaf) {
+        "AlreadyInstalled" | Send-LinesToClient
     }
     else {
         $OsConfig = $Global:configuration.OsConfig
@@ -47,14 +47,15 @@ function Initialize-BorgRepo {
     }
 
     if (-not (Test-Path $RepoPath -PathType Container)) {
-        New-Item -Path $RepoPath -ItemType Directory
+        New-Item -Path $RepoPath -ItemType Directory | Out-Null
     }
     $cmd = "{0} init --encryption={1} {2}" -f $Global:configuration.BorgBin, $encryption, $RepoPath
     $cmd | Write-Verbose
     Invoke-Expression -Command $cmd
     if ($LASTEXITCODE -ne 0) {
         "FAIL" | Send-LinesToClient
-    } else {
+    }
+    else {
         "SUCCESS" | Send-LinesToClient
     }
 }

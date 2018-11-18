@@ -2,6 +2,7 @@ param (
     [parameter(Mandatory = $true, Position = 0)]
     [ValidateSet("Install",
         "DownloadPackages",
+        "CopyDemoConfigFile",
         "SendPackages", 
         "Uninstall", 
         "DownloadPublicKey")]
@@ -38,7 +39,7 @@ $Global:ProjectRoot = $ScriptDir | Split-Path -Parent
 . (Join-Path -Path $CommonDir -ChildPath 'common-util.ps1')
 . (Join-Path -Path $CommonDir -ChildPath 'clientside-util.ps1')
 
-if ($Action -eq "GetDemoConfigFile") {
+if ($Action -eq "CopyDemoConfigFile") {
     Copy-DemoConfigFile -MyDir $here -ToFileName "borg-config.json"
 }
 else {

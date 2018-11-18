@@ -79,10 +79,12 @@ function Update-MysqlPassword {
     if ($EncryptedOldPwd) {
         if ($OldPwdNotEncrypted) {
             $plainop = $EncryptedOldPwd
-        } else {
+        }
+        else {
             $plainop = UnProtect-PasswordByOpenSSLPublicKey -base64 $EncryptedOldPwd
         }
-    } else {
+    }
+    else {
         $plainop = $Global:EmptyPassword
     }
     $sql = "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${plainp}');" # old
@@ -116,7 +118,8 @@ function Install-Mysql {
         $line = Get-Content -Path $MysqlLogFile | Where-Object {$_ -match 'A temporary password is generated for.*?:\s*(.*)\s*$'} | Select-Object -First 1
         if ($line) {
             Update-MysqlPassword -EncryptedNewPwd $Global:configuration.MysqlPassword -OldPwdNotEncrypted -EncryptedOldPwd $Matches[1]
-        } else {
+        }
+        else {
             Update-MysqlPassword -EncryptedNewPwd $Global:configuration.MysqlPassword
         }
         "Install Succcess." | Send-LinesToClient
@@ -414,9 +417,10 @@ function Invoke-MysqlFlushLogs {
     }
     $pf = Split-Path -Path $idxfile.value -Parent
     "log folder is: $pf" | Write-Verbose
+
     Get-Content -Path $idxfile.value | ForEach-Object {Join-Path -Path $pf -ChildPath $_} |
-        ForEach-Object {Get-FileHash -Path $_} |
-        Format-List | Send-LinesToClient
+        ForEach-Object {Get-FileHash -Path $_ | Add-Member @{Length=(Get-Item -Path $_).Length} -PassThru} |
+        ConvertTo-Json | Send-LinesToClient
 }
 function Invoke-MysqlDump {
     param (
@@ -432,7 +436,9 @@ function Invoke-MysqlDump {
     if ($deny) {
         throw $r
     }
-    Get-FileHash -Path $c.DumpFilename | Format-List | Send-LinesToClient
+    $ln = (Get-Item -Path $c.DumpFilename).Length
+    Get-FileHash -Path $c.DumpFilename |
+        Add-Member @{Length = $ln} -PassThru | ConvertTo-Json | Send-LinesToClient
 }
 <#
 .SYNOPSIS
@@ -551,12 +557,12 @@ function Get-MysqlVariables {
     $r = Invoke-MysqlSQLCommand -sql "show variables" -combineError
     if ($VariableNames.Count -gt 0) {
         ([xml]$r).resultset.row |
-         ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} |
-         Where-Object {$_.name -in $VariableNames} | ConvertTo-Json -Depth 10
+            ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} |
+            Where-Object {$_.name -in $VariableNames} | ConvertTo-Json -Depth 10
     }
     else {
         ([xml]$r).resultset.row |
-         ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | ConvertTo-Json -Depth 10
+            ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | ConvertTo-Json -Depth 10
     }
 }
 

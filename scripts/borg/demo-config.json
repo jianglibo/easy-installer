@@ -2,6 +2,7 @@
   "AppName": "borg",
   "ClientScp": "scp",
   "ClientSsh": "ssh",
+  "Powershell": "pwsh",
   "openssl": "openssl",
   "ClientOpenssl": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.exe",
   "ClientEnv": {
@@ -20,6 +21,7 @@
   "LocalDir": "e:/backups/borg",
   "BorgPrunePattern": "0 3 0 3 0 0 0",
   "OsType": "centos",
+  "LogDir": "e:/backups/logs",
   "SwitchByOs": {
     "centos": {
       "Softwares": [

@@ -19,10 +19,10 @@ Describe "SshInvoker" {
     $parent = "TestDrive:\folder"
 
     $noversionFolder = "${parent}\noversions\nov"
-    New-Item -ItemType Directory -Path $noversionFolder
+    New-Item -ItemType Directory -Path $noversionFolder | Out-Null
 
     $srcFolder = "${parent}\src"
-    New-Item -ItemType Directory -Path $srcFolder
+    New-Item -ItemType Directory -Path $srcFolder | Out-Null
 
     $kkvFileInSrcFolder = Join-Path -Path $srcFolder -ChildPath "kkv.txt"
     "abc" | Out-File $kkvFileInSrcFolder 
@@ -72,7 +72,7 @@ Describe "SshInvoker ScpFrom" {
     }
     It "should copy files by command." {
         $PSDefaultParameterValues['*:Verbose'] = $true
-        New-Item -Path $tf2 -ItemType 'Directory'
+        New-Item -Path $tf2 -ItemType Directory | Out-Null
         [array]$r = Copy-FilesFromServer -RemotePathes "/var/lib/mysql/hm-log-bin.000008", "/var/lib/mysql/hm-log-bin.000009" -LocalDirectory $tf2 -configuration @{HostName=$kv.HostName;IdentityFile=$kv.ifile}
         $r.Count | Should -Be 2
         $r | Test-Path -PathType Leaf | Should -BeTrue
@@ -80,14 +80,14 @@ Describe "SshInvoker ScpFrom" {
 
     It "should copy files." {
         $PSDefaultParameterValues['*:Verbose'] = $true
-        New-Item -Path $tf -ItemType 'Directory'
+        New-Item -Path $tf -ItemType Directory | Out-Null
         $r = $sshInvoker.ScpFrom(@("/var/lib/mysql/hm-log-bin.000008", "/var/lib/mysql/hm-log-bin.000009"), $tf)
         $r | Test-Path -PathType Leaf | Should -BeTrue
     }
 
     It "should copy files with space in name." {
         $PSDefaultParameterValues['*:Verbose'] = $true
-        New-Item -Path $tf1 -ItemType 'Directory'
+        New-Item -Path $tf1 -ItemType Directory | Out-Null
         $r = $sshInvoker.ScpFrom(@("'/root/a b/1.txt'", "'/root/a b/2.txt'"), $tf1)
         $r | Test-Path -PathType Leaf | Should -BeTrue
     }
@@ -97,10 +97,10 @@ Describe "SshInvoker ScpTo" {
     $parent = Join-Path $TestDrive 'folder'
 
     $noversionFolder = "${parent}\noversions\nov"
-    New-Item -ItemType Directory -Path $noversionFolder
+    New-Item -ItemType Directory -Path $noversionFolder | Out-Null
 
     $srcFolder = "${parent}\src"
-    New-Item -ItemType Directory -Path $srcFolder
+    New-Item -ItemType Directory -Path $srcFolder | Out-Null
 
     $kkvFileInSrcFolder = Join-Path -Path $srcFolder -ChildPath "kkv.txt"
     "abc" | Out-File $kkvFileInSrcFolder 

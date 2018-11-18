@@ -19,7 +19,7 @@ function Copy-DemoConfigFile {
     "MyDir is: $MyDir" | Write-Verbose
     "Checking existance of $demofolder ...." | Write-Verbose
     if (-not (Test-Path -Path $demofolder)) {
-        New-Item -Path $demofolder -ItemType "directory"
+        New-Item -Path $demofolder -ItemType "directory" | Out-Null
     }
     $tofile = $demofolder | Join-Path -ChildPath $ToFileName
     "destination file is: $tofile" | Write-Verbose
@@ -63,7 +63,7 @@ function Send-SoftwarePackages {
     $c = $Global:configuration
     $dl = $ProjectRoot | Join-Path -ChildPath "downloads" | Join-Path -ChildPath $c.AppName
     if (-not (Test-Path -Path $dl -PathType Container)) {
-        New-Item -Path $dl -ItemType "directory"
+        New-Item -Path $dl -ItemType "directory" | Out-Null
     }
     $osConfig = $c.OsConfig
     $localFileNames = $osConfig.Softwares | ForEach-Object {
@@ -202,4 +202,60 @@ function Invoke-ServerRunningPs1 {
     $rcmd = "pwsh -f {0} -action {1} {2} {3} {4}" -f $entryPoint, $action, $ncp, (Get-Verbose), ($hints -join ' ')
     $rcmd | Out-String | Write-Verbose
     $sshInvoker.Invoke($rcmd, (-not $notCombineError))
+}
+
+
+function Get-MaxLocalDir {
+    param (
+        [Parameter(Mandatory = $false)]$configuration,
+        [Parameter(Mandatory = $false)][switch]$Next
+
+    )
+    if (-not $configuration) {
+        $configuration = $Global:configuration
+    }
+    if (-not (Test-Path -Path $configuration.LocalDir -PathType Container)) {
+        New-Item -Path $configuration.LocalDir -ItemType 'Directory' | Out-Null
+    }
+    $bd = $configuration.LocalDir | Join-Path -ChildPath $configuration.HostName | Join-Path -ChildPath "$($configuration.AppName)s" | Join-Path -ChildPath $configuration.AppName
+    if ($Next) {
+        $maxb = Get-NextBackup -Path $bd
+    } else {
+        $maxb = Get-MaxBackup -Path $bd
+    }
+
+    if (-not (Test-Path -Path $maxb -PathType Container)) {
+        New-Item -Path $maxb -ItemType 'Directory' | Out-Null
+    }
+    $maxb
+}
+
+function Get-LogFile {
+    param (
+        [Parameter(Mandatory = $false)]$configuration,
+        [Parameter(Mandatory = $false)][string]$group,
+        [Parameter(Mandatory = $false)][string]$name
+    )
+    if (-not $configuration) {
+        $configuration = $Global:configuration
+    }
+
+    if (-not $configuration.LogDir) {
+        throw 'configuration file has no LogDir property.'
+    }
+    if (-not $group) {
+        $group = 'logs'
+    }
+    if (-not $name) {
+        $name = '{0:yyyyMMddHHmmss}.log' -f (Get-Date)
+    }
+    if (-not (Test-Path -Path $configuration.LogDir -PathType Container)) {
+        New-Item -Path $configuration.LogDir -ItemType 'Directory' | Out-Null
+    }
+    $bd = $configuration.LogDir | Join-Path -ChildPath $configuration.HostName | Join-Path -ChildPath $configuration.AppName | Join-Path -ChildPath $group
+
+    if (-not (Test-Path -Path $bd -PathType Container)) {
+        New-Item -Path $bd -ItemType 'Directory' | Out-Null
+    }
+    $bd | Join-Path -ChildPath $name
 }

@@ -11,6 +11,14 @@ $scriptDir = $here | Split-Path -Parent
 
 $cfgfile = $scriptDir | Join-Path -ChildPath "mysql" |Join-Path -ChildPath "demo-config.1.json"
 
+function Get-FixtureFile {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$FileName
+    )
+    $here | Join-Path -ChildPath "fixtures" | Join-Path -ChildPath $FileName
+}
+
 Describe "configuration" {
     it "should get configuration." {
         Get-Configuration -ConfigFile $cfgfile -ServerSide
@@ -22,6 +30,15 @@ Describe "configuration" {
         $Global:configuration.DownloadPackages()
 
         Send-SoftwarePackages
+    }
+}
+
+Describe "lines" {
+    it "should lines." {
+        [array]$lines = Get-Content -Path (Get-FixtureFile -FileName 'lines7.txt')
+        $lines.Count | Should -Be 7
+        [array]$lines = Get-Content -Path (Get-FixtureFile -FileName 'lines7.txt') | Where-Object {$_}
+        $lines.Count | Should -Be 4
     }
 }
 

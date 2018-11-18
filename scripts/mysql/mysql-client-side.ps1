@@ -4,7 +4,7 @@ param (
         "Start",
         "Stop", 
         "Restart",
-        "GetDemoConfigFile",
+        "CopyDemoConfigFile",
         "Status", 
         "DownloadPackages",
         "SendPackages", 
@@ -57,7 +57,7 @@ if ($isInstall -and (-not $Version)) {
     return
 }
 
-if ($Action -eq "GetDemoConfigFile") {
+if ($Action -eq "CopyDemoConfigFile") {
     Copy-DemoConfigFile -MyDir $here -ToFileName "mysql-config.json"
 }
 else {
@@ -100,7 +100,7 @@ else {
         }
         "MysqlDump" {
             $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlDump
-            $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
+            $ht = $r | Receive-LinesFromServer | ConvertTo-Json
             $ht | Write-Verbose
             $df = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht
             break
@@ -112,7 +112,7 @@ else {
             break
         }
         "MysqlBackupDump" {
-            $d = Get-MysqlMaxDump
+            $d = Get-MaxLocalDir
             Backup-LocalDirectory -Path $d -keepOrigin
             Resize-BackupFiles -BasePath $d -Pattern $configuration.DumpPrunePattern
             break

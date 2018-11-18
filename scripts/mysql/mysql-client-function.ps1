@@ -1,30 +1,6 @@
-function Get-MysqlMaxDump {
-    param (
-        [Parameter(Mandatory = $false)]$configuration,
-        [Parameter(Mandatory = $false)][switch]$Next
-
-    )
-    if (-not $configuration) {
-        $configuration = $Global:configuration
-    }
-    if (-not (Test-Path -Path $configuration.LocalDir -PathType Container)) {
-        New-Item -Path $configuration.LocalDir -ItemType 'Directory' | Out-Null
-    }
-    $bd = Join-Path -Path $configuration.LocalDir -ChildPath "dumps" | Join-Path -ChildPath "dump"
-    if ($Next) {
-        $maxb = Get-NextBackup -Path $bd
-    } else {
-        $maxb = Get-MaxBackup -Path $bd
-    }
-
-    if (-not (Test-Path -Path $maxb -PathType Container)) {
-        New-Item -Path $maxb -ItemType 'Directory' | Out-Null
-    }
-    $maxb
-}
 <#
 .SYNOPSIS
-Short description
+RemoteDumpFileWithHashValue contains file hash and length.
 
 .DESCRIPTION
 Dumpping mysql will create a new backup directory.
@@ -44,16 +20,17 @@ General notes
 function Copy-MysqlDumpFile {
     param (
         [parameter(Mandatory = $true, Position = 0)]$RemoteDumpFileWithHashValue,
-        [Parameter(Mandatory = $false)]$configuration
+        [Parameter(Mandatory = $false)]$configuration,
+        [Parameter(Mandatory = $false)][switch]$LogResult
     )
     if (-not $configuration) {
         $configuration = $Global:configuration
     }
-    $maxb = Get-MysqlMaxDump -configuration $configuration -Next
+    $maxb = Get-MaxLocalDir -configuration $configuration -Next
 
     $fn = Split-UniversalPath -Path $RemoteDumpFileWithHashValue.Path -Leaf
     $tf = Join-UniversalPath $maxb $fn
-    $RemoteDumpFileWithHashValue.LocalFile = $tf
+    $RemoteDumpFileWithHashValue | Add-Member @{LocalFile=$tf}
     $r = Copy-FilesFromServer -RemotePathes $RemoteDumpFileWithHashValue.Path -LocalDirectory $maxb
 
     $fh = Get-FileHash -Path $RemoteDumpFileWithHashValue.LocalFile
@@ -62,27 +39,33 @@ function Copy-MysqlDumpFile {
     }
     $tdump = Join-Path -Path $maxb -ChildPath "dump.sql"
     Move-Item -Path $RemoteDumpFileWithHashValue.LocalFile -Destination $tdump
-    $tdump
+    $RemoteDumpFileWithHashValue.Path = $tdump
+
+    if ($LogResult) {
+        $RemoteDumpFileWithHashValue | ConvertTo-Json -Depth 10 | Out-File -FilePath (Get-LogFile -group 'mysqldump')
+    }
+    $RemoteDumpFileWithHashValue
+
 }
 
 function Copy-MysqlLogFiles {
     param (
         [parameter(Mandatory = $true, Position = 0)][array]$RemoteLogFilesWithHashValue,
-        [Parameter(Mandatory = $false)]$configuration
+        [Parameter(Mandatory = $false)]$configuration,
+        [Parameter(Mandatory = $false)][switch]$LogResult
     )
     if (-not $configuration) {
         $configuration = $Global:configuration
     }
 
-    $maxb = Get-MysqlMaxDump -configuration $configuration
+    $maxb = Get-MaxLocalDir -configuration $configuration
 
     # filter out already exist files.
     $RemoteLogFilesWithHashValue = $RemoteLogFilesWithHashValue |
         ForEach-Object {
         $fn = Split-UniversalPath -Path $_.Path -Leaf
         $tf = Join-UniversalPath $maxb $fn
-        $_.LocalFile = $tf
-        $_
+        $_ | Add-Member @{LocalFile=$tf} -PassThru
     }
 
     $idxfile = Join-Path -Path $maxb -ChildPath 'logbin.index'
@@ -108,11 +91,17 @@ function Copy-MysqlLogFiles {
 
     $r = Copy-FilesFromServer -RemotePathes $rpathes -LocalDirectory $maxb
     # verify all downloaded file.
-    $RemoteLogFilesWithHashValue | ForEach-Object {
+    $files = $RemoteLogFilesWithHashValue | ForEach-Object {
         $fh = Get-FileHash -Path $_.LocalFile
         if ($fh.Hash -ne $_.Hash) {
             throw "$($fh.Hash) Hash value doesn't match the server side file's."
         }
+        $_
+    }
+    $mo = $files | Measure-Object -Property Length -Sum
+    $r = @{Length=$mo.Sum;files=$files;Count=$mo.Count}
+    if ($LogResult) {
+        $r | ConvertTo-Json -Depth 10 | Out-File -FilePath (Get-LogFile -group 'mysqlflush')
     }
     $r
 }

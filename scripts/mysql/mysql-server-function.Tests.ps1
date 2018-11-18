@@ -200,22 +200,22 @@ Describe "dump mysql" {
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlDump
         $r | Out-Host
-        $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
+        $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
         $ht | Out-Host
         $ht.Path | Should -Be $Global:configuration.DumpFilename
         [SshInvoker]$sshinvoker = Get-SshInvoker
         $sshinvoker.ScpFrom($ht.Path, $df, $false)
         (Get-FileHash -Path $df).Hash | Should -Be $ht.Hash
-        # Get-Content -Path $df | Out-Host
     }
 
     it "should dump and verify hash" {
         $PSDefaultParameterValues['*:Verbose'] = $false
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlDump
-        $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
-        $tdump = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht
-        Test-Path -Path $tdump -PathType Leaf | Should -BeTrue
+        $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
+        $dumpResult = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht -LogResult
+        Test-Path -Path $dumpResult.Path -PathType Leaf | Should -BeTrue
+        $dumpResult.Length | Should -BeGreaterThan 0
     }
 }
 
@@ -225,16 +225,16 @@ Describe "flush mysql" {
         $PSDefaultParameterValues['*:Verbose'] = $false
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlFlushLogs
-        $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
-        Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht
-
-        $maxb = Get-MysqlMaxDump
+        $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
+        $r = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht -LogResult
+        $r | Out-Host
+        $maxb = Get-MaxLocalDir
 
         $idxfile = Join-Path -Path $maxb -ChildPath 'logbin.index'
 
         [array]$lines = Get-Content -Path $idxfile
 
-        [array]$files = Get-ChildItem -Path $maxb -Exclude '*.index'
+        [array]$files = Get-ChildItem -Path $maxb -Exclude '*.index','*.sql'
 
         $lines.Count | Should -Be $files.Count
     }

@@ -232,21 +232,113 @@ function Copy-ChangedFiles {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$RemoteDirectory,
         [Parameter(Mandatory = $true, Position = 1)][string]$LocalDirectory,
-        [Parameter(Mandatory = $false)]$configuration
+        [Parameter(Mandatory = $false)]$configuration,
+        [Parameter(Mandatory = $false)][switch]$OnlySum,
+        [Parameter(Mandatory = $false)][switch]$Json
     )
+    $starttime = Get-Date
     if (-not (Test-Path -Path $LocalDirectory -PathType Container)) {
-        throw "${LocalDirectory} does'nt exist or is'nt a directory."
+        New-Item -Path $LocalDirectory -ItemType Directory | Out-Null
     }
     if (-not $configuration) {
         $configuration = $Global:configuration
     }
     $sshInvoker = [SshInvoker]::new($configuration.HostName, $configuration.IdentityFile)
 
-    $str = "Get-ChildItem -Recurse $RemoteDirectory | Where-Object {`$_ -is [System.IO.FileInfo]} | Get-FileHash | ConvertTo-Json"
+    # Get-Item '.\.classpath'| ForEach-Object {$_ | Get-FileHash | Add-Member @{Length=$_.Length} -PassThru} 
+
+    $str = "Get-ChildItem -Recurse $RemoteDirectory | Where-Object {`$_ -is [System.IO.FileInfo]} | ForEach-Object {`$_ | Get-FileHash | Add-Member @{Length=`$_.Length} -PassThru} | ConvertTo-Json"
     $bytes = [System.Text.Encoding]::Unicode.GetBytes($str)
     $encodedCommand = [Convert]::ToBase64String($bytes)
-    $cmd = "pwsh -e '${encodedCommand}'"
-    $sshInvoker.invoke($cmd)
+    $cmd = "$($configuration.Powershell) -e '${encodedCommand}'"
+    $filelist = $sshInvoker.invoke($cmd) | ConvertFrom-Json
+
+    $mo = $filelist | Select-Object -Property Algorithm,Path,Length,LocalPath | Measure-Object -Property Length -Sum
+
+    $total = @{
+        Length=$mo.Sum;
+        Count=$mo.Count
+    }
+
+    if (-not $OnlySum) {
+        $total.files = $filelist
+    }
+
+    if (-not $total.Length) {
+        $total.Length = 0
+    }
+
+    $failedFiles = @()
+
+    $copiedFiles = $filelist | ForEach-Object {
+        $relativePath = Resolve-RelativePathToAnotherPath -ParentPath $RemoteDirectory -FullPath $_.Path
+        $localPath = Join-UniversalPath -Path $LocalDirectory -ChildPath $relativePath
+        $_ | Add-Member @{LocalPath=$localPath} -PassThru
+    } | ForEach-Object {
+        $pp = Split-Path -Path $_.LocalPath -Parent
+        if (-not (Test-Path -Path $pp -PathType Container)) {
+            "creating new directory: $pp" | Write-Verbose
+            New-Item -Path $pp -ItemType Directory | Out-Null
+        }
+        $_
+    } | Where-Object {
+        if ($_.Length -ne 0) {
+            -not ((Test-Path -Path $_.LocalPath -PathType Leaf) -and ((Get-FileHash -Path $_.LocalPath).Hash -eq $_.Hash))
+        } else {
+            if (Test-Path -Path $_.LocalPath -PathType Leaf) {
+                "file has zero length: $($_.Path), and already exists locally, skipping..." | Write-Verbose
+                $false
+            } else {
+                "file has zero length: $($_.Path), and has'nt exist locally." | Write-Verbose
+                $true
+            }
+        }
+    } | ForEach-Object {
+        if (Test-Path -Path $_.LocalPath -PathType Leaf) {
+            "deleting local file $($_.LocalPath) because of unmatch hash." | Write-Verbose
+        }
+        $copied = $sshInvoker.ScpFrom($_.Path, $_.LocalPath, $false)
+        if (($_.Length -ne 0) -and (Get-FileHash -Path $copied).Hash -ne $_.Hash) {
+            Write-Error -Category ReadError -CategoryReason 'scp failed' -Message 'scp failed' -TargetObject $_ -ErrorId 'SCP_FROM'
+            # throw "copy file from $($_.Path) to $($_.LocalPath) failed, file length is: $($_.Length), hash wasn't match."
+            $failedFiles += $_
+        } else {
+            $_
+        }
+    }
+    $mo = $copiedFiles | Measure-Object -Property Length -Sum
+    $copied = @{
+        Length = $mo.Sum;
+        Count = $mo.Count
+    }
+
+    if (-not $OnlySum) {
+        $copied.files = $copiedFiles
+    }
+    if (-not $copied.Length) {
+        $copied.Length = 0
+    }
+
+    $mo = $failedFiles | Measure-Object -Property Length -Sum
+    $failed = @{
+        Length = $mo.Sum;
+        files = $failedFiles;
+        Count = $mo.Count
+    }
+
+    if (-not $OnlySum) {
+        $failed.files = $failedFiles
+    }
+    if (-not $failed.Length) {
+        $failed.Length = 0
+    }
+    $timespan = (Get-Date) - $starttime
+    $h = @{total=$total;copied=$copied;failed=$failed;timespan=$timespan}
+    if ($Json) {
+        $h | ConvertTo-Json -Depth 10
+    } else {
+        $h
+    }
 }
 function Copy-FilesFromServer {
     param (

@@ -4,6 +4,7 @@ $ScriptDir = $here | Split-Path -Parent
 
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
+. "$here\borg-client-function.ps1"
 
 ".\ssh-invoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1", "common-for-t.ps1" | ForEach-Object {
     . "${ScriptDir}\common\$_"
@@ -51,5 +52,43 @@ Describe "new borg prune successly." {
         $r | Out-Host
         [array]$r = $r | Receive-LinesFromServer
         $r.Count | should -GT 0
+    }
+}
+
+Describe "download borg repo." {
+    it "should download borg repo." {
+        Get-Configuration -ConfigFile ($here | Join-Path -ChildPath "demo-config.1.json")
+        $r = Copy-BorgRepoFiles
+        $r | Out-Host
+        $r.total | Out-Host
+        $r.copied.Length | Should -GT 0
+    }
+}
+
+Describe "copy changed files." {
+    it "should copy changed files." {
+        $PSDefaultParameterValues['*:Verbose'] = $true
+        Get-Configuration -ConfigFile ($here | Join-Path -ChildPath "demo-config.1.json")
+        $Error.Clear()
+        $repo = Get-BorgMaxRepo
+        if (Test-Path -Path $repo) {
+            Remove-Item -Recurse -Force -Path $repo
+        }
+        $r = Copy-ChangedFiles -RemoteDirectory '/etc/NetworkManager' -LocalDirectory $repo
+        $r | ConvertTo-Json -Depth 10 | Out-Host
+        $r.total.Length | Should -Be $r.copied.Length
+        # [array]$ers = $Error | Where-Object FullyQualifiedErrorId -Like 'SCP_FROM,*'
+        # $ers.Count | Should -BeGreaterThan 0
+        $r = Copy-ChangedFiles -RemoteDirectory '/etc/NetworkManager' -LocalDirectory $repo -OnlySum -Json
+        $r | Out-Host
+        $r.copied.Count | Should -Be 0
+
+        $repo = Get-BorgMaxRepo -Next
+        if (Test-Path -Path $repo) {
+            Remove-Item -Recurse -Force -Path $repo
+        }
+        $r = Copy-ChangedFiles -RemoteDirectory '/etc/NetworkManager' -LocalDirectory $repo
+        $r | ConvertTo-Json | Out-Host
+        $r.copied.Count | Should -GT 0
     }
 }

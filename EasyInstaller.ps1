@@ -33,7 +33,7 @@ switch ($action) {
         $democfg = $proot | Join-Path -ChildPath "scripts" | Join-Path -ChildPath $appfolder | Join-Path -ChildPath "README.md" -Resolve
         $demofolder = $PWD | Join-Path -ChildPath "demo-configs"
         if (-not (Test-Path -Path $demofolder)) {
-            New-Item -Path $demofolder -ItemType "directory"
+            New-Item -Path $demofolder -ItemType "directory" | Out-Null
         }
         $tofile = $demofolder | Join-Path -ChildPath "${AppName}.json"
         Copy-Item -Path $democfg -Destination $tofile
