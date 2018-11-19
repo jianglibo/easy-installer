@@ -17,6 +17,7 @@
   "BorgBin": "/usr/local/bin/borg",
   "BorgCreate": "{0} create --stats --json {1}::{2} /etc /usr/local/bin",
   "BorgPrune": "{0} prune -v --list --keep-daily=7 --keep-weekly=4 {1}",
+  "BorgList": "{0} list --json {1}",
   "BorgRepoPath": "/opt/repo",
   "LocalDir": "e:/backups/borg",
   "BorgPrunePattern": "0 3 0 3 0 0 0",

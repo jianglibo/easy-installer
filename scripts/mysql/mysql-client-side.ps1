@@ -19,7 +19,9 @@ param (
     [parameter(Mandatory = $false)]
     [ValidateSet("55", "56", "57", "80")]
     [string]$Version,
-    [switch]$CopyScripts
+    [switch]$CopyScripts,
+    [switch]$LogResult,
+    [switch]$Json
 )
 
 <#
@@ -99,16 +101,15 @@ else {
             break
         }
         "MysqlDump" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlDump
-            $ht = $r | Receive-LinesFromServer | ConvertTo-Json
-            $ht | Write-Verbose
-            $df = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht
+            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlDump -LogResult:$LogResult -Json:$Json
+            $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
+            Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht -LogResult:$LogResult
             break
         }
         "MysqlFlushLogs" {
             $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlFlushLogs
-            $ht = $r | Receive-LinesFromServer | ConvertFrom-ListFormatOutput
-            Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht
+            $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
+            Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht -LogResult:$LogResult
             break
         }
         "MysqlBackupDump" {

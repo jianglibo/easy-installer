@@ -3,13 +3,19 @@ param (
     [ValidateSet("Install",
         "DownloadPackages",
         "CopyDemoConfigFile",
+        "InitializeRepo",
+        "NewArchive",
+        "Prune",
+        "DownloadRepo",
         "SendPackages", 
         "Uninstall", 
         "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,
-    [switch]$CopyScripts
+    [switch]$CopyScripts,
+    [switch]$LogResult,
+    [switch]$Json
 )
 
 <#
@@ -78,6 +84,37 @@ else {
             $sshInvoker = Get-SshInvoker
             $f = Get-PublicKeyFile -NotResolve
             $sshInvoker.ScpFrom($r, $f, $false)
+            break
+        }
+        "InitializeRepo" {
+            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action InitializeRepo -notCombineError
+            $r | Receive-LinesFromServer
+            break
+        }
+        "NewArchive" {
+            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Archive
+            $r | Write-Verbose
+            $v = $r | Receive-LinesFromServer
+            if ($LogResult) {
+                $v | Out-File -FilePath (Get-LogFile -group 'borgarchive')
+            }
+            $v
+            break
+        }
+        "Prune" {
+            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Prune
+            $r | Write-Verbose
+            $v = $r | Receive-LinesFromServer
+            if ($LogResult) {
+                $v | Out-File -FilePath (Get-LogFile -group 'borgprune')
+            }
+            $v
+            break
+        }
+        "DownloadRepo" {
+            $r = Copy-BorgRepoFiles -LogResult:$LogResult -Json:$Json
+            $r | Write-Verbose
+            $r
             break
         }
         Default {

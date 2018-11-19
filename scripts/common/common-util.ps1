@@ -243,10 +243,12 @@ function Copy-ChangedFiles {
     if (-not $configuration) {
         $configuration = $Global:configuration
     }
+
+    if (-not $configuration.Powershell) {
+        throw 'Missing Powershell property in configuration file.'
+    }
     $sshInvoker = [SshInvoker]::new($configuration.HostName, $configuration.IdentityFile)
-
     # Get-Item '.\.classpath'| ForEach-Object {$_ | Get-FileHash | Add-Member @{Length=$_.Length} -PassThru} 
-
     $str = "Get-ChildItem -Recurse $RemoteDirectory | Where-Object {`$_ -is [System.IO.FileInfo]} | ForEach-Object {`$_ | Get-FileHash | Add-Member @{Length=`$_.Length} -PassThru} | ConvertTo-Json"
     $bytes = [System.Text.Encoding]::Unicode.GetBytes($str)
     $encodedCommand = [Convert]::ToBase64String($bytes)

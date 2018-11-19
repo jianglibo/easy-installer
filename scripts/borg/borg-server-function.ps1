@@ -86,5 +86,7 @@ function Invoke-BorgPrune {
         $RepoPath = $Global:configuration.BorgRepoPath
     }
     $createcmd = $Global:configuration.BorgPrune -f $Global:configuration.BorgBin, $RepoPath
-    Invoke-Expression -Command $createcmd | Send-LinesToClient
+    Invoke-Expression -Command $createcmd | Out-Null
+    $listcmd = $Global:configuration.BorgList -f  $Global:configuration.BorgBin, $RepoPath
+    Invoke-Expression -Command $listcmd | Send-LinesToClient
 }

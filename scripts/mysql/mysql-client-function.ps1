@@ -26,7 +26,11 @@ function Copy-MysqlDumpFile {
     if (-not $configuration) {
         $configuration = $Global:configuration
     }
+
+    $starttime = Get-Date
     $maxb = Get-MaxLocalDir -configuration $configuration -Next
+
+    $RemoteDumpFileWithHashValue | Write-Verbose
 
     $fn = Split-UniversalPath -Path $RemoteDumpFileWithHashValue.Path -Leaf
     $tf = Join-UniversalPath $maxb $fn
@@ -40,6 +44,10 @@ function Copy-MysqlDumpFile {
     $tdump = Join-Path -Path $maxb -ChildPath "dump.sql"
     Move-Item -Path $RemoteDumpFileWithHashValue.LocalFile -Destination $tdump
     $RemoteDumpFileWithHashValue.Path = $tdump
+
+    $timespan = (Get-Date) - $starttime
+
+    $RemoteDumpFileWithHashValue | Add-Member @{timespan=$timespan}
 
     if ($LogResult) {
         $RemoteDumpFileWithHashValue | ConvertTo-Json -Depth 10 | Out-File -FilePath (Get-LogFile -group 'mysqldump')
@@ -57,8 +65,10 @@ function Copy-MysqlLogFiles {
     if (-not $configuration) {
         $configuration = $Global:configuration
     }
-
+    $starttime = Get-Date
     $maxb = Get-MaxLocalDir -configuration $configuration
+
+    $RemoteLogFilesWithHashValue | Write-Verbose
 
     # filter out already exist files.
     $RemoteLogFilesWithHashValue = $RemoteLogFilesWithHashValue |
@@ -99,7 +109,8 @@ function Copy-MysqlLogFiles {
         $_
     }
     $mo = $files | Measure-Object -Property Length -Sum
-    $r = @{Length=$mo.Sum;files=$files;Count=$mo.Count}
+    $timespan = (Get-Date) - $starttime
+    $r = @{Length=$mo.Sum;files=$files;Count=$mo.Count;timespan=$timespan}
     if ($LogResult) {
         $r | ConvertTo-Json -Depth 10 | Out-File -FilePath (Get-LogFile -group 'mysqlflush')
     }
