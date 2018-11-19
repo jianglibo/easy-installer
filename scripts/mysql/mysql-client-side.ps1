@@ -64,7 +64,7 @@ if ($Action -eq "CopyDemoConfigFile") {
 }
 else {
     if (-not $ConfigFile) {
-        Write-ParameterWarning -wstring "This action need ConfigFile parameter, If you don't know what ConfigFile is, run Action 'GetDemoConfigFile' first."
+        Write-ParameterWarning -wstring ", If you don't know what ConfigFile is, run Action 'CopyDemoConfigFile' first."
         return
     }
 

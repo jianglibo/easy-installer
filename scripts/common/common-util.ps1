@@ -132,7 +132,7 @@ function Get-SoftwarePackagePath {
                 $ln = Split-Url -Url $url
             }
             $ln
-       } | Select-Object -First 1
+        } | Select-Object -First 1
     }
     $d = Get-ChildItem -Path $TargetDir | Where-Object {$_.Name -eq $SoftwareName} | Select-Object -First 1
     "found package file: $($d.FullName)" | Write-Verbose
@@ -255,11 +255,11 @@ function Copy-ChangedFiles {
     $cmd = "$($configuration.Powershell) -e '${encodedCommand}'"
     $filelist = $sshInvoker.invoke($cmd) | ConvertFrom-Json
 
-    $mo = $filelist | Select-Object -Property Algorithm,Path,Length,LocalPath | Measure-Object -Property Length -Sum
+    $mo = $filelist | Select-Object -Property Algorithm, Path, Length, LocalPath | Measure-Object -Property Length -Sum
 
     $total = @{
-        Length=$mo.Sum;
-        Count=$mo.Count
+        Length = $mo.Sum;
+        Count  = $mo.Count
     }
 
     if (-not $OnlySum) {
@@ -275,7 +275,7 @@ function Copy-ChangedFiles {
     $copiedFiles = $filelist | ForEach-Object {
         $relativePath = Resolve-RelativePathToAnotherPath -ParentPath $RemoteDirectory -FullPath $_.Path
         $localPath = Join-UniversalPath -Path $LocalDirectory -ChildPath $relativePath
-        $_ | Add-Member @{LocalPath=$localPath} -PassThru
+        $_ | Add-Member @{LocalPath = $localPath} -PassThru
     } | ForEach-Object {
         $pp = Split-Path -Path $_.LocalPath -Parent
         if (-not (Test-Path -Path $pp -PathType Container)) {
@@ -286,11 +286,13 @@ function Copy-ChangedFiles {
     } | Where-Object {
         if ($_.Length -ne 0) {
             -not ((Test-Path -Path $_.LocalPath -PathType Leaf) -and ((Get-FileHash -Path $_.LocalPath).Hash -eq $_.Hash))
-        } else {
+        }
+        else {
             if (Test-Path -Path $_.LocalPath -PathType Leaf) {
                 "file has zero length: $($_.Path), and already exists locally, skipping..." | Write-Verbose
                 $false
-            } else {
+            }
+            else {
                 "file has zero length: $($_.Path), and has'nt exist locally." | Write-Verbose
                 $true
             }
@@ -304,14 +306,15 @@ function Copy-ChangedFiles {
             Write-Error -Category ReadError -CategoryReason 'scp failed' -Message 'scp failed' -TargetObject $_ -ErrorId 'SCP_FROM'
             # throw "copy file from $($_.Path) to $($_.LocalPath) failed, file length is: $($_.Length), hash wasn't match."
             $failedFiles += $_
-        } else {
+        }
+        else {
             $_
         }
     }
     $mo = $copiedFiles | Measure-Object -Property Length -Sum
     $copied = @{
         Length = $mo.Sum;
-        Count = $mo.Count
+        Count  = $mo.Count
     }
 
     if (-not $OnlySum) {
@@ -324,8 +327,8 @@ function Copy-ChangedFiles {
     $mo = $failedFiles | Measure-Object -Property Length -Sum
     $failed = @{
         Length = $mo.Sum;
-        files = $failedFiles;
-        Count = $mo.Count
+        files  = $failedFiles;
+        Count  = $mo.Count
     }
 
     if (-not $OnlySum) {
@@ -335,10 +338,11 @@ function Copy-ChangedFiles {
         $failed.Length = 0
     }
     $timespan = (Get-Date) - $starttime
-    $h = @{total=$total;copied=$copied;failed=$failed;timespan=$timespan}
+    $h = @{total = $total; copied = $copied; failed = $failed; timespan = $timespan}
     if ($Json) {
         $h | ConvertTo-Json -Depth 10
-    } else {
+    }
+    else {
         $h
     }
 }
@@ -362,6 +366,65 @@ function Copy-FilesFromServer {
     }
     $r | Write-Verbose
     $r
+}
+
+function Get-MemoryFree {
+    if ($PSVersionTable.Platform -eq 'unix') {
+        $o = free | Where-Object {$_ -match 'Mem:\s+(\d+)\s+(\d+)'} | Select-Object -First 1
+        $Total = ($Matches[1] -as [long]) * 1024
+        $Used = ($Matches[2] -as [long]) * 1024
+        $Free = $Total - $Used
+        $Percent = '{0:p1}' -f ($Used / $Total)
+        $Usedm = '{0:f1}' -f ($Used / 1048576)
+        $Freem = '{0:f1}' -f ($Free / 1048576)
+        $r = @{
+            Total = $Total;
+            Free = $Free;
+            Used = $Used;
+            Percent = $Percent
+            Usedm = $Usedm;
+            Freem = $Freem;
+        }
+    } else {
+        $o = Get-CimInstance -ClassName win32_operatingsystem | Select-Object FreePhysicalMemory,TotalVisibleMemorySize
+        $r = @{
+            Total=$o.TotalVisibleMemorySize * 1024;
+            Free=$o.FreePhysicalMemory * 1024;
+        }
+        $r.Used = $r.Total - $r.Free
+        $r.Percent = '{0:p1}' -f ($r.Used / $r.Total)
+        $r.Usedm = '{0:f1}' -f ($r.Used / 1048576)
+        $r.Freem = '{0:f1}' -f ($r.Free / 1048576)
+    }
+    $r | ConvertTo-Json | Send-LinesToClient
+}
+
+function Get-DiskFree {
+    if ($PSVersionTable.Platform -eq 'unix') {
+        $r = df -l | Select-Object -Skip 1 | ForEach-Object {
+            $a = $_ -split '\s+';
+            $h = @{Name = $a[5];
+                Used = (1024 * $a[2]) -As [Long]; 
+                Free = (1024 * $a[3]) -As [Long];
+            }
+            $h.Percent = '{0:p1}' -f ($h.Used / ($h.Used + $h.Free))
+            $h.Usedm = '{0:f1}' -f ($h.Used / 1048576)
+            $h.Freem = '{0:f1}' -f ($h.Free / 1048576)
+            $h
+        }
+    }
+    else {
+        $r = Get-PSDrive | Where-Object Name -Match '^.{1}$' | Select-Object -Property Name,Used,Free |
+        Where-Object Used -GT 0 |
+        ForEach-Object {
+            $total = $_.Used + $_.Free
+            $pc = '{0:p1}' -f ($_.Used / $total)
+            $Usedm = '{0:f1}' -f ($_.Used / 1048576)
+            $Freem = '{0:f1}' -f ($_.Free / 1048576)
+            $_ | Add-Member @{Percent=$pc;Usedm=$Usedm;Freem=$Freem} -PassThru
+        }
+    }
+    $r | ConvertTo-Json | Send-LinesToClient
 }
 
 function Find-BackupFilesToDelete {
@@ -450,12 +513,12 @@ function Resize-BackupFiles {
 
     $toDeletes = Find-BackupFilesToDelete -FileOrFolders $FilesOrFolders -Pattern $Pattern
     $toDeletes | ForEach-Object {
-                    $fn = $_.FullName
-                    if (Test-Path -Path $fn -PathType Container) {
-                        Remove-Item -Recurse -Path $fn -Force
-                    }
-                    else {
-                        Remove-Item -Path $fn -Force
+        $fn = $_.FullName
+        if (Test-Path -Path $fn -PathType Container) {
+            Remove-Item -Recurse -Path $fn -Force
+        }
+        else {
+            Remove-Item -Path $fn -Force
         }
     }
 }
@@ -526,16 +589,19 @@ function Resolve-RelativePathToAnotherPath {
     )
     if (-not [System.IO.Path]::IsPathRooted($FullPath)) {
         throw "Path is not absolute: $FullPath"
-    } else {
-        $pp = $ParentPath -replace '\\','/'
-        $FullPath = $FullPath -replace "^${pp}",''
-        $FullPath = $FullPath -replace '^/',''
+    }
+    else {
+        $pp = $ParentPath -replace '\\', '/'
+        $FullPath = $FullPath -replace "^${pp}", ''
+        $FullPath = $FullPath -replace '^/', ''
 
-        if ($Separator -and ($Separator -in '/','\')) {
-            $FullPath -replace '/',$Separator
-        } elseif($ParentPath.IndexOf('\') -ne -1) {
-            $FullPath -replace '/','\'
-        } else {
+        if ($Separator -and ($Separator -in '/', '\')) {
+            $FullPath -replace '/', $Separator
+        }
+        elseif ($ParentPath.IndexOf('\') -ne -1) {
+            $FullPath -replace '/', '\'
+        }
+        else {
             $FullPath
         }
     }
@@ -612,9 +678,9 @@ function Get-MaxBackupNumber {
         New-Item -Path $p -ItemType Directory | Out-Null
     }
     $r = Get-ChildItem -Path "${Path}*" | 
-    Foreach-Object {@{base = $_; dg = [int](Select-String -InputObject $_.Name -Pattern '(\d*)$' -AllMatches).matches.groups[1].Value}} |
+        Foreach-Object {@{base = $_; dg = [int](Select-String -InputObject $_.Name -Pattern '(\d*)$' -AllMatches).matches.groups[1].Value}} |
         Sort-Object -Property @{Expression = {$_.dg}; Descending = $true} |
-    # We can not handle this situation, mixed files and directories.
+        # We can not handle this situation, mixed files and directories.
     Select-Object -First 1 | ForEach-Object {$_.dg}
     if (-not $r) {
         0
@@ -670,7 +736,8 @@ function Backup-LocalDirectory {
     )
     if ($Path -match '^(.*)\.\d+$') {
         $nx = Get-NextBackup -Path $Matches[1]
-    } else {
+    }
+    else {
         $nx = Get-NextBackup -Path $Path
     }
 

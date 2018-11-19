@@ -9,6 +9,8 @@ param (
         "DownloadRepo",
         "SendPackages", 
         "Uninstall", 
+        "DiskFree",
+        "MemoryFree",
         "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)]
@@ -50,7 +52,7 @@ if ($Action -eq "CopyDemoConfigFile") {
 }
 else {
     if (-not $ConfigFile) {
-        Write-ParameterWarning -wstring "This action need ConfigFile parameter, If you don't know what ConfigFile is, run Action 'GetDemoConfigFile' first."
+        Write-ParameterWarning -wstring "This action need ConfigFile parameter, If you don't know what ConfigFile is, run Action 'CopyDemoConfigFile' first."
         return
     }
 
@@ -117,8 +119,30 @@ else {
             $r
             break
         }
+        "DiskFree" {
+            $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
+            $r | Write-Verbose
+            $v = $r | Receive-LinesFromServer
+            if ($LogResult) {
+                $v | Out-File -FilePath (Get-LogFile -group 'storagestats')
+            }
+            $v
+            break
+        }
+        "MemoryFree" {
+            $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
+            $r | Write-Verbose
+            $v = $r | Receive-LinesFromServer
+            if ($LogResult) {
+                $v | Out-File -FilePath (Get-LogFile -group 'memorystats')
+            }
+            $v
+            break
+        }
         Default {
-            Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
+            $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
+            $r | Write-Verbose
+            $r
         }
     }
 }

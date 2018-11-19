@@ -5,6 +5,8 @@ param (
         "InitializeRepo",
         "Archive",
         "Prune",
+        "DiskFree",
+        "MemoryFree",
         "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)][switch]$NotCleanUp,
@@ -66,6 +68,14 @@ try {
         }
         "DownloadPublicKey" {
             Get-OpenSSLPublicKey
+            break
+        }
+        "DiskFree" {
+            Get-DiskFree
+            break
+        }
+        "MemoryFree" {
+            Get-MemoryFree
             break
         }
         Default {
