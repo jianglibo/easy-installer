@@ -24,7 +24,7 @@
   "DumpPrunePattern": "0 3 0 3 0 0 0",
   "OsType": "centos",
   "LogDir": "e:/backups/logs",
-  "taskcmd" : {
+  "taskcmd": {
     "archive": "{0}borg-client-side.ps1 -Action NewArchive -ConfigFile {1} -LogResult -CopyScripts -Json",
     "prune": "{0}borg-client-side.ps1 -Action Prune -ConfigFile {1} -LogResult -CopyScripts -Json",
     "download": "{0}borg-client-side.ps1 -Action DownloadRepo -ConfigFile {1} -LogResult -CopyScripts -Json"

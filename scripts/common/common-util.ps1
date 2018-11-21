@@ -628,7 +628,7 @@ function Install-SoftwareByExpression {
     )
     if ($OneSoftware -and $OneSoftware.Install -and $OneSoftware.Install.Command) {
         $cmd = $OneSoftware.Install.Command
-        $cmd = $cmd -replace '{filepath}', $OneSoftware.LocalPath
+        $cmd = $cmd -f $OneSoftware.LocalPath
         Invoke-Expression -Command $cmd
     }
 }
