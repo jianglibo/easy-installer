@@ -58,6 +58,32 @@ function Get-PublicKeyFile {
     }
 }
 
+function Write-ActionResultToLogFile {
+    param (
+        [Parameter(ValueFromPipeline=$true)]
+        $Value,
+        [string]$Action,
+        [switch]$LogResult
+    )
+    if ($LogResult) {
+        $Value | ConvertTo-Json -Depth 10 | Out-File -FilePath (Get-LogFile -group $Action)
+    }
+}
+
+function Out-JsonOrOrigin {
+    param (
+        [Parameter(ValueFromPipeline=$true)]
+        $Value,
+        [switch]$Json,
+        [Parameter(Mandatory=$false)]
+        [int16]$Depth=10
+    )
+    if ($Json) {
+        $Value | ConvertTo-Json -Depth $Depth
+    } else {
+        $Value
+    }
+}
 
 function Send-SoftwarePackages {
     $c = $Global:configuration
@@ -178,7 +204,6 @@ function Invoke-ServerRunningPs1 {
         [string]$Action,
         [parameter(Mandatory = $false)][switch]$notCombineError,
         [parameter(Mandatory = $false)][switch]$NotCleanUp,
-        [switch]$LogResult,
         [switch]$Json,
         [parameter(Mandatory = $false,
             ValueFromRemainingArguments = $true)]

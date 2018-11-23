@@ -24,9 +24,12 @@
   "LocalDir": "e:/backups/mysql",
   "LogDir": "e:/backups/logs",
   "taskcmd": {
-    "archive": "{0}borg-client-side.ps1 -Action NewArchive -ConfigFile {1} -LogResult -CopyScripts -Json",
-    "prune": "{0}borg-client-side.ps1 -Action Prune -ConfigFile {1} -LogResult -CopyScripts -Json",
-    "download": "{0}borg-client-side.ps1 -Action DownloadRepo -ConfigFile {1} -LogResult -CopyScripts -Json"
+    "flushlog": "{0}borg-client-side.ps1 -Action NewArchive -ConfigFile {1} -LogResult -CopyScripts -Json",
+    "dump": "{0}borg-client-side.ps1 -Action Prune -ConfigFile {1} -LogResult -CopyScripts -Json"
+  },
+  "crons": {
+    "flushlog": "3 33 12，19 * * ? *",
+    "dump": "3 33 1 ? * SAT *"
   },
   "DumpPrunePattern": "0 3 0 3 0 0 0",
   "OsType": "centos",

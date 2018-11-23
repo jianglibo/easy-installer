@@ -53,6 +53,7 @@ $Global:ProjectRoot = $ScriptDir | Split-Path -Parent
 
 $isInstall = $Action -eq "Install"
 
+$scriptstarttime = Get-Date
 
 if ($isInstall -and (-not $Version)) {
     Write-ParameterWarning -wstring "If action is Install then Version parameter is required."
@@ -101,15 +102,27 @@ else {
             break
         }
         "MysqlDump" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlDump -LogResult:$LogResult -Json:$Json
-            $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
-            Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht -LogResult:$LogResult
+            $dumpraw = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlDump -Json:$Json
+            $dumpraw | Write-Verbose
+            $dumpr = $dumpraw | Receive-LinesFromServer | ConvertFrom-Json
+            $copyr = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $dumpr
+
+            $success = $dumpr.Length -and $dumpr.Path -and $copyr.Length
+            $v = @{result = $dumpr; download = $copyr; success=$success; timespan=(Get-Date) - $scriptstarttime}
+            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
+            $v | Out-JsonOrOrigin -Json:$Json
             break
         }
         "MysqlFlushLogs" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlFlushLogs
-            $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
-            Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht -LogResult:$LogResult
+            $flushraw = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlFlushLogs
+            $flushraw | Write-Verbose
+            $flushr = $flushraw | Receive-LinesFromServer | ConvertFrom-Json
+            $copyr = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $flushr
+
+            $success = $flushr.Length -and $flushr.Path -and $copyr.Length
+            $v = @{result = $flushr; download = $copyr; success=$success; timespan=(Get-Date) - $scriptstarttime}
+            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
+            $v | Out-JsonOrOrigin -Json:$Json
             break
         }
         "MysqlBackupDump" {

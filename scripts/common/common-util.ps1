@@ -236,7 +236,6 @@ function Copy-ChangedFiles {
         [Parameter(Mandatory = $false)][switch]$OnlySum,
         [Parameter(Mandatory = $false)][switch]$Json
     )
-    $starttime = Get-Date
     if (-not (Test-Path -Path $LocalDirectory -PathType Container)) {
         New-Item -Path $LocalDirectory -ItemType Directory | Out-Null
     }
@@ -337,8 +336,7 @@ function Copy-ChangedFiles {
     if (-not $failed.Length) {
         $failed.Length = 0
     }
-    $timespan = (Get-Date) - $starttime
-    $h = @{total = $total; copied = $copied; failed = $failed; timespan = $timespan}
+    $h = @{total = $total; copied = $copied; failed = $failed}
     if ($Json) {
         $h | ConvertTo-Json -Depth 10
     }

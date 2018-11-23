@@ -1,5 +1,6 @@
 {
   "AppName": "borg",
+  "entryPoint": "scripts/borg/borg-client-side.ps1",
   "ClientScp": "scp",
   "ClientSsh": "ssh",
   "Powershell": "pwsh",
@@ -14,21 +15,24 @@
   "PublicKeyFile": "default|none",
   "PrivateKeyFile": "/root/.ssh/id_rsa",
   "ServerPassword": null,
+  "OsType": "centos",
+  "LogDir": "e:/backups/logs",
   "BorgBin": "/usr/local/bin/borg",
   "BorgCreate": "{0} create --stats --json {1}::{2} /etc /usr/local/bin",
   "BorgPrune": "{0} prune -v --list --keep-daily=7 --keep-weekly=4 {1}",
   "BorgList": "{0} list --json {1}",
   "BorgRepoPath": "/opt/repo",
   "LocalDir": "e:/backups/borg",
+  "taskcmd": {
+    "ArchiveAndDownload": "%s -Action ArchiveAndDownload -ConfigFile %s -LogResult -CopyScripts -Json",
+    "PruneAndDownload": "%s -Action PruneAndDownload -ConfigFile %s -LogResult -CopyScripts -Json"
+  },
+  "crons" : {
+    "archive": "3 33 12，19 * * ? *",
+    "prune": "3 33 1 ? * SAT *"
+  },
   "BorgPrunePattern": "0 3 0 3 0 0 0",
   "DumpPrunePattern": "0 3 0 3 0 0 0",
-  "OsType": "centos",
-  "LogDir": "e:/backups/logs",
-  "taskcmd": {
-    "archive": "{0}borg-client-side.ps1 -Action NewArchive -ConfigFile {1} -LogResult -CopyScripts -Json",
-    "prune": "{0}borg-client-side.ps1 -Action Prune -ConfigFile {1} -LogResult -CopyScripts -Json",
-    "download": "{0}borg-client-side.ps1 -Action DownloadRepo -ConfigFile {1} -LogResult -CopyScripts -Json"
-  },
   "SwitchByOs": {
     "centos": {
       "Softwares": [

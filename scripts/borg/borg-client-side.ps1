@@ -4,8 +4,10 @@ param (
         "DownloadPackages",
         "CopyDemoConfigFile",
         "InitializeRepo",
-        "NewArchive",
+        "Archive",
         "Prune",
+        "ArchiveAndDownload",
+        "PruneAndDownload",
         "DownloadRepo",
         "SendPackages", 
         "Uninstall", 
@@ -46,6 +48,8 @@ $Global:ProjectRoot = $ScriptDir | Split-Path -Parent
 . (Join-Path -Path $CommonDir -ChildPath 'ssh-invoker.ps1')
 . (Join-Path -Path $CommonDir -ChildPath 'common-util.ps1')
 . (Join-Path -Path $CommonDir -ChildPath 'clientside-util.ps1')
+
+$scriptstarttime = Get-Date
 
 if ($Action -eq "CopyDemoConfigFile") {
     Copy-DemoConfigFile -MyDir $here -ToFileName "borg-config.json"
@@ -93,7 +97,7 @@ else {
             $r | Receive-LinesFromServer
             break
         }
-        "NewArchive" {
+        "Archive" {
             $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Archive
             $r | Write-Verbose
             $v = $r | Receive-LinesFromServer
@@ -101,6 +105,24 @@ else {
                 $v | Out-File -FilePath (Get-LogFile -group 'borgarchive')
             }
             $v
+            break
+        }
+        "ArchiveAndDownload" {
+            $ar = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Archive | Receive-LinesFromServer | ConvertFrom-Json
+            $dr = Copy-BorgRepoFiles
+            $success = $ar.archive -and $dr.copied
+            $v = @{result = $ar; download = $dr; success=$success; timespan=(Get-Date) - $scriptstarttime}
+            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
+            $v | Out-JsonOrOrigin -Json:$Json
+            break
+        }
+        "PruneAndDownload" {
+            $pr = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Prune | Receive-LinesFromServer | ConvertFrom-Json
+            $dr = Copy-BorgRepoFiles
+            $success = $pr.archives -and ($pr.archives -is [array]) -and $dr.copied
+            $v = @{result = $pr; download = $dr; success=$success; timespan=(Get-Date) - $scriptstarttime}
+            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
+            $v | Out-JsonOrOrigin -Json:$Json
             break
         }
         "Prune" {
@@ -122,9 +144,12 @@ else {
         "DiskFree" {
             $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
             $r | Write-Verbose
-            $v = $r | Receive-LinesFromServer
+            $jr = $r | Receive-LinesFromServer | ConvertFrom-Json
+            $success = ($jr -is [array]) -and $jr[0].Name
+            $v = @{result=$jr;success=$success; timespan=(Get-Date) - $scriptstarttime}
+
             if ($LogResult) {
-                $v | Out-File -FilePath (Get-LogFile -group 'storagestats')
+                $v | ConvertTo-Json | Out-File -FilePath (Get-LogFile -group $Action)
             }
             $v
             break
@@ -132,9 +157,11 @@ else {
         "MemoryFree" {
             $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
             $r | Write-Verbose
-            $v = $r | Receive-LinesFromServer
+            $jr = $r | Receive-LinesFromServer | ConvertFrom-Json
+            $success = $jr.Total -and $jr.Free
+            $v = @{result=$jr;success=$success; timespan=(Get-Date) - $scriptstarttime}
             if ($LogResult) {
-                $v | Out-File -FilePath (Get-LogFile -group 'memorystats')
+                $v | ConvertTo-Json | Out-File -FilePath (Get-LogFile -group $Action)
             }
             $v
             break

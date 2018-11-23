@@ -213,7 +213,7 @@ Describe "dump mysql" {
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlDump
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
-        $dumpResult = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht -LogResult
+        $dumpResult = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht
         Test-Path -Path $dumpResult.Path -PathType Leaf | Should -BeTrue
         $dumpResult.Length | Should -BeGreaterThan 0
     }
@@ -226,7 +226,7 @@ Describe "flush mysql" {
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlFlushLogs
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
-        $r = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht -LogResult
+        $r = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht
         $r | Out-Host
         $maxb = Get-MaxLocalDir
 
