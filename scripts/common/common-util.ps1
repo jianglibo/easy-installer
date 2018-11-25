@@ -510,15 +510,19 @@ function Resize-BackupFiles {
     $FilesOrFolders = Get-ChildItem -Path $p
 
     $toDeletes = Find-BackupFilesToDelete -FileOrFolders $FilesOrFolders -Pattern $Pattern
+
+    $toDeletes | Write-Verbose
+
     $toDeletes | ForEach-Object {
         $fn = $_.FullName
         if (Test-Path -Path $fn -PathType Container) {
-            Remove-Item -Recurse -Path $fn -Force
+            Remove-Item -Recurse -Path $fn -Force | Out-Null
         }
         else {
-            Remove-Item -Path $fn -Force
+            Remove-Item -Path $fn -Force | Out-Null
         }
     }
+    $toDeletes
 }
 
 function sanitizePath {

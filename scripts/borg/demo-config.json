@@ -24,15 +24,16 @@
   "BorgRepoPath": "/opt/repo",
   "LocalDir": "e:/backups/borg",
   "taskcmd": {
-    "ArchiveAndDownload": "%s -Action ArchiveAndDownload -ConfigFile %s -LogResult -CopyScripts -Json",
-    "PruneAndDownload": "%s -Action PruneAndDownload -ConfigFile %s -LogResult -CopyScripts -Json"
+    "archive": "%s -Action ArchiveAndDownload -ConfigFile %s -LogResult -Json",
+    "prune": "%s -Action PruneAndDownload -ConfigFile %s -LogResult -Json",
+    "backuplocal": "%s -Action BackupLocal -ConfigFile %s -LogResult -Json"
   },
-  "crons" : {
+  "crons": {
     "archive": "3 33 12，19 * * ? *",
-    "prune": "3 33 1 ? * SAT *"
+    "prune": "3 33 1 ? * SAT *",
+    "backuplocal": "3 * * ? * * *"
   },
   "BorgPrunePattern": "0 3 0 3 0 0 0",
-  "DumpPrunePattern": "0 3 0 3 0 0 0",
   "SwitchByOs": {
     "centos": {
       "Softwares": [

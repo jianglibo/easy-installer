@@ -9,9 +9,9 @@ param (
         "DownloadPackages",
         "SendPackages", 
         "Uninstall", 
-        "MysqlFlushLogs",
-        "MysqlDump",
-        "MysqlBackupDump",
+        "FlushLogs",
+        "Dump",
+        "BackupLocal",
         "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)]
@@ -101,7 +101,7 @@ else {
             $sshInvoker.ScpFrom($r, $f, $false)
             break
         }
-        "MysqlDump" {
+        "Dump" {
             $dumpraw = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlDump -Json:$Json
             $dumpraw | Write-Verbose
             $dumpr = $dumpraw | Receive-LinesFromServer | ConvertFrom-Json
@@ -113,7 +113,7 @@ else {
             $v | Out-JsonOrOrigin -Json:$Json
             break
         }
-        "MysqlFlushLogs" {
+        "FlushLogs" {
             $flushraw = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlFlushLogs
             $flushraw | Write-Verbose
             $flushr = $flushraw | Receive-LinesFromServer | ConvertFrom-Json
@@ -125,10 +125,20 @@ else {
             $v | Out-JsonOrOrigin -Json:$Json
             break
         }
-        "MysqlBackupDump" {
+        "BackupLocal" {
             $d = Get-MaxLocalDir
-            Backup-LocalDirectory -Path $d -keepOrigin
-            Resize-BackupFiles -BasePath $d -Pattern $configuration.DumpPrunePattern
+            $newd = Backup-LocalDirectory -Path $d -keepOrigin
+            $pruned = Resize-BackupFiles -BasePath $d -Pattern $configuration.DumpPrunePattern
+            $success = [bool]$d -and [bool]$newd
+            $result = @()
+            if ($pruned) {
+                $pruned | Select-Object -Property FullName | ForEach-Object {
+                    $result += $_
+                }
+            }
+            $v = @{result=$result;success=$success; timespan=(Get-Date) - $scriptstarttime}
+            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
+            $v | Out-JsonOrOrigin -Json:$Json
             break
         }
         Default {
