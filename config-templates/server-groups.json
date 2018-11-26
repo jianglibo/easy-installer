@@ -1,0 +1,9 @@
+{
+  "groups": [
+    {
+      "name": "demogroup",
+      "description": "",
+      "hostnames": ["192.168.33.110"]
+    }
+  ]
+}

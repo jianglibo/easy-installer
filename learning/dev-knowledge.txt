@@ -1,4 +1,0 @@
-scp:
-scp xx.txt root@xx.com:.,dot means user's home.
-
-ssh root@xx.com "ls -lh"
