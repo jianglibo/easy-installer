@@ -102,7 +102,7 @@ else {
             break
         }
         "Dump" {
-            $dumpraw = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlDump -Json:$Json
+            $dumpraw = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action $Action -Json:$Json
             $dumpraw | Write-Verbose
             $dumpr = $dumpraw | Receive-LinesFromServer | ConvertFrom-Json
             $copyr = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $dumpr
@@ -114,12 +114,12 @@ else {
             break
         }
         "FlushLogs" {
-            $flushraw = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action MysqlFlushLogs
+            $flushraw = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action $Action
             $flushraw | Write-Verbose
-            $flushr = $flushraw | Receive-LinesFromServer | ConvertFrom-Json
+            [array]$flushr = $flushraw | Receive-LinesFromServer | ConvertFrom-Json
             $copyr = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $flushr
 
-            $success = $flushr.Length -and $flushr.Path -and $copyr.Length
+            $success = $flushr[0].Length -and $flushr[0].Path -and $copyr.Length
             $v = @{result = $flushr; download = $copyr; success=$success; timespan=(Get-Date) - $scriptstarttime}
             $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
             $v | Out-JsonOrOrigin -Json:$Json

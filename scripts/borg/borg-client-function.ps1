@@ -8,5 +8,10 @@ function Copy-BorgRepoFiles {
         $configuration = $Global:configuration
     }
     $maxb = Get-MaxLocalDir -configuration $configuration
-    Copy-ChangedFiles -RemoteDirectory $configuration.BorgRepoPath -LocalDirectory $maxb -Json:$Json -OnlySum:$OnlySum
+    $dr = Copy-ChangedFiles -RemoteDirectory $configuration.BorgRepoPath -LocalDirectory $maxb -OnlySum:$OnlySum
+    if ($Json) {
+        $dr | ConvertTo-Json -Depth 10
+    } else {
+        $dr
+    }
 }

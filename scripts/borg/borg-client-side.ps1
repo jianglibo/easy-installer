@@ -112,6 +112,8 @@ else {
             $ar = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Archive | Receive-LinesFromServer | ConvertFrom-Json
             $dr = Copy-BorgRepoFiles
             $success = $ar.archive -and $dr.copied
+            [array]$files = $dr.total.files # change from stream to array.
+            $dr.total.files = $files
             $v = @{result = $ar; download = $dr; success=$success; timespan=(Get-Date) - $scriptstarttime}
             $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
             $v | Out-JsonOrOrigin -Json:$Json
@@ -120,6 +122,8 @@ else {
         "PruneAndDownload" {
             $pr = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Prune | Receive-LinesFromServer | ConvertFrom-Json
             $dr = Copy-BorgRepoFiles
+            [array]$files = $dr.total.files # change from stream to array.
+            $dr.total.files = $files
             $success = $pr.archives -and ($pr.archives -is [array]) -and $dr.copied
             $v = @{result = $pr; download = $dr; success=$success; timespan=(Get-Date) - $scriptstarttime}
             $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
@@ -161,26 +165,21 @@ else {
         "DiskFree" {
             $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
             $r | Write-Verbose
-            $jr = $r | Receive-LinesFromServer | ConvertFrom-Json
+            [array]$jr = $r | Receive-LinesFromServer | ConvertFrom-Json
             $success = ($jr -is [array]) -and $jr[0].Name
             $v = @{result=$jr;success=$success; timespan=(Get-Date) - $scriptstarttime}
-
-            if ($LogResult) {
-                $v | ConvertTo-Json | Out-File -FilePath (Get-LogFile -group $Action)
-            }
-            $v
+            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
+            $v | Out-JsonOrOrigin -Json:$Json
             break
         }
         "MemoryFree" {
             $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
             $r | Write-Verbose
-            $jr = $r | Receive-LinesFromServer | ConvertFrom-Json
+            [array]$jr = $r | Receive-LinesFromServer | ConvertFrom-Json
             $success = $jr.Total -and $jr.Free
             $v = @{result=$jr;success=$success; timespan=(Get-Date) - $scriptstarttime}
-            if ($LogResult) {
-                $v | ConvertTo-Json | Out-File -FilePath (Get-LogFile -group $Action)
-            }
-            $v
+            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
+            $v | Out-JsonOrOrigin -Json:$Json
             break
         }
         Default {

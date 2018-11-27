@@ -70,20 +70,21 @@ Describe "copy changed files." {
         $PSDefaultParameterValues['*:Verbose'] = $true
         Get-Configuration -ConfigFile ($here | Join-Path -ChildPath "demo-config.1.json")
         $Error.Clear()
-        $repo = Get-BorgMaxRepo
+        $repo = Get-MaxLocalDir
         if (Test-Path -Path $repo) {
             Remove-Item -Recurse -Force -Path $repo
         }
         $r = Copy-ChangedFiles -RemoteDirectory '/etc/NetworkManager' -LocalDirectory $repo
         $r | ConvertTo-Json -Depth 10 | Out-Host
         $r.total.Length | Should -Be $r.copied.Length
+        # $r.total.files.value | Should -BeNullOrEmpty
         # [array]$ers = $Error | Where-Object FullyQualifiedErrorId -Like 'SCP_FROM,*'
         # $ers.Count | Should -BeGreaterThan 0
         $r = Copy-ChangedFiles -RemoteDirectory '/etc/NetworkManager' -LocalDirectory $repo -OnlySum -Json
         $r | Out-Host
         $r.copied.Count | Should -Be 0
 
-        $repo = Get-BorgMaxRepo -Next
+        $repo = Get-MaxLocalDir -Next
         if (Test-Path -Path $repo) {
             Remove-Item -Recurse -Force -Path $repo
         }

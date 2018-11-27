@@ -233,8 +233,7 @@ function Copy-ChangedFiles {
         [Parameter(Mandatory = $true, Position = 0)][string]$RemoteDirectory,
         [Parameter(Mandatory = $true, Position = 1)][string]$LocalDirectory,
         [Parameter(Mandatory = $false)]$configuration,
-        [Parameter(Mandatory = $false)][switch]$OnlySum,
-        [Parameter(Mandatory = $false)][switch]$Json
+        [Parameter(Mandatory = $false)][switch]$OnlySum
     )
     if (-not (Test-Path -Path $LocalDirectory -PathType Container)) {
         New-Item -Path $LocalDirectory -ItemType Directory | Out-Null
@@ -336,13 +335,7 @@ function Copy-ChangedFiles {
     if (-not $failed.Length) {
         $failed.Length = 0
     }
-    $h = @{total = $total; copied = $copied; failed = $failed}
-    if ($Json) {
-        $h | ConvertTo-Json -Depth 10
-    }
-    else {
-        $h
-    }
+    @{total = $total; copied = $copied; failed = $failed}
 }
 function Copy-FilesFromServer {
     param (

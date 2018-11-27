@@ -8,8 +8,8 @@ param (
         "GetMycnf", 
         "EnableLogbin",
         "GetVariables", 
-        "MysqlDump", 
-        "MysqlFlushLogs", 
+        "Dump", 
+        "FlushLogs", 
         "MysqlExtraFile", 
         "Uninstall", 
         "Echo", 
@@ -96,11 +96,11 @@ try {
             $line | Write-Verbose
             Invoke-Expression -Command $line
         }
-        "MysqlDump" {
+        "Dump" {
             Invoke-MysqlDump -UsePlainPwd "$hints"
             break
         }
-        "MysqlFlushLogs" {
+        "FlushLogs" {
             Invoke-MysqlFlushLogs -UsePlainPwd "$hints"
             break
         }

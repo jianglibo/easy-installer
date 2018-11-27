@@ -1,9 +1,9 @@
 {
   "subscribes": [
     {
-      "id": "",
-      "username": "",
-      "groupname": "",
+      "id": "jlb",
+      "username": "demouser",
+      "groupname": "demogroup",
       "cron": "3 33 10 * * ? *",
       "template": "",
       "description": ""
