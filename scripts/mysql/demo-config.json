@@ -10,6 +10,7 @@
     "OPENSSL_CONF": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.cfg"
   },
   "HostName": "192.168.33.110",
+  "ServerName": "测试机",
   "coreNumber": 8,
   "mem": "8G",
   "UserName": "root",
@@ -28,6 +29,7 @@
   "LogDir": "e:/backups/logs",
   "taskcmd": {
     "flushlog": "%s -Action FlushLogs -ConfigFile %s -LogResult -Json",
+    "dump": "%s -Action Dump -ConfigFile %s -LogResult -Json",
     "backuplocal": "%s -Action BackupLocal -ConfigFile %s -LogResult -Json"
   },
   "crons": {

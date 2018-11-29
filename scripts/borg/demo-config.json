@@ -10,6 +10,7 @@
     "OPENSSL_CONF": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.cfg"
   },
   "HostName": "192.168.33.110",
+  "ServerName": "测试机",
   "coreNumber": 8,
   "mem": "8G",
   "UserName": "root",
@@ -28,10 +29,13 @@
   "taskcmd": {
     "archive": "%s -Action ArchiveAndDownload -ConfigFile %s -LogResult -Json",
     "prune": "%s -Action PruneAndDownload -ConfigFile %s -LogResult -Json",
-    "backuplocal": "%s -Action BackupLocal -ConfigFile %s -LogResult -Json"
+    "backuplocal": "%s -Action BackupLocal -ConfigFile %s -LogResult -Json",
+    "diskfree": "%s -Action DiskFree -ConfigFile %s -LogResult -Json",
+    "memoryfree": "%s -Action MemoryFree -ConfigFile %s -LogResult -Json"
   },
   "crons": {
     "archive": "3 33 12，19 * * ? *",
+    "diskfree": "3 33 22 * * ? *",
     "prune": "3 33 1 ? * SAT *",
     "backuplocal": "3 * * ? * * *"
   },
