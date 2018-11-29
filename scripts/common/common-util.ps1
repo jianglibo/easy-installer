@@ -152,7 +152,7 @@ function Get-Configuration {
         return
     }
 
-    $c = Get-Content -Path $vcf | ConvertFrom-Json
+    $c = Get-Content -Path $vcf -Encoding UTF8 | ConvertFrom-Json
     if (-not $ServerSide) {
 
         if (-not ($c.IdentityFile -or $c.ServerPassword)) {

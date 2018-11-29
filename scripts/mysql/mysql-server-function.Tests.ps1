@@ -222,9 +222,11 @@ Describe "dump mysql" {
 Describe "flush mysql" {
     $idxfolder = Join-Path $TestDrive "localdir"
     it "should flush" {
-        $PSDefaultParameterValues['*:Verbose'] = $false
+        $PSDefaultParameterValues['*:Verbose'] = $true
         $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlFlushLogs
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action FlushLogs
+
+        $r | Write-Verbose
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
         $r = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht
         $r | Out-Host
