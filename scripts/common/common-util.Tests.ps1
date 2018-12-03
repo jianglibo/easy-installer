@@ -8,6 +8,29 @@ $scriptDir = $here | Split-Path -Parent
 
 $tcfg = Get-Content -Path ($here | Join-Path -ChildPath "common-util.t.json") | ConvertFrom-Json
 
+
+Describe "copy-exclude" {
+        $sourcefolder = Join-Path $TestDrive "source"
+        $d = New-Item -ItemType Directory -Path $sourcefolder
+
+        $a = New-Item -ItemType Directory -Path ($sourcefolder | Join-Path -ChildPath 'a')
+        $b = New-Item -ItemType Directory -Path ($sourcefolder | Join-Path -ChildPath 'b')
+
+        $af = New-Item -Path ($a | Join-Path -ChildPath '1.txt');
+        $bf = New-Item -Path ($b | Join-Path -ChildPath '2.txt');
+
+        $dstfolder = Join-Path $TestDrive "dst"
+        it "should exclude " {
+            Copy-Item -Path $sourcefolder -Recurse -Destination $dstfolder -Exclude 'b'
+
+            $da = $dstfolder | Join-Path -ChildPath 'a' | Join-Path -ChildPath '1.txt'
+            $db = $dstfolder | Join-Path -ChildPath 'b' | Join-Path -ChildPath '2.txt'
+
+            Test-Path $da | Should -BeTrue
+            Test-Path $db | Should -BeFalse
+        }
+}
+
 Describe "common-util" {
     It "should split url" {
         Split-Url -Url "abc/" | Should -Be ''
