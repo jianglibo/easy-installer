@@ -7,3 +7,4 @@
 /myconfigs
 **/*.t.json
 app.1.json
+*.pyc

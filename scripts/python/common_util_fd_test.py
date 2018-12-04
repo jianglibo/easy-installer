@@ -1,0 +1,20 @@
+import unittest
+import common_util
+from global_static import PyGlobal
+import tempfile
+import os
+import shutil
+
+class Test_TestIncrementDecrement(unittest.TestCase):
+    def setUp(self):
+        self.dd = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.dd)
+
+    def test_increment(self):
+        self.assertTrue(os.path.exists())
+
+
+if __name__ == '__main__':
+    unittest.main()
