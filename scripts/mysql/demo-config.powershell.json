@@ -27,6 +27,12 @@
   "MysqlLogFile": "/var/log/mysqld.log",
   "LocalDir": "e:/backups/mysql",
   "LogDir": "e:/backups/logs",
+  "ServerSideFileList": [
+    "common-util.ps1",
+    "ssh-invoker.ps1",
+    "../mysql/mysql-server-side.ps1",
+    "../mysql/mysql-server-function.ps1"
+  ],
   "taskcmd": {
     "flushlog": "%s -Action FlushLogs -ConfigFile %s -LogResult -Json",
     "dump": "%s -Action Dump -ConfigFile %s -LogResult -Json",

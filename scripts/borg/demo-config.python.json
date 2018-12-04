@@ -1,0 +1,80 @@
+{
+  "AppName": "borg",
+  "entryPoint": "scripts/borg/borg-client-side.ps1",
+  "ClientScp": "scp",
+  "ClientSsh": "ssh",
+  "Powershell": "pwsh",
+  "openssl": "openssl",
+  "ClientOpenssl": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.exe",
+  "ClientEnv": {
+    "OPENSSL_CONF": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.cfg"
+  },
+  "HostName": "192.168.33.110",
+  "ServerName": "测试机",
+  "coreNumber": 8,
+  "mem": "8G",
+  "UserName": "root",
+  "IdentityFile": "D:/cygwin64/home/admin/.ssh/id_rsa",
+  "PublicKeyFile": "default|none",
+  "PrivateKeyFile": "/root/.ssh/id_rsa",
+  "ServerPassword": null,
+  "OsType": "centos",
+  "LogDir": "e:/backups/logs",
+  "BorgBin": "/usr/local/bin/borg",
+  "BorgCreate": "{0} create --stats --json {1}::{2} /etc /usr/local/bin",
+  "BorgPrune": "{0} prune -v --list --keep-daily=7 --keep-weekly=4 {1}",
+  "BorgList": "{0} list --json {1}",
+  "BorgRepoPath": "/opt/repo",
+  "LocalDir": "e:/backups/borg",
+  "ServerSideFileList": [
+    "../../common/common-util.ps1",
+    "../../common/ssh-invoker.ps1",
+    "../borg-server-side.ps1",
+    "../borg-server-function.ps1"
+  ],
+  "taskcmd": {
+    "archive": "%s -Action ArchiveAndDownload -ConfigFile %s -LogResult -Json",
+    "prune": "%s -Action PruneAndDownload -ConfigFile %s -LogResult -Json",
+    "backuplocal": "%s -Action BackupLocal -ConfigFile %s -LogResult -Json",
+    "diskfree": "%s -Action DiskFree -ConfigFile %s -LogResult -Json",
+    "memoryfree": "%s -Action MemoryFree -ConfigFile %s -LogResult -Json"
+  },
+  "crons": {
+    "archive": "3 33 12，19 * * ? *",
+    "diskfree": "3 33 22 * * ? *",
+    "prune": "3 33 1 ? * SAT *",
+    "backuplocal": "3 * * ? * * *"
+  },
+  "BorgPrunePattern": "0 3 0 3 0 0 0",
+  "SwitchByOs": {
+    "centos": {
+      "Softwares": [
+        {
+          "PackageUrl": "https://github.com/borgbackup/borg/releases/download/1.1.7/borg-linux64",
+          "LocalName": null,
+          "InstallDetect": {
+            "command": "yum list installed | Where-Object {$_ -match 'mysql57-community-release.noarch'}",
+            "expect": "aru",
+            "unexpect": ""
+          },
+          "Install": {
+            "command": "yum --nogpgcheck -y localinstall {filepath}"
+          }
+        }
+      ],
+      "ServerSide": {
+        "UninstallCommand": "yum remove -y (Invoke-Expression -Command '& yum list installed' | ForEach-Object {$_ -split '\\s+' | Select-Object -First 1 }| Where-Object {$PSItem -like '*mysql*server.x86_64'})",
+        "ScriptDir": "/tmp/easyinstaller-scripts/borg",
+        "PackageDir": "/tmp/easyinstaller-scripts/packages",
+        "EntryPoint": "borg-server-side.ps1",
+        "Software": {
+          "InstallDetect": {
+            "command": "systemctl status mysqld",
+            "expect": "",
+            "unexpect": "not-found"
+          }
+        }
+      }
+    }
+  }
+}

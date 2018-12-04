@@ -26,6 +26,12 @@
   "BorgList": "{0} list --json {1}",
   "BorgRepoPath": "/opt/repo",
   "LocalDir": "e:/backups/borg",
+  "ServerSideFileList": [
+    "../../common/common-util.ps1",
+    "../../common/ssh-invoker.ps1",
+    "../borg-server-side.ps1",
+    "../borg-server-function.ps1"
+  ],
   "taskcmd": {
     "archive": "%s -Action ArchiveAndDownload -ConfigFile %s -LogResult -Json",
     "prune": "%s -Action PruneAndDownload -ConfigFile %s -LogResult -Json",

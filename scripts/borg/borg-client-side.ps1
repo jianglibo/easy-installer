@@ -44,6 +44,13 @@ $ScriptDir = $here | Split-Path -Parent
 $CommonDir = $ScriptDir | Join-Path -ChildPath "common"
 
 $Global:ProjectRoot = $ScriptDir | Split-Path -Parent
+$Global:ScriptDir = $ScriptDir
+$Global:CommonDir = $CommonDir
+$Global:ProjectTmpDir = Join-Path -Path $Global:ProjectRoot -ChildPath ".working"
+
+if (-not (Test-Path $Global:ProjectTmpDir)) {
+    New-Item -Path $Global:ProjectTmpDir -ItemType Directory | Out-Null
+}
 
 . (Join-Path -Path $here -ChildPath 'borg-client-function.ps1')
 . (Join-Path -Path $CommonDir -ChildPath 'ssh-invoker.ps1')

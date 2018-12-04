@@ -1,10 +1,11 @@
 .vagrant
 **/*.secret.yml
 /demo-configs/**
-**/demo-config.1.json
+**/demo-config.*.1.json
 /downloads
 .vscode/launch.json
 /myconfigs
 **/*.t.json
 app.1.json
 *.pyc
+/.working

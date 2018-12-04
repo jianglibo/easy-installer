@@ -55,7 +55,7 @@ Get-ChildItem -Path (Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -Ch
 try {
     switch ($Action) {
         "Echo" {
-            $hints -join ' '
+            $hints -join ' ' | Send-LinesToClient
             break
         }
         "Install" {

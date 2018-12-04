@@ -198,7 +198,7 @@ Describe "dump mysql" {
     it "should dump" {
         $PSDefaultParameterValues['*:Verbose'] = $false
         $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlDump
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action Dump
         $r | Out-Host
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
         $ht | Out-Host
@@ -211,25 +211,26 @@ Describe "dump mysql" {
     it "should dump and verify hash" {
         $PSDefaultParameterValues['*:Verbose'] = $false
         $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlDump
+        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action Dump
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
         $dumpResult = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht
-        Test-Path -Path $dumpResult.Path -PathType Leaf | Should -BeTrue
-        $dumpResult.Length | Should -BeGreaterThan 0
+        $dumpResult | ConvertTo-Json | Write-Verbose
+        Test-Path -Path $dumpResult.files[0].LocalPath -PathType Leaf | Should -BeTrue
+        $dumpResult.files[0].Length | Should -BeGreaterThan 0
     }
 }
 
 Describe "flush mysql" {
     $idxfolder = Join-Path $TestDrive "localdir"
     it "should flush" {
-        $PSDefaultParameterValues['*:Verbose'] = $true
+        $PSDefaultParameterValues['*:Verbose'] = $false
         $ht = Copy-TestPsScriptToServer -HerePath $here
         $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action FlushLogs
 
         $r | Write-Verbose
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
         $r = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht
-        $r | Out-Host
+        $r | Write-Verbose
         $maxb = Get-MaxLocalDir
 
         $idxfile = Join-Path -Path $maxb -ChildPath 'logbin.index'

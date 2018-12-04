@@ -50,7 +50,8 @@ function Get-PublicKeyFile {
     $pkrsolved = Resolve-Path -Path $pk -ErrorAction SilentlyContinue
     if ($NotResolve) {
         $pk
-    } else {
+    }
+    else {
         if (-not $pkrsolved) {
             Write-ParameterWarning -wstring "${pk} does'nt exists. If you don't want to encrypt the config file leave either of PrivateKeyFile or PublicKeyFile empty."
         }
@@ -60,7 +61,7 @@ function Get-PublicKeyFile {
 
 function Write-ActionResultToLogFile {
     param (
-        [Parameter(ValueFromPipeline=$true)]
+        [Parameter(ValueFromPipeline = $true)]
         $Value,
         [string]$Action,
         [switch]$LogResult
@@ -72,15 +73,16 @@ function Write-ActionResultToLogFile {
 
 function Out-JsonOrOrigin {
     param (
-        [Parameter(ValueFromPipeline=$true)]
+        [Parameter(ValueFromPipeline = $true)]
         $Value,
         [switch]$Json,
-        [Parameter(Mandatory=$false)]
-        [int16]$Depth=10
+        [Parameter(Mandatory = $false)]
+        [int16]$Depth = 10
     )
     if ($Json) {
         $Value | ConvertTo-Json -Depth $Depth
-    } else {
+    }
+    else {
         $Value
     }
 }
@@ -134,12 +136,33 @@ function  Get-SshInvoker {
 
 function Copy-PsScriptToServer {
     param (
-        [Parameter(Mandatory = $true, Position = 0)][string]$ConfigFile,
-        [Parameter(Mandatory = $true, Position = 1)][string]$ServerSideFileListFile
+        [Parameter(Mandatory = $true, Position = 0)][string]$ConfigFile
     )
-
     try {
+        $c = $Global:configuration
+        $filesExcludeConfig = $c.ServerSideFileList |
+            ForEach-Object {Join-Path -Path $CommonScriptsDir -ChildPath $_} |
+            ForEach-Object {Resolve-Path -Path $_} |
+            Select-Object -ExpandProperty Path
         
+        $filehashfile = Join-Path -Path $Global:ProjectTmpDir -ChildPath 'copingfiles.json'
+
+        if (Test-Path $filehashfile) {
+            $mp = Get-Content -Path $filehashfile | ConvertFrom-Json
+            $unmatch = (Get-FileHash -Path $ConfigFile).Hash -ne $mp."config.json"
+            if (-not $unmatch) {
+                $unmatch = $filesExcludeConfig | Where-Object {
+                    $nowhash = (Get-FileHash -Path $_).Hash
+                    $oldhash = $mp.$_
+                    $nowhash -ne $oldhash
+                } | Select-Object -First 1
+            }
+            if (-not $unmatch) {
+                "no changed file" | Write-Verbose
+                return
+            }
+        }
+
         $td = New-TemporaryDirectory
         $tf = $td | Join-Path -ChildPath "config.json"
 
@@ -148,15 +171,11 @@ function Copy-PsScriptToServer {
         "Configuration File is: $ConfigFile" | Write-Verbose
         "temporary file is: $tf" | Write-Verbose
 
-        $c = $Global:configuration
-        $files = Get-Content -Path $ServerSideFileListFile |
-            ForEach-Object {Join-Path -Path $ServerSideFileListFile -ChildPath $_} |
-            ForEach-Object {Resolve-Path -Path $_} |
-            Select-Object -ExpandProperty Path
 
         $tf = Resolve-Path -Path $tf | Select-Object -ExpandProperty ProviderPath
 
-        $files += $tf
+        $files = $filesExcludeConfig + $tf
+
 
         $filesToCopy = $files -join ' '
         "files to copy: $filesToCopy" | Write-Verbose
@@ -176,9 +195,17 @@ function Copy-PsScriptToServer {
         $sshInvoker.Invoke($rmcmd)
         $r = $sshInvoker.ScpTo($filesToCopy, $dst, $true)
         "files copied: $r" | Write-Verbose
+        $fhs = @{}
+        $filesExcludeConfig | ForEach-Object {
+                $fhs[$_] = (Get-FileHash -Path $_).Hash
+        }
+        $fhs."config.json" = (Get-FileHash -Path $ConfigFile).Hash
+        $fhs | ConvertTo-Json | Out-File $filehashfile
     }
     finally {
-        Remove-Item -Path $td -Recurse -Force
+        if ($td) {
+            Remove-Item -Path $td -Recurse -Force
+        }
     }
 
     # unnecessary to encrypt whole configuration file. Because We had encrypt the password in it.
@@ -222,7 +249,8 @@ function Invoke-ServerRunningPs1 {
 
     if ($NotCleanUp) {
         $ncp = "-NotCleanUp"
-    } else {
+    }
+    else {
         $ncp = ""
     }
     
@@ -244,10 +272,14 @@ function Get-MaxLocalDir {
     if (-not (Test-Path -Path $configuration.LocalDir -PathType Container)) {
         New-Item -Path $configuration.LocalDir -ItemType 'Directory' | Out-Null
     }
-    $bd = $configuration.LocalDir | Join-Path -ChildPath $configuration.HostName | Join-Path -ChildPath "$($configuration.AppName)s" | Join-Path -ChildPath $configuration.AppName
+    $bd = $configuration.LocalDir | 
+        Join-Path -ChildPath $configuration.HostName | 
+        Join-Path -ChildPath "$($configuration.AppName)s" |
+        Join-Path -ChildPath $configuration.AppName
     if ($Next) {
         $maxb = Get-NextBackup -Path $bd
-    } else {
+    }
+    else {
         $maxb = Get-MaxBackup -Path $bd
     }
 
@@ -279,7 +311,10 @@ function Get-LogFile {
     if (-not (Test-Path -Path $configuration.LogDir -PathType Container)) {
         New-Item -Path $configuration.LogDir -ItemType 'Directory' | Out-Null
     }
-    $bd = $configuration.LogDir | Join-Path -ChildPath $configuration.HostName | Join-Path -ChildPath $configuration.AppName | Join-Path -ChildPath $group
+    $bd = $configuration.LogDir |
+        Join-Path -ChildPath $configuration.HostName | 
+        Join-Path -ChildPath $configuration.AppName |
+        Join-Path -ChildPath $group
 
     if (-not (Test-Path -Path $bd -PathType Container)) {
         New-Item -Path $bd -ItemType 'Directory' | Out-Null

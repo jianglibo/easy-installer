@@ -42,7 +42,7 @@ Describe "lines" {
     }
 }
 
-Describe "SshInvoker" {
+Describe "copy scripts to server." {
 
     it "should parse config file." {
         $js = "[{a: 1}, {b: 2}]"
@@ -56,13 +56,13 @@ Describe "SshInvoker" {
     }
 
     it "should copy script to server." {
-        $PSDefaultParameterValues['*:Verbose'] = $false
+        $PSDefaultParameterValues['*:Verbose'] = $true
         $mysql = Join-Path -Path $scriptDir -ChildPath "mysql"
         $ht = Copy-TestPsScriptToServer -HerePath $mysql
         # $ht | Out-Host
         [SshInvoker]$sshInvoker = Get-SshInvoker -configuration $ht.configuration
         $sshInvoker.isFileExists($ht.configuration.ServerSide.ScriptDir) | Should -BeTrue
-        $result = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action Echo a b c
+        $result = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action Echo a b c | Receive-LinesFromServer
         $result | Should -Be 'a b c'
     }
 }
