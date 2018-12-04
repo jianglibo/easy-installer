@@ -2,12 +2,14 @@
 # vars(a)
 # inspect.getmembers(a, inspect.isfunction) 
 # https://www.tutorialspoint.com/python/python_lists.htm
+# https://www.python-course.eu/lambda.php
 
 import os
 import urllib2
 import io
 import json
 from global_static import PyGlobal
+import hashlib
 
 def split_url(url, parent):
     parts = url.split('://', 1)
@@ -67,3 +69,12 @@ def get_configration(config_file, encoding="utf-8", server_side=False):
         return j
     else:
         raise ValueError("config file %s doesn't exists." % config_file)
+
+def get_filehash(file_to_hash, mode="SHA256"):
+    h = hashlib.new(mode)
+    with open(file_to_hash, 'rb') as file:
+            block = file.read(512)
+            while block:
+                h.update(block)
+                block = file.read(512)
+    return h.hexdigest()

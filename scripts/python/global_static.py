@@ -1,6 +1,5 @@
 import os
 
-
 class PyGlobal:
     configuration = None
     gc_file = os.path.realpath(__file__)

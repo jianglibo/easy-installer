@@ -13,7 +13,7 @@ class Test_TestIncrementDecrement(unittest.TestCase):
         shutil.rmtree(self.dd)
 
     def test_increment(self):
-        self.assertTrue(os.path.exists())
+        self.assertTrue(os.path.exists('a'))
 
 
 if __name__ == '__main__':
