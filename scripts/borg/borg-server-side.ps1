@@ -7,6 +7,7 @@ param (
         "Prune",
         "DiskFree",
         "MemoryFree",
+        "FileHashes",
         "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)][switch]$NotCleanUp,
@@ -36,7 +37,6 @@ $ConfigFile | Write-Verbose
 
 $configuration = Get-Configuration -ConfigFile $ConfigFile -ServerSide
 $osConfig = $configuration.OsConfig
-
 
 Get-ChildItem -Path (Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath "*.ps1") |
     Select-Object -ExpandProperty FullName |
@@ -76,6 +76,10 @@ try {
         }
         "MemoryFree" {
             Get-MemoryFree
+            break
+        }
+        "FileHashes" {
+            Get-FileHashsInDirectory -Directory "$hints"
             break
         }
         Default {

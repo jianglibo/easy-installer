@@ -2,6 +2,12 @@
 
 import sys
 import getopt
+import os
+from global_static import PyGlobal
+import common_util
+
+PyGlobal.config_file = os.path.join(os.path.split(__file__)[0], 'config.json')
+common_util.get_configration(PyGlobal.config_file, "utf-8", True)
 
 
 def usage():
@@ -20,8 +26,8 @@ def main(action, args):
         pass
     elif action == 'DownloadPublicKey':
         pass
-    print action
-    print type(args)
+    elif action == 'Echo':
+        common_util.send_lines_to_client(' '.join(args))
     
 
 if __name__ == "__main__":

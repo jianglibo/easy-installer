@@ -1,7 +1,4 @@
-﻿$CommonScriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectRoot = $CommonScriptsDir | Split-Path -Parent | Split-Path  -Parent
-
-class OsDetail {
+﻿class OsDetail {
     [string]$Name
     [string]$Version
     [string]$Platform
@@ -148,8 +145,7 @@ function Get-Configuration {
     $vcf = Resolve-Path -Path $ConfigFile -ErrorAction SilentlyContinue
     if (-not $vcf) {
         $m = "ConfigFile ${ConfigFile} doesn't exists."
-        Write-ParameterWarning -wstring $m
-        return
+        Write-ParameterWarning -wstring $m -ThrowIt
     }
 
     $c = Get-Content -Path $vcf -Encoding UTF8 | ConvertFrom-Json
@@ -228,6 +224,17 @@ function Join-UniversalPath {
     "${pp}${sp}${cp}"
 }
 
+function Get-FileHashsInDirectory {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)][string]$Directory
+    )
+    Get-ChildItem -Recurse $Directory |
+        Where-Object {$_ -is [System.IO.FileInfo]} |
+        ForEach-Object {$_ | Get-FileHash | Add-Member @{Length=$_.Length} -PassThru} | 
+        ConvertTo-Json |
+        Send-LinesToClient
+}
+
 function Copy-ChangedFiles {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$RemoteDirectory,
@@ -242,16 +249,16 @@ function Copy-ChangedFiles {
         $configuration = $Global:configuration
     }
 
-    if (-not $configuration.Powershell) {
-        throw 'Missing Powershell property in configuration file.'
+    if (-not $configuration.ServerExec) {
+        throw 'Missing ServerExec property in configuration file.'
     }
     $sshInvoker = [SshInvoker]::new($configuration.HostName, $configuration.IdentityFile)
-    # Get-Item '.\.classpath'| ForEach-Object {$_ | Get-FileHash | Add-Member @{Length=$_.Length} -PassThru} 
-    $str = "Get-ChildItem -Recurse $RemoteDirectory | Where-Object {`$_ -is [System.IO.FileInfo]} | ForEach-Object {`$_ | Get-FileHash | Add-Member @{Length=`$_.Length} -PassThru} | ConvertTo-Json"
-    $bytes = [System.Text.Encoding]::Unicode.GetBytes($str)
-    $encodedCommand = [Convert]::ToBase64String($bytes)
-    $cmd = "$($configuration.Powershell) -e '${encodedCommand}'"
-    $filelist = $sshInvoker.invoke($cmd) | ConvertFrom-Json
+    # $str = "Get-ChildItem -Recurse $RemoteDirectory | Where-Object {`$_ -is [System.IO.FileInfo]} | ForEach-Object {`$_ | Get-FileHash | Add-Member @{Length=`$_.Length} -PassThru} | ConvertTo-Json"
+    # $bytes = [System.Text.Encoding]::Unicode.GetBytes($str)
+    # $encodedCommand = [Convert]::ToBase64String($bytes)
+    # $cmd = "$($configuration.ServerExec) -e '${encodedCommand}'"
+    # [array]$filelist = $sshInvoker.invoke($cmd) | ConvertFrom-Json
+    [array]$filelist = Invoke-ServerRunningPs1 -Action FileHashes $RemoteDirectory | Receive-LinesFromServer | ConvertFrom-Json
 
     $mo = $filelist | Select-Object -Property Algorithm, Path, Length, LocalPath | Measure-Object -Property Length -Sum
 
@@ -337,6 +344,8 @@ function Copy-ChangedFiles {
     }
     @{total = $total; copied = $copied; failed = $failed}
 }
+
+
 function Copy-FilesFromServer {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string[]]$RemotePathes,
@@ -1580,6 +1589,50 @@ function UnProtect-PasswordByOpenSSLPublicKey {
         Remove-Item -Force -Path $f, $outf 
     }
 }
+function Invoke-ServerRunningPs1 {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string]$Action,
+        [parameter(Mandatory = $false)][switch]$notCombineError,
+        [parameter(Mandatory = $false)][switch]$NotCleanUp,
+        [switch]$Json,
+        [parameter(Mandatory = $false,
+            ValueFromRemainingArguments = $true)]
+        [String[]]
+        $hints
+    )
+    $c = $Global:configuration
+    $sshInvoker = Get-SshInvoker
+
+    $osConfig = $c.OsConfig
+
+    # it's a fixed name on server. so it's no necessary to tell the server script where it is.
+    # $toServerConfigFile = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
+
+    $entryPoint = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath $osConfig.ServerSide.EntryPoint
+
+    if ($NotCleanUp) {
+        $ncp = "-NotCleanUp"
+    }
+    else {
+        $ncp = ""
+    }
+
+    switch ($c.ServerLang) {
+        'powershell' { 
+            $rcmd = "{0} -f {1} -action {2} {3} {4} {5}" -f $c.ServerExec, $entryPoint, $action, $ncp, (Get-Verbose), ($hints -join ' ')
+         }
+         'python' {
+            $rcmd = "{0} {1} --action={2} {3}" -f $c.ServerExec, $entryPoint, $action, ($hints -join ' ')
+         }
+        Default {
+            throw "unknown ServerLang property in configration file: $($c.ServerLang)"
+        }
+    }
+    $rcmd | Out-String | Write-Verbose
+    $sshInvoker.Invoke($rcmd, (-not $notCombineError))
+}
+
 
 trap {
     $Error[0].TargetObject | Send-LinesToClient

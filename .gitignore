@@ -3,7 +3,7 @@
 /demo-configs/**
 **/demo-config.*.1.json
 /downloads
-.vscode/launch.json
+.vscode
 /myconfigs
 **/*.t.json
 app.1.json

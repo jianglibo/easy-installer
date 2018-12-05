@@ -2,6 +2,8 @@ $myself = $MyInvocation.MyCommand.Path
 $here = $myself | Split-Path -Parent
 $ScriptDir = $here | Split-Path -Parent
 
+. "${ScriptDir}\global-variables.ps1"
+
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 . "$here\$sut"
 
@@ -12,6 +14,18 @@ $fixture = "${here}\fixtures\mysql-community.repo"
 ".\ssh-invoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1", "common-for-t.ps1" | ForEach-Object {
     . "${ScriptDir}\common\$_"
 }
+
+
+function Get-ConfigurationForT {
+    param(
+        [switch]$Verbose
+    )
+    $mysqlDir = $Global:ScriptDir | Join-Path -ChildPath "mysql" 
+    $PSDefaultParameterValues['*:Verbose'] = $Verbose
+    $ht = Copy-TestPsScriptToServer -HerePath $mysqlDir
+    Get-Configuration -ConfigFile ( $mysqlDir | Join-Path -ChildPath "demo-config.powershell.1.json")
+}
+
 
 function Assert-Enabled {
     param (
@@ -196,12 +210,11 @@ Describe "mysql extra file" {
 Describe "dump mysql" {
     $df = Join-Path $TestDrive "dump.sql"
     it "should dump" {
-        $PSDefaultParameterValues['*:Verbose'] = $false
-        $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action Dump
-        $r | Out-Host
+        Get-ConfigurationForT
+        $r = Invoke-ServerRunningPs1 -action Dump
+        $r | Write-Verbose
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
-        $ht | Out-Host
+        $ht | Write-Verbose
         $ht.Path | Should -Be $Global:configuration.DumpFilename
         [SshInvoker]$sshinvoker = Get-SshInvoker
         $sshinvoker.ScpFrom($ht.Path, $df, $false)
@@ -209,9 +222,8 @@ Describe "dump mysql" {
     }
 
     it "should dump and verify hash" {
-        $PSDefaultParameterValues['*:Verbose'] = $false
-        $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action Dump
+        Get-ConfigurationForT
+        $r = Invoke-ServerRunningPs1 -action Dump
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
         $dumpResult = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht
         $dumpResult | ConvertTo-Json | Write-Verbose
@@ -223,9 +235,8 @@ Describe "dump mysql" {
 Describe "flush mysql" {
     $idxfolder = Join-Path $TestDrive "localdir"
     it "should flush" {
-        $PSDefaultParameterValues['*:Verbose'] = $false
-        $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action FlushLogs
+        Get-ConfigurationForT
+        $r = Invoke-ServerRunningPs1 -action FlushLogs
 
         $r | Write-Verbose
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json

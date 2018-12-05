@@ -1,7 +1,4 @@
-$CommonScriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectRoot = $CommonScriptsDir | Split-Path -Parent | Split-Path  -Parent
-. "${CommonScriptsDir}\common-util.ps1"
-
+. "${Global:CommonDir}\common-util.ps1"
 function Get-AppName {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$MyDir
@@ -39,7 +36,7 @@ function Get-PublicKeyFile {
     $c = $Global:configuration
 
     if ($c.PublicKeyFile -like "default*") {
-        $pk = $CommonScriptsDir | Split-Path -Parent | Split-Path -Parent |
+        $pk = $Global:CommonDir | Split-Path -Parent | Split-Path -Parent |
             Join-Path -ChildPath "myconfigs" |
             Join-Path -ChildPath $c.HostName |
             Join-Path -ChildPath "public_key.pem"
@@ -141,7 +138,7 @@ function Copy-PsScriptToServer {
     try {
         $c = $Global:configuration
         $filesExcludeConfig = $c.ServerSideFileList |
-            ForEach-Object {Join-Path -Path $CommonScriptsDir -ChildPath $_} |
+            ForEach-Object {Join-Path -Path $Global:ScriptDir -ChildPath $_} |
             ForEach-Object {Resolve-Path -Path $_} |
             Select-Object -ExpandProperty Path
         
@@ -189,10 +186,10 @@ function Copy-PsScriptToServer {
             return
         }
 
-        $rmcmd = "pwsh -Command '& {remove-item -Path " + $dst + "/* -recurse -force}'"
-        $rmcmd | Write-Verbose
+        # $rmcmd = "pwsh -Command '& {remove-item -Path " + $dst + "/* -recurse -force}'"
+        # $rmcmd | Write-Verbose
+        # $sshInvoker.Invoke($rmcmd)
 
-        $sshInvoker.Invoke($rmcmd)
         $r = $sshInvoker.ScpTo($filesToCopy, $dst, $true)
         "files copied: $r" | Write-Verbose
         $fhs = @{}
@@ -209,7 +206,6 @@ function Copy-PsScriptToServer {
     }
 
     # unnecessary to encrypt whole configuration file. Because We had encrypt the password in it.
-
     # if ($c.PrivateKeyFile -and $c.PublicKeyFile) {
     #     $ConfigFile = Protect-ByOpenSSL -PublicKeyFile (Get-PublicKeyFile) -PlainFile $ConfigFile
     # }
@@ -224,40 +220,6 @@ function Copy-PsScriptToServer {
 <#
 it's better to fix the configfile name on server side.
 #>
-function Invoke-ServerRunningPs1 {
-    param (
-        [Parameter(Mandatory = $true, Position = 0)][string]$ConfigFile,
-        [Parameter(Mandatory = $true, Position = 1)]
-        [string]$Action,
-        [parameter(Mandatory = $false)][switch]$notCombineError,
-        [parameter(Mandatory = $false)][switch]$NotCleanUp,
-        [switch]$Json,
-        [parameter(Mandatory = $false,
-            ValueFromRemainingArguments = $true)]
-        [String[]]
-        $hints
-    )
-    $c = $Global:configuration
-    $sshInvoker = Get-SshInvoker
-
-    $osConfig = $c.OsConfig
-
-    # it's a fixed name on server. so it's no necessary to tell the server script where it is.
-    # $toServerConfigFile = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath 'config.json'
-
-    $entryPoint = Join-UniversalPath -Path $osConfig.ServerSide.ScriptDir -ChildPath $osConfig.ServerSide.EntryPoint
-
-    if ($NotCleanUp) {
-        $ncp = "-NotCleanUp"
-    }
-    else {
-        $ncp = ""
-    }
-    
-    $rcmd = "pwsh -f {0} -action {1} {2} {3} {4}" -f $entryPoint, $action, $ncp, (Get-Verbose), ($hints -join ' ')
-    $rcmd | Out-String | Write-Verbose
-    $sshInvoker.Invoke($rcmd, (-not $notCombineError))
-}
 
 
 function Get-MaxLocalDir {

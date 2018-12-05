@@ -3,7 +3,8 @@
   "entryPoint": "scripts/borg/borg-client-side.ps1",
   "ClientScp": "scp",
   "ClientSsh": "ssh",
-  "Powershell": "pwsh",
+  "ServerExec": "python",
+  "ServerLang": "python",
   "openssl": "openssl",
   "ClientOpenssl": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.exe",
   "ClientEnv": {
@@ -27,10 +28,9 @@
   "BorgRepoPath": "/opt/repo",
   "LocalDir": "e:/backups/borg",
   "ServerSideFileList": [
-    "../../common/common-util.ps1",
-    "../../common/ssh-invoker.ps1",
-    "../borg-server-side.ps1",
-    "../borg-server-function.ps1"
+    "python/common_util.py",
+    "python/global_static.py",
+    "borg/borg_server_side.py"
   ],
   "taskcmd": {
     "archive": "%s -Action ArchiveAndDownload -ConfigFile %s -LogResult -Json",
@@ -66,7 +66,7 @@
         "UninstallCommand": "yum remove -y (Invoke-Expression -Command '& yum list installed' | ForEach-Object {$_ -split '\\s+' | Select-Object -First 1 }| Where-Object {$PSItem -like '*mysql*server.x86_64'})",
         "ScriptDir": "/tmp/easyinstaller-scripts/borg",
         "PackageDir": "/tmp/easyinstaller-scripts/packages",
-        "EntryPoint": "borg-server-side.ps1",
+        "EntryPoint": "borg_server_side.py",
         "Software": {
           "InstallDetect": {
             "command": "systemctl status mysqld",

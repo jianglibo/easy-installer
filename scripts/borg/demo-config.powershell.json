@@ -3,7 +3,8 @@
   "entryPoint": "scripts/borg/borg-client-side.ps1",
   "ClientScp": "scp",
   "ClientSsh": "ssh",
-  "Powershell": "pwsh",
+  "ServerExec": "pwsh",
+  "ServerLang": "powershell",
   "openssl": "openssl",
   "ClientOpenssl": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.exe",
   "ClientEnv": {
@@ -27,10 +28,10 @@
   "BorgRepoPath": "/opt/repo",
   "LocalDir": "e:/backups/borg",
   "ServerSideFileList": [
-    "../../common/common-util.ps1",
-    "../../common/ssh-invoker.ps1",
-    "../borg-server-side.ps1",
-    "../borg-server-function.ps1"
+    "common/common-util.ps1",
+    "common/ssh-invoker.ps1",
+    "borg/borg-server-side.ps1",
+    "borg/borg-server-function.ps1"
   ],
   "taskcmd": {
     "archive": "%s -Action ArchiveAndDownload -ConfigFile %s -LogResult -Json",

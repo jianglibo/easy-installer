@@ -1,4 +1,0 @@
-..\..\common\common-util.ps1
-..\..\common\ssh-invoker.ps1
-..\borg-server-side.ps1
-..\borg-server-function.ps1

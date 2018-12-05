@@ -5,7 +5,8 @@ $ScriptDir = $here | Split-Path -Parent
 . "${ScriptDir}\global-variables.ps1"
 
 $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
-. "$here\$sut"
+# . "$here\$sut"
+
 . "$here\borg-client-function.ps1"
 
 ".\ssh-invoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1", "common-for-t.ps1" | ForEach-Object {
@@ -14,12 +15,21 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 function Get-ConfigurationForT {
     param(
-        [switch]$Verbose
+        [switch]$vb
     )
     $borgDir = $Global:ScriptDir | Join-Path -ChildPath "borg" 
-    $PSDefaultParameterValues['*:Verbose'] = $Verbose
-    $ht = Copy-TestPsScriptToServer -HerePath $borgDir
-    Get-Configuration -ConfigFile ( $borgDir | Join-Path -ChildPath "demo-config.powershell.1.json")
+    $PSDefaultParameterValues['*:Verbose'] = $vb
+    Copy-TestPsScriptToServer -HerePath $borgDir -Lang python
+    Get-Configuration -ConfigFile ( $borgDir | Join-Path -ChildPath "demo-config.python.1.json")
+}
+
+Describe "echo" {
+    it "should echo." {
+        Get-ConfigurationForT -vb
+        $r = Invoke-ServerRunningPs1 -action Echo you are always on my mind.
+        $r | Write-Verbose
+        $r | Receive-LinesFromServer | Should -Be 'you are always on my mind.'
+    }
 }
 
 Describe "install" {
@@ -49,10 +59,10 @@ Describe "init borg repo successly." {
 
 Describe "new borg archive successly." {
     it "should create new borg archive." {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -vb
         $r = Invoke-ServerRunningPs1 -Action Archive
         $r | Write-Verbose
-        $r = $r | Receive-LinesFromServer | ConvertFrom-Json
+        $r = $r | ConvertFrom-Json
         $r.archive.stats.compressed_size | should -BeTrue
     }
 }

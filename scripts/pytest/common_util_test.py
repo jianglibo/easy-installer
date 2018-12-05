@@ -35,7 +35,7 @@ class Test_TestIncrementDecrement(unittest.TestCase):
     
     def test_file_hash(self):
         f_path = os.path.join(PyGlobal.project_dir, 'ttrap.ps1')
-        ha = common_util.get_filehash(f_path, "SHA256")
+        ha = common_util.get_one_filehash(f_path, "SHA256")
         self.assertEqual(ha.upper(), '87AF4543F9A0C5873CDDB280BBA6C6A0E3080888FEDB31D3468BDACCFA9F284B')
 
 

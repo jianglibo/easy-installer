@@ -70,7 +70,7 @@ def get_configration(config_file, encoding="utf-8", server_side=False):
     else:
         raise ValueError("config file %s doesn't exists." % config_file)
 
-def get_filehash(file_to_hash, mode="SHA256"):
+def get_one_filehash(file_to_hash, mode="SHA256"):
     h = hashlib.new(mode)
     with open(file_to_hash, 'rb') as file:
             block = file.read(512)
@@ -78,3 +78,8 @@ def get_filehash(file_to_hash, mode="SHA256"):
                 h.update(block)
                 block = file.read(512)
     return h.hexdigest()
+
+def send_lines_to_client(content):
+    print PyGlobal.line_start
+    print content
+    print PyGlobal.line_end
