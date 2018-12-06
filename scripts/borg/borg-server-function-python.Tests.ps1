@@ -34,17 +34,16 @@ Describe "echo" {
 
 Describe "install" {
     it "should install borg." {
-        $ht = Copy-TestPsScriptToServer -HerePath $here
-        $PSDefaultParameterValues['*:Verbose'] = $true
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action Install
+        Get-ConfigurationForT -vb
+        $r = Invoke-ServerRunningPs1 -action Install
         $r | Receive-LinesFromServer | Should -Be 'Install Success.'
     }
 }
 
 Describe "uninstall borg successly." {
     it "should uninstall." {
-        $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -Action uninstall -notCombineError
+        Get-ConfigurationForT -vb
+        $r = Invoke-ServerRunningPs1 -Action uninstall -notCombineError
         $r | Receive-LinesFromServer | should -Be 'Uninstall successly.'
     }
 }
@@ -88,9 +87,16 @@ Describe "borg prune." {
 Describe "download borg repo." {
     it "should download borg repo." {
         Get-ConfigurationForT -vb
+        $d = Get-MaxLocalDir
+        Remove-Item -Path $d -Recurse -Force
         $r = Copy-BorgRepoFiles
-        $r | Write-Verbose
+        $r | ConvertTo-Json -Depth 10 | Write-Verbose
         $r.copied.Length | Should -GT 0
+
+        $r = Copy-BorgRepoFiles
+        $r | ConvertTo-Json -Depth 10 | Write-Verbose
+        $r.copied.Length | Should -Be 0
+
     }
 }
 

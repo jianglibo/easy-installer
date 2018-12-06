@@ -721,7 +721,7 @@ General notes
 #>
 function Get-MaxBackup {
     param (
-        [Parameter(Mandatory = $false, Position = 0)][string]$Path
+        [Parameter(Mandatory = $true, Position = 0)][string]$Path
     )
     $mn = Get-MaxBackupNumber -Path $Path
     if ($mn -eq 0) {

@@ -23,8 +23,8 @@
   "LogDir": "e:/backups/logs",
   "BorgBin": "/usr/local/bin/borg",
   "BorgCreate": "%s create --stats --json %s::%s /etc /usr/local/bin",
-  "BorgPrune": "{0} prune -v --list --keep-daily=7 --keep-weekly=4 {1}",
-  "BorgList": "{0} list --json {1}",
+  "BorgPrune": "%s prune -v --list --keep-daily=7 --keep-weekly=4 %s",
+  "BorgList": "%s list --json %s",
   "BorgRepoPath": "/opt/repo",
   "LocalDir": "e:/backups/borg",
   "ServerSideFileList": [
