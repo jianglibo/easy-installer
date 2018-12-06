@@ -8,8 +8,9 @@ import os
 import urllib2
 import io
 import json
-from global_static import PyGlobal
+from global_static import PyGlobal, BorgConfiguration
 import hashlib
+from functools import partial
 
 def split_url(url, parent):
     parts = url.split('://', 1)
@@ -65,19 +66,33 @@ def get_configration(config_file, encoding="utf-8", server_side=False):
         else:
             dl = os.path.join(PyGlobal.project_dir, 'downloads', j['AppName'])
         get_software_packages(dl, softwares)
-        PyGlobal.configuration = j
+        PyGlobal.configuration = BorgConfiguration(j)
         return j
     else:
         raise ValueError("config file %s doesn't exists." % config_file)
 
 def get_one_filehash(file_to_hash, mode="SHA256"):
     h = hashlib.new(mode)
+    o = {}
     with open(file_to_hash, 'rb') as file:
             block = file.read(512)
             while block:
                 h.update(block)
                 block = file.read(512)
-    return h.hexdigest()
+    o['Algorithm'] = mode
+    o['Hash'] = str.upper(h.hexdigest())
+    o['Path'] = os.path.abspath(file_to_hash)
+    o['Length'] = os.path.getsize(file_to_hash)
+    return o
+
+def get_filehashes(dir_to_hash, mode="SHA256"):
+    l = []
+    for dirName, subdirList, fileList in os.walk(dir_to_hash, topdown=False):
+        pf = partial(os.path.join, dirName)
+        pf1 = partial(get_one_filehash, mode=mode)
+        result =  map(pf, fileList)
+        l.extend(map(pf1, result))
+    return l
 
 def send_lines_to_client(content):
     print PyGlobal.line_start

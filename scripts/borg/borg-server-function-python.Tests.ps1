@@ -51,9 +51,17 @@ Describe "uninstall borg successly." {
 
 Describe "init borg repo successly." {
     it "should init repo." {
-        $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -Action InitializeRepo -notCombineError
+        Get-ConfigurationForT -vb
+        $cmd = "rm -rf $($Global:configuration.BorgRepoPath)"
+        $Global:sshinvoker.invoke($cmd)
+        $r = Invoke-ServerRunningPs1 -Action InitializeRepo
+        $r | Write-Verbose
         $r | Receive-LinesFromServer | should -Be 'SUCCESS'
+
+        $r = Invoke-ServerRunningPs1 -Action InitializeRepo
+        $r | Write-Verbose
+        $rs = [string]$r
+        $rs -match 'returned non-zero' | Should -BeTrue
     }
 }
 
@@ -62,14 +70,14 @@ Describe "new borg archive successly." {
         Get-ConfigurationForT -vb
         $r = Invoke-ServerRunningPs1 -Action Archive
         $r | Write-Verbose
-        $r = $r | ConvertFrom-Json
+        $r = $r | Receive-LinesFromServer | ConvertFrom-Json
         $r.archive.stats.compressed_size | should -BeTrue
     }
 }
 
-Describe "new borg prune successly." {
+Describe "borg prune." {
     it "should prune borg archive." {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -vb
         $r = Invoke-ServerRunningPs1 -Action Prune
         $r | Write-Verbose
         [array]$r = $r | Receive-LinesFromServer
@@ -79,18 +87,19 @@ Describe "new borg prune successly." {
 
 Describe "download borg repo." {
     it "should download borg repo." {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -vb
         $r = Copy-BorgRepoFiles
-        $r | Out-Host
-        $r.total | Out-Host
+        $r | Write-Verbose
         $r.copied.Length | Should -GT 0
     }
 }
 
 Describe "file hashes in a directory." {
     it "should get file hashes." {
-        Get-ConfigurationForT
-        $r = Invoke-ServerRunningPs1 -Action FileHashes '/etc/NetworkManager' | Receive-LinesFromServer | ConvertFrom-Json
+        Get-ConfigurationForT -vb
+        $r = Invoke-ServerRunningPs1 -Action FileHashes '/etc/NetworkManager'
+        $r | Write-Verbose
+        $r = $r | Receive-LinesFromServer | ConvertFrom-Json
         $r.Count | Should -BeGreaterThan 0
         $r[0].Algorithm | Should -BeTrue
         $r | Write-Verbose

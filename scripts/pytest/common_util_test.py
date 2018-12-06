@@ -1,12 +1,17 @@
 import unittest
 import common_util
-from global_static import PyGlobal
+from global_static import PyGlobal, BorgConfiguration
 import shared_fort
 import os
 import hashlib
+import subprocess
+from functools import partial
+
+def two_add(a, b, c=6):
+    return a + int(b) + c
 
 class Test_TestIncrementDecrement(unittest.TestCase):
-    def test_increment(self):
+    def test_split_url(self):
         self.assertEqual(common_util.split_url("http://abc/cc", True), 'http://abc/')
         self.assertEqual(common_util.split_url("http://abc/cc", False), 'cc')
 
@@ -36,8 +41,32 @@ class Test_TestIncrementDecrement(unittest.TestCase):
     def test_file_hash(self):
         f_path = os.path.join(PyGlobal.project_dir, 'ttrap.ps1')
         ha = common_util.get_one_filehash(f_path, "SHA256")
-        self.assertEqual(ha.upper(), '87AF4543F9A0C5873CDDB280BBA6C6A0E3080888FEDB31D3468BDACCFA9F284B')
+        self.assertEqual(ha['Hash'], '87AF4543F9A0C5873CDDB280BBA6C6A0E3080888FEDB31D3468BDACCFA9F284B')
 
+    def test_config_wrapper(self):
+        cf = shared_fort.get_demo_config_file()
+        j = common_util.get_configration(cf)
+        wp = BorgConfiguration(j)
+        self.assertEqual(wp.borg_repo_path(None), "/opt/repo")
+    
+    def test_subprocess_call(self):
+        try:
+            subprocess.check_output('exit 1')
+        except WindowsError as we:
+            print we
+
+    def test_partial(self):
+        v = partial(two_add, 1)('2')
+        self.assertEqual(v, 9)
+        v = partial(two_add, 1, c=1)('2')
+        self.assertEqual(v, 4)
+        v = partial(two_add, 1)('2', 1)
+        self.assertEqual(v, 4)
+
+    def test_filehashes(self):
+        print common_util.get_filehashes(PyGlobal.python_dir)
+
+        
 
 if __name__ == '__main__':
     unittest.main()

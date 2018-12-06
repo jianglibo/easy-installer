@@ -195,8 +195,8 @@ function Get-Configuration {
             $_ | Add-Member -MemberType NoteProperty -Value $lf -Name LocalPath
         }
     }
-
     $Global:configuration = $c
+    $Global:sshinvoker = Get-SshInvoker
     $c
 }
 function Join-UniversalPath {
@@ -258,7 +258,9 @@ function Copy-ChangedFiles {
     # $encodedCommand = [Convert]::ToBase64String($bytes)
     # $cmd = "$($configuration.ServerExec) -e '${encodedCommand}'"
     # [array]$filelist = $sshInvoker.invoke($cmd) | ConvertFrom-Json
-    [array]$filelist = Invoke-ServerRunningPs1 -Action FileHashes $RemoteDirectory | Receive-LinesFromServer | ConvertFrom-Json
+    $rawResult = Invoke-ServerRunningPs1 -Action FileHashes $RemoteDirectory
+    $rawResult | Write-Verbose
+    [array]$filelist = $rawResult | Receive-LinesFromServer | ConvertFrom-Json
 
     $mo = $filelist | Select-Object -Property Algorithm, Path, Length, LocalPath | Measure-Object -Property Length -Sum
 
