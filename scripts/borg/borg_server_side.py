@@ -7,12 +7,16 @@ from global_static import PyGlobal
 import common_util
 import subprocess
 import json
+import shutil
+import tempfile
 
 PyGlobal.config_file = os.path.join(os.path.split(__file__)[0], 'config.json')
 common_util.get_configration(PyGlobal.config_file, "utf-8", True)
 j = PyGlobal.configuration.json
 repo_path = j['BorgRepoPath']
 borg_bin = j['BorgBin']
+os_config = PyGlobal.configuration.get_os_config()
+server_side = os_config["ServerSide"]
 
 def usage():
     print "usage message printed."
@@ -25,18 +29,37 @@ def main(action, args):
     elif action == 'Prune':
         common_util.send_lines_to_client(invoke_prune())
     elif action == 'DiskFree':
-        pass
+        common_util.send_lines_to_client(common_util.get_diskfree())
     elif action == 'MemoryFree':
-        pass
+        common_util.send_lines_to_client(common_util.get_memoryfree())
     elif action == 'InitializeRepo':
         common_util.send_lines_to_client(init_borg_repo())
-        pass
     elif action == 'DownloadPublicKey':
-        pass
+        common_util.send_lines_to_client(get_openssl_publickey())
+    elif action == 'Install':
+        common_util.send_lines_to_client(install_borg())
     elif action == 'FileHashes':
         common_util.send_lines_to_client(common_util.get_filehashes(args[0]))
     elif action == 'Echo':
         common_util.send_lines_to_client(' '.join(args))
+
+def get_openssl_publickey():
+    openssl_exec = j["openssl"]
+    private_key_file = j["PrivateKeyFile"]
+    with tempfile.NamedTemporaryFile(delete=False) as tf:
+        subprocess.call([openssl_exec, 'rsa', '-in' , private_key_file, '-pubout', '-out', tf.name])
+        return tf.name
+
+def install_borg():
+    if os.path.exists(borg_bin):
+        common_util.send_lines_to_client("AlreadyInstalled")
+    else:
+        common_util.get_software_packages(server_side["PackageDir"], os_config["Softwares"])
+        pk = common_util.get_software_package_path()
+        shutil.copy(pk, borg_bin)
+        subprocess.call(['chmod', '755', borg_bin])
+        common_util.send_lines_to_client("Install Success.")
+    
 
 def new_borg_archive():
     j = PyGlobal.configuration.json

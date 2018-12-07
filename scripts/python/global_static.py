@@ -15,6 +15,16 @@ class Configuration:
     'A Wrapper for json configuration'
     def __init__(self, json):
         self.json = json
+
+    def get_os_config(self):
+        my_os = self.json["OsType"]
+        return self.json['SwitchByOs'][my_os]
+
+    def get_server_side(self):
+        return self.get_os_config()["ServerSide"]
+
+    def get_packagedir(self):
+        return self.get_server_side()["PackageDir"]
     
     def get_property(self, pn):
         return self.json[pn]
@@ -34,3 +44,5 @@ class BorgConfiguration(Configuration):
 
     def borg_repo_path(self, dv):
         return self.get_property_if_need(dv, "BorgRepoPath")
+    
+

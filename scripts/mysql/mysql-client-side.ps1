@@ -19,7 +19,6 @@ param (
     [parameter(Mandatory = $false)]
     [ValidateSet("55", "56", "57", "80")]
     [string]$Version,
-    [switch]$CopyScripts,
     [switch]$LogResult,
     [switch]$Json
 )
@@ -71,9 +70,7 @@ else {
     if (-not $configuration) {
         return
     }
-    if ($CopyScripts) {
-        Copy-PsScriptToServer -ConfigFile $ConfigFile
-    }
+    Copy-PsScriptToServer -ConfigFile $ConfigFile
     switch ($Action) {
         "DownloadPackages" {
             $configuration.DownloadPackages()

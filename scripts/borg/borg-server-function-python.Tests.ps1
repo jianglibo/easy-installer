@@ -35,8 +35,11 @@ Describe "echo" {
 Describe "install" {
     it "should install borg." {
         Get-ConfigurationForT -vb
+        $Global:sshinvoker.invoke("rm $($Global:configuration.BorgBin)")
         $r = Invoke-ServerRunningPs1 -action Install
         $r | Receive-LinesFromServer | Should -Be 'Install Success.'
+        $r = Invoke-ServerRunningPs1 -action Install
+        $r | Receive-LinesFromServer | Should -Be 'AlreadyInstalled'
     }
 }
 
@@ -61,6 +64,17 @@ Describe "init borg repo successly." {
         $r | Write-Verbose
         $rs = [string]$r
         $rs -match 'returned non-zero' | Should -BeTrue
+    }
+}
+
+Describe "download public key." {
+    it "should get public key file name." {
+        Get-ConfigurationForT -vb
+        $r = Invoke-ServerRunningPs1 -Action DownloadPublicKey
+        $v = $r | Receive-LinesFromServer
+        $v | Should -Match "^/tmp/.*"
+        $r = $Global:sshinvoker.invoke("cat $v")
+        $r | Write-Verbose
     }
 }
 

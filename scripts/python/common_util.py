@@ -11,8 +11,9 @@ import json
 from global_static import PyGlobal, BorgConfiguration
 import hashlib
 from functools import partial
+import psutil
 
-def split_url(url, parent):
+def split_url(url, parent=False):
     parts = url.split('://', 1)
     if (len(parts) == 2):
         has_protocol = True
@@ -30,6 +31,16 @@ def split_url(url, parent):
             return (after_protocol, "%s://%s" % (before_protocol, after_protocol))[has_protocol]
         else:
             return after_protocol[idx+1:]
+
+def get_software_package_path(software_name=None):
+    pd = PyGlobal.configuration.get_packagedir()
+    if not(software_name):
+        software = PyGlobal.configuration.get_os_config()["Softwares"][0]
+        if not(software['LocalName']):
+            software_name = split_url(software['PackageUrl'])
+        else:
+            software_name = software['LocalName']
+    return os.path.join(pd, software_name)
         
 def get_software_packages(target_dir, softwares):
     if (not(os.path.exists(target_dir))):
@@ -98,3 +109,32 @@ def send_lines_to_client(content):
     print PyGlobal.line_start
     print content
     print PyGlobal.line_end
+
+#    "Used":  0,
+#    "Free":  256335872,
+#    "Percent":  "0.0%",
+#    "Freem":  "244.5",
+#    "Name":  "/dev/shm",
+#    "Usedm":  "0.0"
+def get_diskfree():
+    mps = filter(lambda dv: dv.fstype, psutil.disk_partitions())
+    mps = map(lambda dv: dv.mountpoint, mps)
+    def format_result(name):
+        du = psutil.disk_usage(name)
+        used = du.used
+        free = du.total - used
+        percent = str(du.percent) + '%'
+        freem = str(free / 1024)
+        usedm = str(used / 1024)
+        return {"Name": name, "Used": used, "Percent": percent, "Free": free, "Freem": freem, "Usedm": usedm}
+    return map(format_result, mps)
+
+# total=8268038144L, available=1243422720L, percent=85.0, used=7024615424L, free=1243422720L
+def get_memoryfree():
+    r = psutil.virtual_memory()
+    percent = str(r.percent) + '%'
+    freem = str(r.free / 1024)
+    usedm = str(r.used / 1024)
+    return [{"Name": '', "Used": r.used, "Percent": percent, "Free": r.free, "Freem": freem, "Usedm": usedm, "Total": r.total}]
+
+    

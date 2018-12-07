@@ -1,4 +1,6 @@
-. "${Global:CommonDir}\common-util.ps1"
+if ($Global:CommonDir) {
+    . "${Global:CommonDir}\common-util.ps1"
+}
 function Get-AppName {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$MyDir

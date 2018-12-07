@@ -4,7 +4,8 @@
   "MysqlVersion": "57",
   "ClientScp": "scp",
   "ClientSsh": "ssh",
-  "ServerExec": "pwsh",
+  "ServerExec": "python",
+  "ServerLang": "python",
   "openssl": "openssl",
   "ClientOpenssl": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.exe",
   "ClientEnv": {
@@ -29,10 +30,9 @@
   "LocalDir": "e:/backups/mysql",
   "LogDir": "e:/backups/logs",
   "ServerSideFileList": [
-    "common/common-util.ps1",
-    "common/ssh-invoker.ps1",
-    "mysql/mysql-server-side.ps1",
-    "mysql/mysql-server-function.ps1"
+    "python/common_util.py",
+    "python/global_static.py",
+    "mysql/mysql_server_side.py"
   ],
   "taskcmd": {
     "flushlog": "%s -Action FlushLogs -ConfigFile %s -LogResult -Json",

@@ -66,6 +66,17 @@ class Test_TestIncrementDecrement(unittest.TestCase):
     def test_filehashes(self):
         print common_util.get_filehashes(PyGlobal.python_dir)
 
+    def test_diskfree(self):
+        dfs = common_util.get_diskfree()
+        df = dfs[0]
+        self.assertTrue(df['Used'])
+        self.assertTrue(df['Free'])
+        self.assertTrue(df['Usedm'])
+    
+    def test_memoryfree(self):
+        mf = common_util.get_memoryfree()
+        print mf
+
         
 
 if __name__ == '__main__':

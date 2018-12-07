@@ -18,7 +18,6 @@ param (
     [string]$Action,
     [parameter(Mandatory = $false)]
     [string]$ConfigFile,
-    [switch]$CopyScripts,
     [switch]$LogResult,
     [switch]$Json
 )
@@ -67,9 +66,7 @@ else {
     if (-not $configuration) {
         return
     }
-    if ($CopyScripts) {
-        Copy-PsScriptToServer -ConfigFile $ConfigFile -ServerSideFileListFile ($here | Join-Path -ChildPath "serversidefilelist.txt")
-    }
+    Copy-PsScriptToServer -ConfigFile $ConfigFile
     switch ($Action) {
         "DownloadPackages" {
             $configuration.DownloadPackages()
@@ -81,7 +78,7 @@ else {
         }
         "Uninstall" {
             if ($PSCmdlet.ShouldContinue("Are you sure?", "")) {
-                Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
+                Invoke-ServerRunningPs1 -action $Action
             }
             else {
                 "canceled."
@@ -89,19 +86,21 @@ else {
             break
         }
         "DownloadPublicKey" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action | Receive-LinesFromServer
+            $r = Invoke-ServerRunningPs1 -action $Action 
+            $r = $r | Receive-LinesFromServer
             $sshInvoker = Get-SshInvoker
             $f = Get-PublicKeyFile -NotResolve
             $sshInvoker.ScpFrom($r, $f, $false)
+            $sshInvoker.invoke("rm $r")
             break
         }
         "InitializeRepo" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action InitializeRepo -notCombineError
+            $r = Invoke-ServerRunningPs1 -Action InitializeRepo -notCombineError
             $r | Receive-LinesFromServer
             break
         }
         "Archive" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Archive
+            $r = Invoke-ServerRunningPs1 -Action Archive
             $r | Write-Verbose
             $v = $r | Receive-LinesFromServer
             if ($LogResult) {
@@ -111,7 +110,7 @@ else {
             break
         }
         "ArchiveAndDownload" {
-            $ar = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Archive | Receive-LinesFromServer | ConvertFrom-Json
+            $ar = Invoke-ServerRunningPs1 -Action Archive | Receive-LinesFromServer | ConvertFrom-Json
             $dr = Copy-BorgRepoFiles
             $success = $ar.archive -and $dr.copied
             [array]$files = $dr.total.files # change from stream to array.
@@ -122,7 +121,7 @@ else {
             break
         }
         "PruneAndDownload" {
-            $pr = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Prune | Receive-LinesFromServer | ConvertFrom-Json
+            $pr = Invoke-ServerRunningPs1 -Action Prune | Receive-LinesFromServer | ConvertFrom-Json
             $dr = Copy-BorgRepoFiles
             [array]$files = $dr.total.files # change from stream to array.
             $dr.total.files = $files
@@ -133,7 +132,7 @@ else {
             break
         }
         "Prune" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -Action Prune
+            $r = Invoke-ServerRunningPs1 -Action Prune
             $r | Write-Verbose
             $v = $r | Receive-LinesFromServer
             if ($LogResult) {
@@ -165,7 +164,7 @@ else {
             break
         }
         "DiskFree" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
+            $r = Invoke-ServerRunningPs1 -action $Action
             $r | Write-Verbose
             [array]$jr = $r | Receive-LinesFromServer | ConvertFrom-Json
             $success = ($jr -is [array]) -and $jr[0].Name
@@ -175,7 +174,7 @@ else {
             break
         }
         "MemoryFree" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
+            $r = Invoke-ServerRunningPs1 -action $Action
             $r | Write-Verbose
             [array]$jr = $r | Receive-LinesFromServer | ConvertFrom-Json
             $success = $jr.Total -and $jr.Free
