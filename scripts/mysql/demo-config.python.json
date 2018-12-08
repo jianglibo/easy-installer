@@ -69,7 +69,7 @@
         "UninstallCommand": "yum remove -y (Invoke-Expression -Command '& yum list installed' | ForEach-Object {$_ -split '\\s+' | Select-Object -First 1 }| Where-Object {$PSItem -like '*mysql*server.x86_64'})",
         "ScriptDir": "/tmp/easyinstaller-scripts/mysql",
         "PackageDir": "/tmp/easyinstaller-scripts/packages",
-        "EntryPoint": "mysql-server-side.ps1",
+        "EntryPoint": "mysql_server_side.py",
         "Software": {
           "InstallDetect": {
             "command": "systemctl status mysqld",

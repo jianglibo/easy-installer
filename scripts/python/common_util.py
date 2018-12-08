@@ -12,6 +12,8 @@ from global_static import PyGlobal, BorgConfiguration
 import hashlib
 from functools import partial
 import psutil
+import re
+import shutil
 
 def split_url(url, parent=False):
     parts = url.split('://', 1)
@@ -57,18 +59,29 @@ def get_software_packages(target_dir, softwares):
             with open(lf,'wb') as output:
                 output.write(downloading_file.read())
     
+def get_filecontent_str(config_file, encoding="utf-8"):
+    try:
+        f = io.open(config_file,mode="r",encoding=encoding)
+        return f.read()
+    except UnicodeDecodeError:
+        f = io.open(config_file,mode="r",encoding='utf-16')
+        return f.read()
+    finally:
+        f.close()
+
+def get_filecontent_lines(config_file, encoding="utf-8"):
+    try:
+        f = io.open(config_file,mode="r",encoding=encoding)
+        return f.readlines()
+    except UnicodeDecodeError:
+        f = io.open(config_file,mode="r",encoding='utf-16')
+        return f.readlines()
+    finally:
+        f.close()
 
 def get_configration(config_file, encoding="utf-8", server_side=False):
     if (os.path.isfile(config_file) and os.path.exists(config_file)):
-        try:
-            f = io.open(config_file,mode="r",encoding=encoding)
-            s = f.read()
-        except UnicodeDecodeError:
-            f = io.open(config_file,mode="r",encoding='utf-16')
-            s = f.read()
-        finally:
-            f.close()
-        j = json.loads(s)
+        j = json.loads(get_filecontent_str(config_file, encoding=encoding))
         os_type = j['OsType']
         os_config = j['SwitchByOs'][os_type]
         softwares = os_config['Softwares']
@@ -137,4 +150,40 @@ def get_memoryfree():
     usedm = str(r.used / 1024)
     return [{"Name": '', "Used": r.used, "Percent": percent, "Free": r.free, "Freem": freem, "Usedm": usedm, "Total": r.total}]
 
-    
+def get_maxbackupnumber(path):
+    p_tuple = os.path.split(path)
+    if not os.path.exists(p_tuple[0]):
+        os.makedirs(p_tuple[0])
+    re_str = p_tuple[1] + '\.(\d+)$'
+    def sl(fn):
+        m = re.match(re_str, fn)
+        return int(m.group(1)) if m else 0
+    nums = [sl(x) for x in os.listdir(p_tuple[0])]
+    nums.sort()
+    nums.reverse()
+    return nums[0]
+
+def get_next_backup(path):
+    mn = 1 + get_maxbackupnumber(path)
+    return "%s.%s" % (path, mn)
+
+def get_maxbackup(path):
+    mn = get_maxbackupnumber(path)
+    return "%s.%s" % (path, mn) if mn else path
+
+def backup_localdirectory(path, keep_origin=True):
+    if not os.path.exists(path):
+        raise ValueError("%s doesn't exists." % path)
+    m = re.match('^(.*?)\.\d+$', path)
+    nx = get_next_backup(m.group(1)) if m else get_next_backup(path)
+    if os.path.isfile(path):
+        if keep_origin:
+            shutil.copy(path, nx)
+        else:
+            shutil.move(path, nx)
+    else:
+        if keep_origin:
+            shutil.copytree(path, nx)
+        else:
+            shutil.move(path, nx)
+    return nx

@@ -10,6 +10,10 @@ class PyGlobal:
     script_dir = os.path.dirname(python_dir)
     project_dir = os.path.dirname(script_dir)
     common_dir = os.path.join(script_dir, "common")
+    empty_password = "USE-EMPTY-PASSWORD"
+
+class MysqlVariableNames:
+    data_dir = "datadir"
 
 class Configuration:
     'A Wrapper for json configuration'

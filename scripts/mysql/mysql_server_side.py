@@ -11,13 +11,18 @@ import shutil
 import tempfile
 import StringIO
 import re
+import io
+import itertools
 
 PyGlobal.config_file = os.path.join(os.path.split(__file__)[0], 'config.json')
-common_util.get_configration(PyGlobal.config_file, "utf-8", True)
-j = PyGlobal.configuration.json
-client_bin = j['ClientBin']
-os_config = PyGlobal.configuration.get_os_config()
-server_side = os_config["ServerSide"]
+if os.path.exists(PyGlobal.config_file):
+    common_util.get_configration(PyGlobal.config_file, "utf-8", True)
+    j = PyGlobal.configuration.json
+    client_bin = j['ClientBin']
+    os_config = PyGlobal.configuration.get_os_config()
+    server_side = os_config["ServerSide"]
+
+
 
 def usage():
     print "usage message printed."
@@ -43,6 +48,58 @@ def get_openssl_publickey():
         subprocess.call([openssl_exec, 'rsa', '-in' , private_key_file, '-pubout', '-out', tf.name])
         return tf.name
 
+def get_enabled_version(lines):
+    founded = []
+    current_version = None
+    for line in lines:
+        line = line.strip()
+        m = re.match('^\[.*?(\d+)-.*\]$', line)
+        if m:
+            current_version = m.group(1)
+        else:
+            if line == 'enabled=1' and current_version:
+                founded.append(current_version)
+                current_version = None
+    return founded
+
+
+def enable_repoversion(repo_file, version):
+    common_util.backup_localdirectory(repo_file)
+    lines = _enable_repoversion(repo_file, version)
+    with io.open(repo_file, 'wb') as opened_file:
+        opened_file.writelines(["%s%s" % (line, "\n") for line in lines])
+    
+def _enable_repoversion(repo_file, version):
+    current_version = None
+    with io.open(repo_file, mode='r') as opened_file:
+        lines = [line.strip() for line in opened_file.readlines()]
+        new_lines = []
+    for line in lines:
+        m = re.match('^\[.*?(\d+)-.*\]$', line)
+        if m:
+            current_version = m.group(1)
+        else:
+            m = re.match('^\[.*\]$', line)
+            if m:
+                current_version = 'others'
+            else:
+                m = re.match('^enabled=(0|1)$', line)
+                if m:
+                    if current_version == version:
+                        line = 'enabled=1'
+                    elif current_version != 'others':
+                        line = 'enabled=0'
+        new_lines.append(line)
+    return new_lines
+    
+
+    
+
+
+
+
+
+    
 def get_mycnf_file():
     out = subprocess.check_output([client_bin, '--help'])
     sio = StringIO.StringIO(out)

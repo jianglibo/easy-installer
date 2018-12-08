@@ -23,7 +23,6 @@ function Get-ConfigurationForT {
     $mysqlDir = $Global:ScriptDir | Join-Path -ChildPath "mysql" 
     $PSDefaultParameterValues['*:Verbose'] = $Verbose
     Copy-TestPsScriptToServer -HerePath $mysqlDir -Lang python
-    Get-Configuration -ConfigFile ( $mysqlDir | Join-Path -ChildPath "demo-config.python.1.json")
 }
 
 
@@ -145,20 +144,19 @@ Describe "should convert namevalue pair" {
 }
 Describe "get mysql variables" {
     it "should return variables hashtable." {
-        $PSDefaultParameterValues['*:Verbose'] = $false
-        $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "auto_increment_offset" "datadir"
+        Get-ConfigurationForT -Verbose
+        $r = Invoke-ServerRunningPs1 -action GetVariables -notCombineError "auto_increment_offset" "datadir"
         $r | Out-Host
         $r = $r | ConvertFrom-Json | ConvertFrom-NameValuePair
         $r | Out-Host
         $r.auto_increment_offset | Should -Be '1'
         $r.datadir | Should -Be '/var/lib/mysql/'
 
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "auto_increment_offset1"
+        $r = Invoke-ServerRunningPs1 -action GetVariables -notCombineError "auto_increment_offset1"
         $r | Out-Host
         $r | Should -BeFalse
 
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action GetVariables -notCombineError "datadir"
+        $r = Invoke-ServerRunningPs1 -action GetVariables -notCombineError "datadir"
         $r | Out-Host
         $r = $r | ConvertFrom-Json | ConvertFrom-NameValuePair
         $r.datadir | Should -Be '/var/lib/mysql/'

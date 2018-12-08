@@ -11,12 +11,13 @@ import shutil
 import tempfile
 
 PyGlobal.config_file = os.path.join(os.path.split(__file__)[0], 'config.json')
-common_util.get_configration(PyGlobal.config_file, "utf-8", True)
-j = PyGlobal.configuration.json
-repo_path = j['BorgRepoPath']
-borg_bin = j['BorgBin']
-os_config = PyGlobal.configuration.get_os_config()
-server_side = os_config["ServerSide"]
+if os.path.exists(PyGlobal.config_file):
+    common_util.get_configration(PyGlobal.config_file, "utf-8", True)
+    j = PyGlobal.configuration.json
+    repo_path = j['BorgRepoPath']
+    borg_bin = j['BorgBin']
+    os_config = PyGlobal.configuration.get_os_config()
+    server_side = os_config["ServerSide"]
 
 def usage():
     print "usage message printed."

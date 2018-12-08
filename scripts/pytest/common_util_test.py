@@ -6,6 +6,7 @@ import os
 import hashlib
 import subprocess
 from functools import partial
+import tempfile
 
 def two_add(a, b, c=6):
     return a + int(b) + c
@@ -76,6 +77,7 @@ class Test_TestIncrementDecrement(unittest.TestCase):
     def test_memoryfree(self):
         mf = common_util.get_memoryfree()
         print mf
+
 
         
 

@@ -28,7 +28,7 @@ function Enable-RepoVersion {
                     $notChanged = $false
                 }
                 else {
-                    # don't change value of other section.
+                    # don't change value of other section. for example [mysql-tools-preview] section.
                     if ($currentVersion -ne "others") {
                         "enabled=0"
                         $notChanged = $false
