@@ -82,7 +82,7 @@ else {
         }
         "Uninstall" {
             if ($PSCmdlet.ShouldContinue("Are you sure?", "")) {
-                Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action $Version
+                Invoke-ServerRunningPs1 -action $Action $Version
             }
             else {
                 "canceled."
@@ -90,14 +90,14 @@ else {
             break
         }
         "DownloadPublicKey" {
-            $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action | Receive-LinesFromServer
+            $r = Invoke-ServerRunningPs1 -action $Action | Receive-LinesFromServer
             $sshInvoker = Get-SshInvoker
             $f = Get-PublicKeyFile -NotResolve
             $sshInvoker.ScpFrom($r, $f, $false)
             break
         }
         "Dump" {
-            $dumpraw = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action $Action -Json:$Json
+            $dumpraw = Invoke-ServerRunningPs1 -action $Action
             $dumpraw | Write-Verbose
             $dumpr = $dumpraw | Receive-LinesFromServer | ConvertFrom-Json
             $copyr = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $dumpr
@@ -109,7 +109,7 @@ else {
             break
         }
         "FlushLogs" {
-            $flushraw = Invoke-ServerRunningPs1 -ConfigFile $ConfigFile -action $Action
+            $flushraw = Invoke-ServerRunningPs1 -action $Action
             $flushraw | Write-Verbose
             [array]$flushr = $flushraw | Receive-LinesFromServer | ConvertFrom-Json
             $copyr = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $flushr
@@ -143,24 +143,3 @@ else {
         }
     }
 }
-
-# DynamicParam {
-#     if (($action -eq "Install")) {
-#         $attributes = New-Object -Type `
-#             System.Management.Automation.ParameterAttribute
-#         $attributes.ParameterSetName = "PSet1"
-#         $attributes.Mandatory = $false
-#         $attributeCollection = New-Object `
-#             -Type System.Collections.ObjectModel.Collection[System.Attribute]
-#         $attributeCollection.Add($attributes)
-
-#         $dynConfigFile = New-Object -Type `
-#             System.Management.Automation.RuntimeDefinedParameter("ConfigFile", [string],
-#             $attributeCollection)
-
-#         $paramDictionary = New-Object `
-#             -Type System.Management.Automation.RuntimeDefinedParameterDictionary
-#         $paramDictionary.Add("ConfigFile", $dynConfigFile)
-#         return $paramDictionary
-#     }
-# }

@@ -1597,7 +1597,6 @@ function Invoke-ServerRunningPs1 {
         [string]$Action,
         [parameter(Mandatory = $false)][switch]$notCombineError,
         [parameter(Mandatory = $false)][switch]$NotCleanUp,
-        [switch]$Json,
         [parameter(Mandatory = $false,
             ValueFromRemainingArguments = $true)]
         [String[]]

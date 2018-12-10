@@ -1,5 +1,9 @@
-if ($Global:CommonDir) {
-    . "${Global:CommonDir}\common-util.ps1"
+if ($Global:CommonUtil) {
+    . $Global:CommonUtil
+}
+
+if ($Global:SshInvoker) {
+    . $Global:SshInvoker
 }
 function Get-AppName {
     param (
