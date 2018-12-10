@@ -1625,7 +1625,7 @@ function Invoke-ServerRunningPs1 {
             $rcmd = "{0} -f {1} -action {2} {3} {4} {5}" -f $c.ServerExec, $entryPoint, $action, $ncp, (Get-Verbose), ($hints -join ' ')
          }
          'python' {
-            $rcmd = "{0} {1} --action={2} {3}" -f $c.ServerExec, $entryPoint, $action, ($hints -join ' ')
+            $rcmd = "{0} {1} --action={2} {3} {4}" -f $c.ServerExec, $entryPoint, $action, "$(if($NotCleanUp) {'--notclean'} else {''})" , ($hints -join ' ')
          }
         Default {
             throw "unknown ServerLang property in configration file: $($c.ServerLang)"

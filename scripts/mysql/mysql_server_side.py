@@ -13,6 +13,7 @@ import StringIO
 import re
 import io
 import itertools
+import xml.etree.ElementTree as ET
 
 if not PyGlobal.config_file:
     PyGlobal.config_file = os.path.join(os.path.split(__file__)[0], 'config.json')
@@ -31,14 +32,20 @@ def usage():
 # "ho:" mean -h doesn't need a argument, but -o needs.
 
 def main(action, args):
-    if action == 'Archive':
-        common_util.send_lines_to_client(common_util.get_diskfree())
+    if action == 'MysqlExtraFile':
+        common_util.send_lines_to_client(new_mysql_extrafile())
+    elif action == 'FlushLogs':
+        common_util.send_lines_to_client(invoke_mysql_flushlogs())
+    elif action == 'Dump':
+        common_util.send_lines_to_client(invoke_mysqldump())
     elif action == 'GetMycnf':
         common_util.send_lines_to_client(get_mycnf_file())
     elif action == 'DownloadPublicKey':
         common_util.send_lines_to_client(get_openssl_publickey())
     elif action == 'FileHashes':
         common_util.send_lines_to_client(common_util.get_filehashes(args[0]))
+    elif action == 'GetVariables':
+        common_util.send_lines_to_client(get_mysql_variables(args))
     elif action == 'Echo':
         common_util.send_lines_to_client(' '.join(args))
 
@@ -93,7 +100,7 @@ def _enable_repoversion(repo_file, version):
         new_lines.append(line)
     return new_lines
 
-def new_mysqlextrafile(plain_password):
+def new_mysql_extrafile(plain_password=None):
     mysql_user = j['MysqlUser']
     if mysql_user is None:
         raise ValueError('MysqlUser property in configuration file is empty.')
@@ -101,131 +108,70 @@ def new_mysqlextrafile(plain_password):
         plain_password = plain_password if plain_password != PyGlobal.empty_password else ''
         tf = tempfile.mktemp()
         with io.open(tf, mode='wb') as opened_file:
-            opened_file.writelines(["%s%s" % (line, "\n") for line in ["client", "user=%s" % mysql_user, "password=%s" % plain_password]])
+            opened_file.writelines(["%s%s" % (line, "\n") for line in ["[client]", "user=%s" % mysql_user, 'password="%s"' % plain_password]])
         return tf
     else:
         if PyGlobal.mysql_extrafile is None:
             plain_password = common_util.unprotect_password_by_openssl_publickey(j['MysqlPassword'])
             tf = tempfile.mktemp()
             with io.open(tf, mode='wb') as opened_file:
-                opened_file.writelines(["%s%s" % (line, "\n") for line in ["client", "user=%s" % mysql_user, "password=%s" % plain_password]])
+                opened_file.writelines(["%s%s" % (line, "\n") for line in ["[client]", "user=%s" % mysql_user, 'password="%s"' % plain_password]])
             PyGlobal.mysql_extrafile = tf
             return tf
         else:
             return PyGlobal.mysql_extrafile
 
-def get_sql_commandline(sql, plain_password, combine_error=False):
-    extra_file = new_mysqlextrafile(plain_password)
+def get_sql_commandline(sql, plain_password):
+    extra_file = new_mysql_extrafile(plain_password)
     cmd_line = [
         j['ClientBin'],
         "--defaults-extra-file=%s" % extra_file,
         "-X",
         "-e",
-        '"%s"' % sql,
-        "2>&1" if combine_error else ""
+        sql
     ]
-    return {"cmdline": cmd_line, "extrafile": extra_file}
+    return {"cmd_line": cmd_line, "extrafile": extra_file}
 
-# function Invoke-MysqlSQLCommand {
-#     param (
-#         [parameter(Mandatory = $true, Position = 0)]$sql,
-#         [parameter(Mandatory = $false)][string]$UsePlainPwd,
-#         [parameter()][switch]$SQLFromFile,
-#         [parameter()][switch]$combineError
-#     )
+def invoke_mysql_sql_command(sql, plain_password, combine_error=False):
+    cmd_dict = get_sql_commandline(sql, plain_password)
+    return common_util.subprocess_checkout_print_error(cmd_dict['cmd_line'], redirect_err=combine_error)
 
-#     $cmdline = Get-SQLCommandLine -sql $sql -combineError:$combineError -UsePlainPwd $UsePlainPwd -SQLFromFile:$SQLFromFile
-#     $cmdline | Write-Verbose
-#     $r = Invoke-Expression -Command $cmdline.cmdline | Where-Object {-not ($_ -like 'Warning:*')}
-#     if (-not ($sql -match 'show variables')) {
-#         $r | Write-Verbose
-#     }
-#     if ($cmdline.sqltmp -and (Test-Path -Path $cmdline.sqltmp)) {
-#         "deleting tmp sqlfile: $($cmdline.sqltmp)" | Write-Verbose
-#         Remove-Item -Path $cmdline.sqltmp -Force
-#     }
-#     if ($cmdline.DeleteExtraFile -and $cmdline.extrafile -and (Test-Path -Path $cmdline.extrafile)) {
-#         "deleting emptypass extrafile: $($cmdline.sqltmp)" | Write-Verbose
-#     }
-#     if ($r -like "*Access Denied*") {
-#         throw "Mysql Access Denied."
-#     }
-#     elseif ($r -like "*Can't connect to*") {
-#         throw "Mysql is not started."
-#     }
-#     $r
-# }
+def get_mysql_variables(variable_names=None, plain_password=None):
+    result = invoke_mysql_sql_command('show variables', None, combine_error=True)
+    rows = [(x[0].text, x[1].text) for x in ET.fromstring(result)] # tuple (auto_increment_increment, 1)
+    if variable_names is None:
+        return rows
+    elif isinstance(variable_names, str):
+        result = filter(lambda x: x[0] == variable_names, rows)
+        if len(result) > 0:
+            return {'name': result[0][0], 'value': result[0][1]}
+    else:
+        result = filter(lambda x: x[0] in variable_names, rows)
+        result = map(lambda t: {'name': t[0], 'value': t[1]}, result)
+        return result
 
-def invoke_mysql_sql_command(sql, plain_password):
-    pass
-
-# function Get-MysqlVariables {
-#     param (
-#         [parameter(Mandatory = $false, Position = 0)][string[]]$VariableNames,
-#         [parameter(Mandatory = $false)][string]$UsePlainPwd
-#     )
-#     $r = Invoke-MysqlSQLCommand -sql "show variables" -combineError
-#     if ($VariableNames.Count -gt 0) {
-#         ([xml]$r).resultset.row |
-#             ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} |
-#             Where-Object {$_.name -in $VariableNames} | ConvertTo-Json -Depth 10
-#     }
-#     else {
-#         ([xml]$r).resultset.row |
-#             ForEach-Object {@{name = $_.field[0].'#text'; value = $_.field[1].'#text'}} | ConvertTo-Json -Depth 10
-#     }
-# }
-
-def get_mysql_variables(variable_names, plain_password):
-
-    pass
-#     $flushcmd = 
-#     $flushcmd | Write-Verbose
-#     $r = Invoke-Expression -Command $flushcmd
-#     "Invoke flushcmd output:" | Write-Verbose
-#     $r | Write-Verbose
-#     $deny = $r | Where-Object {$_ -match 'Access denied'} | Select-Object -First 1
-#     if ($deny) {
-#         throw $r
-#     }
-#     $idxfile = Get-MysqlVariables -VariableNames 'log_bin_index' -UsePlainPwd $UsePlainPwd
-
-#     "found idxfile: $idxfile" | Write-Verbose
-#     if (-not $idxfile) {
-#         throw 'cannot find log_bin_index variable.'
-#     }
-
-#     $idxfile = $idxfile | ConvertFrom-Json
-
-#     if (-not $idxfile.value) {
-#         throw "log_bin_index variable is null. Did logbin be enabled?"
-#     }
-
-#     if (-not (Test-Path -Path $idxfile.value -PathType Leaf)) {
-#         throw 'cannot find log_bin_index file.'
-#     }
-#     $pf = Split-Path -Path $idxfile.value -Parent
-#     "log folder is: $pf" | Write-Verbose
-
-#     Get-Content -Path $idxfile.value | ForEach-Object {Join-Path -Path $pf -ChildPath $_} |
-#         ForEach-Object {Get-FileHash -Path $_ | Add-Member @{Length=(Get-Item -Path $_).Length} -PassThru} |
-#         ConvertTo-Json | Send-LinesToClient
-# }
-
-def invoke_mysqlflushlogs(plain_password):
-    extra_file = new_mysqlextrafile(plain_password)
+def invoke_mysql_flushlogs(plain_password=None):
+    extra_file = new_mysql_extrafile(plain_password)
     flush_cmd = [
         j['MysqlAdminBin'],
         "--defaults-extra-file=%s" % extra_file,
-        "flush-logs",
-        "2>&1"
+        "flush-logs"
     ]
     subprocess.call(flush_cmd)
-    idxfile = 
-    pass
+    idx_file = get_mysql_variables('log_bin_index', plain_password)['value']
+    parent = os.path.split(idx_file)[0]
+    with io.open(idx_file, 'rb') as opened_file:
+        lines = opened_file.readlines()
+        lines = [line.strip() for line in lines]
+        def to_file_desc(relative_file):
+            ff = os.path.join(parent, relative_file)
+            return common_util.get_one_filehash(ff)
+        return map(to_file_desc, lines)
 
-def invoke_mysqldump(plain_password):
-    extra_file = new_mysqlextrafile(plain_password)
+
+def invoke_mysqldump(plain_password=None):
+    extra_file = new_mysql_extrafile(plain_password)
+    dumpfile = j['DumpFilename']
     dump_cmd = [j['DumpBin'],
                 "--defaults-extra-file=%s" % extra_file,
                 '--max_allowed_packet=512M',
@@ -234,11 +180,11 @@ def invoke_mysqldump(plain_password):
                 '--all-databases',
                 '--flush-logs',
                 '--delete-master-logs',
-                '--single-transaction',
-                '>',
-                j['DumpFilename']]
-    subprocess.call(dump_cmd)
-    return common_util.get_one_filehash(j['DumpFilename'])
+                '--single-transaction']
+    with io.open(dumpfile, 'wb') as opened_file:
+        subprocess.call(dump_cmd, stdout=opened_file)
+
+    return common_util.get_one_filehash(dumpfile)
 
 def enable_logbin(mycnf_file, logbin_base_name='hm-log-bin', server_id='1'):
     common_util.backup_localdirectory(mycnf_file)
@@ -272,16 +218,19 @@ def get_mycnf_file():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hv:a:", ["help", "action="])
+        opts, args = getopt.getopt(sys.argv[1:], "hv:a:", ["help", "action=", "notclean"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
         sys.exit(2)
     verbose = False
+    clean = True
     action = None
     for o, a in opts:
         if o == "-v":
             verbose = True
+        elif o == '--notclean':
+            clean = False
         elif o in ("-h", "--help"):
             usage()
             sys.exit()
@@ -289,5 +238,11 @@ if __name__ == "__main__":
             action = a
         else:
             assert False, "unhandled option"
-    main(action, args)
+    try:
+        main(action, args)
+    finally:
+        if PyGlobal.mysql_extrafile and clean:
+            if os.path.exists(PyGlobal.mysql_extrafile):
+                os.remove(PyGlobal.mysql_extrafile)
+        PyGlobal.mysql_extrafile = None
 

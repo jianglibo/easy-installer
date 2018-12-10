@@ -145,22 +145,20 @@ Describe "should convert namevalue pair" {
 Describe "get mysql variables" {
     it "should return variables hashtable." {
         Get-ConfigurationForT -Verbose
-        $r = Invoke-ServerRunningPs1 -action GetVariables -notCombineError "auto_increment_offset" "datadir"
-        $r | Out-Host
-        $r = $r | ConvertFrom-Json | ConvertFrom-NameValuePair
-        $r | Out-Host
+        $r = Invoke-ServerRunningPs1 -action GetVariables -notCombineError -NotCleanUp "auto_increment_offset" "datadir"
+        $r | Write-Verbose
+        $r = $r | Receive-LinesFromServer  | ConvertFrom-Json | ConvertFrom-NameValuePair
         $r.auto_increment_offset | Should -Be '1'
         $r.datadir | Should -Be '/var/lib/mysql/'
 
         $r = Invoke-ServerRunningPs1 -action GetVariables -notCombineError "auto_increment_offset1"
-        $r | Out-Host
-        $r | Should -BeFalse
+
+        $r | Receive-LinesFromServer | ConvertFrom-Json | Should -BeFalse
 
         $r = Invoke-ServerRunningPs1 -action GetVariables -notCombineError "datadir"
-        $r | Out-Host
-        $r = $r | ConvertFrom-Json | ConvertFrom-NameValuePair
+        $r | Write-Verbose
+        $r = $r | Receive-LinesFromServer | ConvertFrom-Json | ConvertFrom-NameValuePair
         $r.datadir | Should -Be '/var/lib/mysql/'
-
     }
 }
 
@@ -194,22 +192,25 @@ Describe "enable logbin" {
 
 Describe "mysql extra file" {
     it "should create" {
-        $PSDefaultParameterValues['*:Verbose'] = $false
-        $ht = Copy-TestPsScriptToServer -HerePath $here
-        $r = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action MysqlExtraFile -NotCleanUp
-        $r | Out-Host
+        Get-ConfigurationForT -Verbose
+        $r = Invoke-ServerRunningPs1 -action MysqlExtraFile -NotCleanUp
+        $r | Write-Verbose
+
+        $r = $r | Receive-LinesFromServer
 
         $sshinvoker = Get-SshInvoker
         $r = $sshinvoker.Invoke("cat $r")
+        $r | Write-Verbose
         $r | Where-Object {$_ -eq '[client]'} | should -BeTrue
         $r | Where-Object {$_ -eq 'user=root'} | should -BeTrue
+        $r = $sshinvoker.Invoke("rm $r")
     }
 }
 
 Describe "dump mysql" {
     $df = Join-Path $TestDrive "dump.sql"
     it "should dump" {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -Verbose
         $r = Invoke-ServerRunningPs1 -action Dump
         $r | Write-Verbose
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
@@ -221,7 +222,7 @@ Describe "dump mysql" {
     }
 
     it "should dump and verify hash" {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -Verbose
         $r = Invoke-ServerRunningPs1 -action Dump
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
         $dumpResult = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $ht
@@ -232,9 +233,8 @@ Describe "dump mysql" {
 }
 
 Describe "flush mysql" {
-    $idxfolder = Join-Path $TestDrive "localdir"
     it "should flush" {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -Verbose
         $r = Invoke-ServerRunningPs1 -action FlushLogs
 
         $r | Write-Verbose

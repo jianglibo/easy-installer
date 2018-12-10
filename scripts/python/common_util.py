@@ -115,7 +115,10 @@ def get_filehashes(dir_to_hash, mode="SHA256"):
 
 def send_lines_to_client(content):
     print PyGlobal.line_start
-    print content
+    if isinstance(content, dict):
+        print json.dumps(content)
+    else:
+        print content
     print PyGlobal.line_end
 
 
@@ -286,3 +289,10 @@ def update_block_config_file(path_or_lines, key, value=None, block_name="mysqld"
     block_before.extend(block_found)
     block_before.extend(block_after)
     return block_before
+
+def subprocess_checkout_print_error(cmd_list, redirect_err=True, shell=False):
+    try:
+        return subprocess.check_output(cmd_list, stderr=subprocess.STDOUT, shell=shell)
+    except subprocess.CalledProcessError as cpe:
+        print cpe
+        return cpe.output
