@@ -4,16 +4,11 @@
 # https://www.tutorialspoint.com/python/python_lists.htm
 # https://www.python-course.eu/lambda.php
 
-import os
-import urllib2
-import io
-import json
+import os, urllib2, io, json
 from global_static import PyGlobal, BorgConfiguration
 import hashlib
 from functools import partial
-import psutil
-import re
-import shutil
+import psutil, re, shutil, base64, tempfile, subprocess
 
 def split_url(url, parent=False):
     parts = url.split('://', 1)
@@ -111,7 +106,7 @@ def get_one_filehash(file_to_hash, mode="SHA256"):
 
 def get_filehashes(dir_to_hash, mode="SHA256"):
     l = []
-    for dirName, subdirList, fileList in os.walk(dir_to_hash, topdown=False):
+    for dirName, sub_dirs, fileList in os.walk(dir_to_hash, topdown=False):
         pf = partial(os.path.join, dirName)
         pf1 = partial(get_one_filehash, mode=mode)
         result =  map(pf, fileList)
@@ -123,13 +118,16 @@ def send_lines_to_client(content):
     print content
     print PyGlobal.line_end
 
-#    "Used":  0,
-#    "Free":  256335872,
-#    "Percent":  "0.0%",
-#    "Freem":  "244.5",
-#    "Name":  "/dev/shm",
-#    "Usedm":  "0.0"
+
 def get_diskfree():
+    """
+    "Used":  0,
+    "Free":  256335872,
+    "Percent":  "0.0%",
+    "Freem":  "244.5",
+    "Name":  "/dev/shm",
+    "Usedm":  "0.0"
+    """
     mps = filter(lambda dv: dv.fstype, psutil.disk_partitions())
     mps = map(lambda dv: dv.mountpoint, mps)
     def format_result(name):
@@ -142,8 +140,10 @@ def get_diskfree():
         return {"Name": name, "Used": used, "Percent": percent, "Free": free, "Freem": freem, "Usedm": usedm}
     return map(format_result, mps)
 
-# total=8268038144L, available=1243422720L, percent=85.0, used=7024615424L, free=1243422720L
 def get_memoryfree():
+    """
+        format: total=8268038144L, available=1243422720L, percent=85.0, used=7024615424L, free=1243422720L
+    """
     r = psutil.virtual_memory()
     percent = str(r.percent) + '%'
     freem = str(r.free / 1024)
@@ -154,7 +154,7 @@ def get_maxbackupnumber(path):
     p_tuple = os.path.split(path)
     if not os.path.exists(p_tuple[0]):
         os.makedirs(p_tuple[0])
-    re_str = p_tuple[1] + '\.(\d+)$'
+    re_str = p_tuple[1] + r'\.(\d+)$'
     def sl(fn):
         m = re.match(re_str, fn)
         return int(m.group(1)) if m else 0
@@ -174,7 +174,7 @@ def get_maxbackup(path):
 def backup_localdirectory(path, keep_origin=True):
     if not os.path.exists(path):
         raise ValueError("%s doesn't exists." % path)
-    m = re.match('^(.*?)\.\d+$', path)
+    m = re.match(r'^(.*?)\.\d+$', path)
     nx = get_next_backup(m.group(1)) if m else get_next_backup(path)
     if os.path.isfile(path):
         if keep_origin:
@@ -187,3 +187,102 @@ def backup_localdirectory(path, keep_origin=True):
         else:
             shutil.move(path, nx)
     return nx
+
+def get_file_frombase64(base64_str, out_file=None):
+    decoded_str = base64.b64decode(base64_str)
+    if out_file is None:
+        out_file = tempfile.mktemp()
+    with io.open(out_file, 'wb') as opened_file:
+        opened_file.write(decoded_str)
+    return out_file
+
+def unprotect_password_by_openssl_publickey(base64_str, private_key=None, openssl=None):
+    in_file = get_file_frombase64(base64_str)
+    out_file = tempfile.mktemp()
+    if openssl is None:
+        openssl = PyGlobal.configuration.json['openssl']
+    if private_key is None:
+        private_key = PyGlobal.configuration.json['PrivateKeyFile']
+    subprocess.call([openssl, 'pkeyutl', '-decrypt', '-inkey', private_key, '-in', in_file, '-out', out_file])
+    with io.open(out_file, 'rb') as opened_file:
+        return opened_file.read()
+
+def get_lines(path_or_lines):
+    if isinstance(path_or_lines, str):
+        with io.open(path_or_lines, 'r') as opened_file:
+            lines = [line.strip() for line in opened_file.readlines()]
+    else:
+        lines = [line.strip() for line in path_or_lines]
+    return lines
+
+def get_block_config_value(path_or_lines, block_name, key):
+    lines = get_lines(path_or_lines)
+    block_found = False
+    for line in lines:
+        if block_found:
+            m = re.match(r'^\s*(\[.*\])\s*$', line)
+            if m: # block had found, but found another block again. so value is None
+                return None
+            else:
+                m = re.match(r'^\s*%s=(.+)$' % key, line)
+                if m:
+                    return m.group(1)
+        else:
+            if line == block_name:
+                block_found = True
+
+def update_block_config_file(path_or_lines, key, value=None, block_name="mysqld"):
+    lines = get_lines(path_or_lines)
+    if block_name[0] != '[':
+        block_name = "[%s]" % block_name
+
+    block_idx = -1
+    next_block_idx = -1
+    for idx, line in enumerate(lines):
+        if block_idx != -1:
+            m = re.match(r'^\s*(\[.*\])\s*$', line)
+            if m:
+                next_block_idx = idx
+                break
+        else:
+            if line == block_name:
+                block_idx = idx
+    block_before = []
+    block_found = []
+    block_after = []
+
+    if block_idx == -1:
+        block_after = lines[:]
+    else:
+        block_before = lines[:block_idx]
+        if next_block_idx == -1:
+            block_found = lines[block_idx:]
+        else:
+            block_found = lines[block_idx: next_block_idx]
+            block_after = lines[:next_block_idx]
+    block_found_len = len(block_found)
+    if block_found_len == 0:
+        block_found.append(block_name)
+        block_found.append("%s=%s" % (key, value))
+    elif block_found_len == 1:
+        block_found.append("%s=%s" % (key, value))
+    else:
+        processed = False
+        for idx, line in enumerate(block_found):
+            m = re.match(r'^\s*#+\s*%s=(.+)$' % key, line)
+            if m:
+                if value: # found comment outed line.
+                    block_found[idx] = "%s=%s" % (key, value)
+                processed = True
+                break
+            m = re.match(r'^\s*%s=(.+)$' % key, line)
+            if m:
+                if not value:
+                    block_found[idx] = "#%s" % line
+                processed = True
+                break
+        if not processed and value:
+            block_found.append("%s=%s" % (key, value))
+    block_before.extend(block_found)
+    block_before.extend(block_after)
+    return block_before
