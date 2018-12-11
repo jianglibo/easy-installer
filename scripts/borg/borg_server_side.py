@@ -46,7 +46,7 @@ def main(action, args):
 
 def get_openssl_publickey():
     openssl_exec = j["openssl"]
-    private_key_file = j["PrivateKeyFile"]
+    private_key_file = j["ServerPrivateKeyFile"]
     with tempfile.NamedTemporaryFile(delete=False) as tf:
         subprocess.call([openssl_exec, 'rsa', '-in' , private_key_file, '-pubout', '-out', tf.name])
         return tf.name
@@ -96,16 +96,19 @@ def init_borg_repo():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hv:a:", ["help", "action="])
+        opts, args = getopt.getopt(sys.argv[1:], "hv:a:", ["help", "action=", "notclean"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
         sys.exit(2)
     verbose = False
+    clean = True
     action = None
     for o, a in opts:
         if o == "-v":
             verbose = True
+        elif o == '--notclean':
+            clean = False
         elif o in ("-h", "--help"):
             usage()
             sys.exit()
@@ -113,4 +116,11 @@ if __name__ == "__main__":
             action = a
         else:
             assert False, "unhandled option"
-    main(action, args)
+    try:
+        main(action, args)
+    except Exception as e:
+        print type(e)
+        print e
+        print e.message
+    finally:
+        pass

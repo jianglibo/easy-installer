@@ -51,7 +51,7 @@ def main(action, args):
 
 def get_openssl_publickey():
     openssl_exec = j["openssl"]
-    private_key_file = j["PrivateKeyFile"]
+    private_key_file = j["ServerPrivateKeyFile"]
     with tempfile.NamedTemporaryFile(delete=False) as tf:
         subprocess.call([openssl_exec, 'rsa', '-in' , private_key_file, '-pubout', '-out', tf.name])
         return tf.name
@@ -240,6 +240,10 @@ if __name__ == "__main__":
             assert False, "unhandled option"
     try:
         main(action, args)
+    except Exception as e:
+        print type(e)
+        print e
+        print e.message
     finally:
         if PyGlobal.mysql_extrafile and clean:
             if os.path.exists(PyGlobal.mysql_extrafile):

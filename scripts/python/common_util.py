@@ -205,7 +205,7 @@ def unprotect_password_by_openssl_publickey(base64_str, private_key=None, openss
     if openssl is None:
         openssl = PyGlobal.configuration.json['openssl']
     if private_key is None:
-        private_key = PyGlobal.configuration.json['PrivateKeyFile']
+        private_key = PyGlobal.configuration.json['ServerPrivateKeyFile']
     subprocess.call([openssl, 'pkeyutl', '-decrypt', '-inkey', private_key, '-in', in_file, '-out', out_file])
     with io.open(out_file, 'rb') as opened_file:
         return opened_file.read()

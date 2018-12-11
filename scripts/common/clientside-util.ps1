@@ -15,8 +15,11 @@ function Get-AppName {
 function Copy-DemoConfigFile {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$MyDir,
-        [Parameter(Mandatory = $true, Position = 1)][string]$HostName,
-        [Parameter(Mandatory = $true, Position = 2)][string]$ToFileName
+        [Parameter(Mandatory = $true, Position = 1, HelpMessage="Please enter the target hostname or IP address:")][string]$HostName,
+        [Parameter(Mandatory = $true, Position = 2)][
+            ValidateSet('python', 'powershell')
+        ][string]$ServerLang,
+        [Parameter(Mandatory = $true, Position = 3)][string]$ToFileName
     )
     $demofolder = $PWD | Join-Path -ChildPath "myconfigs" | Join-Path -ChildPath $HostName
     "MyDir is: $MyDir" | Write-Verbose
@@ -26,29 +29,29 @@ function Copy-DemoConfigFile {
     }
     $tofile = $demofolder | Join-Path -ChildPath $ToFileName
     "destination file is: $tofile" | Write-Verbose
-    $srcfile = Join-Path -Path $MyDir -ChildPath "demo-config.json"
+    $srcfile = Join-Path -Path $MyDir -ChildPath "demo-config.${ServerLang}.json"
     "source file is: $srcfile" | Write-Verbose
 
-    $h = Get-Content -Path $srcfile | ConvertFrom-Json
+    $h = Get-Content -Path $srcfile -Encoding UTF8 | ConvertFrom-Json
     $h.HostName = $HostName
     # Copy-Item -Path $srcfile -Destination $tofile
-    $h | ConvertTo-Json -Depth 10 | Out-File $tofile
+    $h | ConvertTo-Json -Depth 10 | Out-File $tofile -Encoding utf8
     "The demo config file created at ${tofile}`n"
 }
-function Get-PublicKeyFile {
+function Get-ServerPublicKeyFile {
     param (
         [switch]$NotResolve
     )
     $c = $Global:configuration
 
-    if ($c.PublicKeyFile -like "default*") {
+    if ($c.ServerPublicKeyFile -like "default*") {
         $pk = $Global:CommonDir | Split-Path -Parent | Split-Path -Parent |
             Join-Path -ChildPath "myconfigs" |
             Join-Path -ChildPath $c.HostName |
-            Join-Path -ChildPath "public_key.pem"
+            Join-Path -ChildPath "server_public_key.pem"
     }
     else {
-        $pk = $c.PublicKeyFile
+        $pk = $c.ServerPublicKeyFile
     }
     $pkrsolved = Resolve-Path -Path $pk -ErrorAction SilentlyContinue
     if ($NotResolve) {
@@ -56,7 +59,7 @@ function Get-PublicKeyFile {
     }
     else {
         if (-not $pkrsolved) {
-            Write-ParameterWarning -wstring "${pk} does'nt exists. If you don't want to encrypt the config file leave either of PrivateKeyFile or PublicKeyFile empty."
+            Write-ParameterWarning -wstring "${pk} does'nt exists. If you don't want to encrypt the config file leave either of ServerPrivateKeyFile or ServerPublicKeyFile empty."
         }
         $pkrsolved
     }
@@ -212,8 +215,8 @@ function Copy-PsScriptToServer {
     }
 
     # unnecessary to encrypt whole configuration file. Because We had encrypt the password in it.
-    # if ($c.PrivateKeyFile -and $c.PublicKeyFile) {
-    #     $ConfigFile = Protect-ByOpenSSL -PublicKeyFile (Get-PublicKeyFile) -PlainFile $ConfigFile
+    # if ($c.ServerPrivateKeyFile -and $c.ServerPublicKeyFile) {
+    #     $ConfigFile = Protect-ByOpenSSL -ServerPublicKeyFile (Get-ServerPublicKeyFile) -PlainFile $ConfigFile
     # }
 
     # #copy configfile to fixed server name.

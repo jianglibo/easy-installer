@@ -42,14 +42,9 @@ $here = $myself | Split-Path -Parent
 
 . ($here | Split-Path -Parent | Join-Path -ChildPath 'global-variables.ps1')
 
-if (-not (Test-Path $Global:ProjectTmpDir)) {
-    New-Item -Path $Global:ProjectTmpDir -ItemType Directory | Out-Null
-}
-
 . (Join-Path -Path $here -ChildPath 'borg-client-function.ps1')
-. (Join-Path -Path $Global:CommonDir -ChildPath 'ssh-invoker.ps1')
-. (Join-Path -Path $Global:CommonDir -ChildPath 'common-util.ps1')
-. (Join-Path -Path $Global:CommonDir -ChildPath 'clientside-util.ps1')
+. $Global:CommonUtil
+. $Global:ClientUtil
 
 $scriptstarttime = Get-Date
 
@@ -89,7 +84,7 @@ else {
             $r = Invoke-ServerRunningPs1 -action $Action 
             $r = $r | Receive-LinesFromServer
             $sshInvoker = Get-SshInvoker
-            $f = Get-PublicKeyFile -NotResolve
+            $f = Get-ServerPublicKeyFile -NotResolve
             $sshInvoker.ScpFrom($r, $f, $false)
             $sshInvoker.invoke("rm $r")
             break

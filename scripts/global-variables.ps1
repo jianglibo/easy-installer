@@ -14,5 +14,3 @@ $Global:SshInvoker = Join-Path -Path $Global:CommonDir -ChildPath 'ssh-invoker.p
 if (-not (Test-Path $Global:ProjectTmpDir)) {
     New-Item -Path $Global:ProjectTmpDir -ItemType Directory | Out-Null
 }
-
-# . ($Global:CommonDir | Join-Path -ChildPath 'ssh-invoker.ps1')

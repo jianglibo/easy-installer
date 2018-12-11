@@ -232,12 +232,12 @@ Describe "openssl" {
     1..5000 -join ' ' | Out-File $plainfile
     it "should encrypt." {
         Get-DemoConfiguration -HerePath (Join-Path -Path $scriptDir -ChildPath "mysql") -ServerSide
-        $encrypted = Protect-ByOpenSSL -PublicKeyFile $tcfg.PublicKeyFile -PlainFile $plainfile
+        $encrypted = Protect-ByOpenSSL -ServerPublicKeyFile $tcfg.ServerPublicKeyFile -PlainFile $plainfile
         Test-Path -Path $encrypted -PathType Leaf | Should -BeTrue
 
         Get-DemoConfiguration -HerePath (Join-Path -Path $scriptDir -ChildPath "mysql")
 
-        $decrypted = UnProtect-ByOpenSSL -PrivateKeyFile $tcfg.PrivateKeyFile -CombinedEncriptedFile $encrypted -openssl $Global:configuration.ClientOpenssl
+        $decrypted = UnProtect-ByOpenSSL -ServerPrivateKeyFile $tcfg.ServerPrivateKeyFile -CombinedEncriptedFile $encrypted -openssl $Global:configuration.ClientOpenssl
         $LASTEXITCODE | Should -Be 0
         Get-Content -Path $decrypted | Should -Be (1..5000 -join ' ')
     }
@@ -259,8 +259,8 @@ Describe "protect password" {
     it "should convert." {
         $ss = ConvertTo-SecureString -String "123456" -AsPlainText -Force  # | ConvertFrom-SecureString
         Get-DemoConfiguration -HerePath (Join-Path -Path $scriptDir -ChildPath "mysql")
-        $base64 = Protect-PasswordByOpenSSLPublicKey -PublicKeyFile $tcfg.PublicKeyFile -ss $ss
-        $plainPwd = UnProtect-PasswordByOpenSSLPublicKey  -base64 $base64 -PrivateKeyFile $tcfg.PrivateKeyFile -OpenSSL $Global:configuration.ClientOpenssl
+        $base64 = Protect-PasswordByOpenSSLPublicKey -ServerPublicKeyFile $tcfg.ServerPublicKeyFile -ss $ss
+        $plainPwd = UnProtect-PasswordByOpenSSLPublicKey  -base64 $base64 -ServerPrivateKeyFile $tcfg.ServerPrivateKeyFile -OpenSSL $Global:configuration.ClientOpenssl
         $plainPwd | should -Be "123456"
     }
 }

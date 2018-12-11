@@ -92,7 +92,7 @@ else {
         "DownloadPublicKey" {
             $r = Invoke-ServerRunningPs1 -action $Action | Receive-LinesFromServer
             $sshInvoker = Get-SshInvoker
-            $f = Get-PublicKeyFile -NotResolve
+            $f = Get-ServerPublicKeyFile -NotResolve
             $sshInvoker.ScpFrom($r, $f, $false)
             break
         }

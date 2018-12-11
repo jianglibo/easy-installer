@@ -1262,7 +1262,7 @@ function Join-Files {
 # https://wiki.openssl.org/index.php/Command_Line_Utilities
 function Protect-ByOpenSSL {
     param (
-        [Parameter(Mandatory = $true, Position = 0)][string]$PublicKeyFile,
+        [Parameter(Mandatory = $true, Position = 0)][string]$ServerPublicKeyFile,
         [Parameter(Mandatory = $true, Position = 1)][string]$PlainFile
     )
 
@@ -1287,7 +1287,7 @@ function Protect-ByOpenSSL {
         "encrypt large file: $cmd" | Write-Verbose
         Invoke-Expression -Command $cmd
 
-        $cmd = "& '${openssl}' pkeyutl -encrypt -inkey $PublicKeyFile -pubin -in $plainPassFile -out $encryptPassFile"
+        $cmd = "& '${openssl}' pkeyutl -encrypt -inkey $ServerPublicKeyFile -pubin -in $plainPassFile -out $encryptPassFile"
         "encrypt password file: $cmd" | Write-Verbose
         Invoke-Expression -Command $cmd
         Join-Files -FileNamePairs @{file = $encryptPassFile; name = "pass"}, @{file = $encryptFile; name = "content"}
@@ -1301,7 +1301,7 @@ function Protect-ByOpenSSL {
 
 function UnProtect-ByOpenSSL {
     param (
-        [Parameter(Mandatory = $true, Position = 0)][string]$PrivateKeyFile,
+        [Parameter(Mandatory = $true, Position = 0)][string]$ServerPrivateKeyFile,
         [Parameter(Mandatory = $true, Position = 1)][string]$CombinedEncriptedFile,
         [Parameter(Mandatory = $false, Position = 2)][string]$openssl
     )
@@ -1314,7 +1314,7 @@ function UnProtect-ByOpenSSL {
         $encryptedKeyFile = Join-Path -Path $d -ChildPath "pass"
         $encryptedFile = Join-Path -Path $d -ChildPath "content"
         $decryptedKeyFile = New-TemporaryFile
-        $cmd = "& '${openssl}' pkeyutl -decrypt -inkey $PrivateKeyFile -in $encryptedKeyFile -out $decryptedKeyFile"
+        $cmd = "& '${openssl}' pkeyutl -decrypt -inkey $ServerPrivateKeyFile -in $encryptedKeyFile -out $decryptedKeyFile"
         "decrypt key file: $cmd" | Write-Verbose
         Invoke-Expression -Command $cmd
         $decryptedFile = New-TemporaryFile
@@ -1470,10 +1470,10 @@ function Receive-LinesFromServer {
     }
 }
 
-# openssl rsa -in C:\Users\Administrator\192.168.33.110.ifile -pubout -out public_key.pem
+# openssl rsa -in C:\Users\Administrator\192.168.33.110.ifile -pubout -out server_public_key.pem
 function Get-OpenSSLPublicKey {
     $ossl = $Global:configuration.openssl
-    $prik = $Global:configuration.PrivateKeyFile
+    $prik = $Global:configuration.ServerPrivateKeyFile
     $tmp = (New-TemporaryFile).FullName
     $cmd = "$ossl rsa -in $prik -pubout -out $tmp"
     $cmd | Write-Verbose
@@ -1543,7 +1543,7 @@ function Get-RemainParameterHashtable {
 
 function Protect-PasswordByOpenSSLPublicKey {
     param (
-        [Parameter(Mandatory = $true, Position = 0)][string]$PublicKeyFile,
+        [Parameter(Mandatory = $true, Position = 0)][string]$ServerPublicKeyFile,
         [Parameter(Mandatory = $false)][securestring]$ss
     )
     $f = New-TemporaryFile
@@ -1555,7 +1555,7 @@ function Protect-PasswordByOpenSSLPublicKey {
         $plainPassword = (New-Object PSCredential "user", $ss).GetNetworkCredential().Password
         $plainPassword | Out-File -FilePath $f -NoNewline -Encoding ascii
         $openssl = $Global:configuration.ClientOpenssl
-        $cmd = "& '${openssl}' pkeyutl -encrypt -inkey $PublicKeyFile -pubin -in $f -out $outf"
+        $cmd = "& '${openssl}' pkeyutl -encrypt -inkey $ServerPublicKeyFile -pubin -in $f -out $outf"
         $cmd | Write-Verbose
         Invoke-Expression -Command $cmd
         $s = Get-Base64FromFile $outf
@@ -1569,7 +1569,7 @@ function Protect-PasswordByOpenSSLPublicKey {
 function UnProtect-PasswordByOpenSSLPublicKey {
     param (
         [Parameter(Mandatory = $true, Position = 0)][string]$base64,
-        [Parameter(Mandatory = $false, Position = 1)][string]$PrivateKeyFile,
+        [Parameter(Mandatory = $false, Position = 1)][string]$ServerPrivateKeyFile,
         [Parameter(Mandatory = $false, Position = 2)][string]$OpenSSL
     )
     $f = Get-FileFromBase64 -Base64 $base64
@@ -1578,10 +1578,10 @@ function UnProtect-PasswordByOpenSSLPublicKey {
         if (-not $OpenSSL) {
             $OpenSSL = $Global:configuration.openssl
         }
-        if (-not $PrivateKeyFile) {
-            $PrivateKeyFile = $Global:configuration.PrivateKeyFile
+        if (-not $ServerPrivateKeyFile) {
+            $ServerPrivateKeyFile = $Global:configuration.ServerPrivateKeyFile
         }
-        $cmd = "& '${OpenSSL}' pkeyutl -decrypt -inkey $PrivateKeyFile -in $f -out $outf"
+        $cmd = "& '${OpenSSL}' pkeyutl -decrypt -inkey $ServerPrivateKeyFile -in $f -out $outf"
         $cmd | Write-Verbose
         Invoke-Expression -Command $cmd
         $s = Get-Content -Path $outf -Encoding Ascii
