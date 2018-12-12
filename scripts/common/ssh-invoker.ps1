@@ -9,23 +9,26 @@ class SshInvoker {
     [string]$ifile
 
     [int]$ExitCode
+    [int]$SshPort
     [string[]]$result
     [string]$sshStr
     [string] hidden $ShellName
     [string]$commandName
 
-    SshInvoker([string]$HostName, [string]$ifile) {
+    SshInvoker([string]$HostName, [string]$ifile, [int]$SshPort) {
         $this.HostName = $HostName
         $this.ShellName = [ShellName]::bash
         $this.ifile = $ifile
-        $this.sshStr = "ssh -i $ifile $($this.UserName)@${HostName}"
+        $this.SshPort = $SshPort
+        $this.sshStr = "ssh -p $SshPort -i $ifile $($this.UserName)@${HostName}"
     }
 
-    SshInvoker([string]$HostName, [string]$ifile, [ShellName]$ShellName) {
+    SshInvoker([string]$HostName, [string]$ifile, [int]$SshPort, [ShellName]$ShellName) {
         $this.HostName = $HostName
         $this.ShellName = $ShellName
         $this.ifile = $ifile
-        $this.sshStr = "ssh -i $ifile $($this.UserName)@${HostName}"
+        $this.SshPort = $SshPort
+        $this.sshStr = "ssh -p $SshPort -i $ifile $($this.UserName)@${HostName}"
     }
 
     [bool]isCommandNotFound() {
@@ -151,7 +154,7 @@ class SshInvoker {
         }
 
         $roption = if ($RemoteIsDir) {'-r'} else {''}
-        $scpStr = "scp -i {0} {1} {2}@{3}:{4} {5} 2>&1" -f $this.ifile, $roption, $this.UserName, $this.HostName, $remotePath, $localPath
+        $scpStr = "scp -P {0} -i {1} {2} {3}@{4}:{5} {6} 2>&1" -f $this.SshPort, $this.ifile, $roption, $this.UserName, $this.HostName, $remotePath, $localPath
 
         $scpStr | Write-Verbose
 
@@ -178,7 +181,7 @@ class SshInvoker {
 
         $fns = $RemotePathes -join ' '
 
-        $scpStr = "scp -i {0} {1}@{2}:{3} {4} 2>&1" -f $this.ifile, $this.UserName, $this.HostName, "`"$fns`"", $LocalDirectory
+        $scpStr = "scp -P {0} -i {1} {2}@{3}:{4} {5} 2>&1" -f $this.SshPort, $this.ifile, $this.UserName, $this.HostName, "`"$fns`"", $LocalDirectory
 
         $scpStr | Write-Verbose
 

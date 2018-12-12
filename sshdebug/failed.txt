@@ -1,0 +1,82 @@
+PS C:\Users\admin> ssh -vv -i C:\Users\admin\.ssh\id_rsa Administrator@172.19.253.244
+OpenSSH_for_Windows_7.7p1, LibreSSL 2.6.4
+debug2: resolve_canonicalize: hostname 172.19.253.244 is address
+debug2: ssh_connect_direct: needpriv 0
+debug1: Connecting to 172.19.253.244 [172.19.253.244] port 22.
+debug1: Connection established.
+debug1: identity file C:\\Users\\admin\\.ssh\\id_rsa type 0
+debug1: key_load_public: No such file or directory
+debug1: identity file C:\\Users\\admin\\.ssh\\id_rsa-cert type -1
+debug1: Local version string SSH-2.0-OpenSSH_for_Windows_7.7
+debug1: Remote protocol version 2.0, remote software version OpenSSH_for_Windows_7.7
+debug1: match: OpenSSH_for_Windows_7.7 pat OpenSSH* compat 0x04000000
+debug2: fd 3 setting O_NONBLOCK
+debug1: Authenticating to 172.19.253.244:22 as 'Administrator'
+debug1: SSH2_MSG_KEXINIT sent
+debug1: SSH2_MSG_KEXINIT received
+debug2: local client KEXINIT proposal
+debug2: KEX algorithms: curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group-exchange-sha1,dif
+fie-hellman-group14-sha256,diffie-hellman-group14-sha1,ext-info-c
+debug2: host key algorithms: ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-cert-v01@openssh.com,ssh-ed25519-cert-v01@openssh.com,ssh-rsa-cert-v01@openssh.com,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha
+2-nistp521,ssh-ed25519,rsa-sha2-512,rsa-sha2-256,ssh-rsa
+debug2: ciphers ctos: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
+debug2: ciphers stoc: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
+debug2: MACs ctos: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1
+debug2: MACs stoc: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1
+debug2: compression ctos: none
+debug2: compression stoc: none
+debug2: languages ctos:
+debug2: languages stoc:
+debug2: first_kex_follows 0
+debug2: reserved 0
+debug2: peer server KEXINIT proposal
+debug2: KEX algorithms: curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256,diffie-h
+ellman-group14-sha1
+debug2: host key algorithms: ssh-rsa,rsa-sha2-512,rsa-sha2-256,ecdsa-sha2-nistp256,ssh-ed25519
+debug2: ciphers ctos: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
+debug2: ciphers stoc: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
+debug2: MACs ctos: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1
+debug2: MACs stoc: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha1-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512,hmac-sha1
+debug2: compression ctos: none
+debug2: compression stoc: none
+debug2: languages ctos:
+debug2: languages stoc:
+debug2: first_kex_follows 0
+debug2: reserved 0
+debug1: kex: algorithm: curve25519-sha256
+debug1: kex: host key algorithm: ecdsa-sha2-nistp256
+debug1: kex: server->client cipher: chacha20-poly1305@openssh.com MAC: <implicit> compression: none
+debug1: kex: client->server cipher: chacha20-poly1305@openssh.com MAC: <implicit> compression: none
+debug1: expecting SSH2_MSG_KEX_ECDH_REPLY
+debug1: Server host key: ecdsa-sha2-nistp256 SHA256:9Uf+BXFHiAmzJDYCKHFrawkCFyy8jNwxjqN9NLO7V9U
+debug1: read_passphrase: can't open /dev/tty: No such file or directory
+The authenticity of host '172.19.253.244 (172.19.253.244)' can't be established.
+ECDSA key fingerprint is SHA256:9Uf+BXFHiAmzJDYCKHFrawkCFyy8jNwxjqN9NLO7V9U.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '172.19.253.244' (ECDSA) to the list of known hosts.
+debug2: set_newkeys: mode 1
+debug1: rekey after 134217728 blocks
+debug1: SSH2_MSG_NEWKEYS sent
+debug1: expecting SSH2_MSG_NEWKEYS
+debug1: SSH2_MSG_NEWKEYS received
+debug2: set_newkeys: mode 0
+debug1: rekey after 134217728 blocks
+debug2: key: C:\\Users\\admin\\.ssh\\id_rsa (000001E672ED7B40), explicit, agent
+debug1: SSH2_MSG_EXT_INFO received
+debug1: kex_input_ext_info: server-sig-algs=<ssh-ed25519,ssh-rsa,rsa-sha2-256,rsa-sha2-512,ssh-dss,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521>
+debug2: service_accept: ssh-userauth
+debug1: SSH2_MSG_SERVICE_ACCEPT received
+debug1: Authentications that can continue: publickey,password,keyboard-interactive
+debug1: Next authentication method: publickey
+debug1: Offering public key: RSA SHA256:pvA6WiJX3I3pFgkXdVfshLryMWRkM4RSk4WY3RnLz5U C:\\Users\\admin\\.ssh\\id_rsa
+debug2: we sent a publickey packet, wait for reply
+debug1: Authentications that can continue: publickey,password,keyboard-interactive
+debug2: we did not send a packet, disable method
+debug1: Next authentication method: keyboard-interactive
+debug2: userauth_kbdint
+debug2: we sent a keyboard-interactive packet, wait for reply
+debug1: Authentications that can continue: publickey,password,keyboard-interactive
+debug2: we did not send a packet, disable method
+debug1: Next authentication method: password
+debug1: read_passphrase: can't open /dev/tty: No such file or directory
+Administrator@172.19.253.244's password:

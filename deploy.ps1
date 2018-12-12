@@ -1,5 +1,8 @@
 param (
-    [Parameter(Mandatory = $true)][String]$RemoteDst,
+    [Parameter(Mandatory = $true)]
+    [ValidatePattern(".+@.+:.+")]
+    [ValidateSet("Administrator@172.19.253.244:d:\\easy-installers")]
+    [String]$RemoteDst,
     [Parameter(Mandatory = $false)][switch]$IncludeDownloads
 )
 
@@ -9,7 +12,7 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $TmpDir = New-TemporaryDirectory
 
-$exclude = '.vagrant', '.vscode', '.git', '.gitignore', 'downloads', "myconfigs"
+$exclude = '.vagrant', '.vscode', '.git', '.gitignore', 'downloads', "myconfigs", ".working", "sshdebug"
 
 if ($IncludeDownloads) {
     $exclude = $exclude | Where-Object {$_ -ne 'downloads'}

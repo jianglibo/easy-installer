@@ -9,7 +9,7 @@ $kv = Get-Content "$here\common-util.t.json" | ConvertFrom-Json
 
 Describe "SshInvoker pwsh" {
     it "should right" {
-        $o = [SshInvoker]::new($kv.HostName, $kv.ifile)
+        $o = [SshInvoker]::new($kv.HostName, $kv.ifile, $kv.SshPort)
         $o | Should -Not -BeNullOrEmpty
         $o.sshStr | Should -BeLike "ssh -i *"
     }
@@ -28,25 +28,25 @@ Describe "SshInvoker" {
     "abc" | Out-File $kkvFileInSrcFolder 
 
     It "shoud create SshInvoker Object." {
-        $o = [SshInvoker]::new($kv.HostName, $kv.ifile)
+        $o = [SshInvoker]::new($kv.HostName, $kv.ifile, $kv.SshPort)
         $o | Should -Not -BeNullOrEmpty
         $o.sshStr | Should -BeLike "ssh -i *"
     }
     It "shoud invoke bash command." {
-        $o = [SshInvoker]::new($kv.HostName, $kv.ifile)
+        $o = [SshInvoker]::new($kv.HostName, $kv.ifile, $kv.SshPort)
         $r = $o.InvokeBash("echo a", $false);
         $o.result | Should -Be $r
         $o.ExitCode | Should -Be 0
         $r | Should -Be "a"
     }
     It "shoud handle command not found." {
-        $o = [SshInvoker]::new($kv.HostName, $kv.ifile)
+        $o = [SshInvoker]::new($kv.HostName, $kv.ifile, $kv.SshPort)
         $r = $o.InvokeBash("echo001 a", $true);
         $o.IsCommandNotFound() | Should -BeTrue
     }
 
     It "shoud contains new lines." {
-        $o = [SshInvoker]::new($kv.HostName, $kv.ifile)
+        $o = [SshInvoker]::new($kv.HostName, $kv.ifile, $kv.SshPort)
         $r = $o.InvokeBash("ls -lh /", $true)
 
         "a" | should -BeOfType [string]
@@ -62,7 +62,7 @@ Describe "SshInvoker ScpFrom" {
     $tf2 = Join-Path $TestDrive -ChildPath "tf2"
     BeforeEach {
         $remoteFolderNoEndSlash = '/tmp/folder'
-        $sshInvoker = [SshInvoker]::new($kv.HostName, $kv.ifile)
+        $sshInvoker = [SshInvoker]::new($kv.HostName, $kv.ifile, $kv.SshPort)
     }
 
     It "should copy one file." {
@@ -110,7 +110,7 @@ Describe "SshInvoker ScpTo" {
 
     BeforeEach {
         $remoteFolderNoEndSlash = '/tmp/folder'
-        $sshInvoker = [SshInvoker]::new($kv.HostName, $kv.ifile)
+        $sshInvoker = [SshInvoker]::new($kv.HostName, $kv.ifile, $kv.SshPort)
         $sshInvoker.Invoke("rm -rvf ${remoteFolderNoEndSlash}")
         $sshInvoker.Invoke("mkdir -p ${remoteFolderNoEndSlash}")
     }

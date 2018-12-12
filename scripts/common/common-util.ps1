@@ -252,7 +252,7 @@ function Copy-ChangedFiles {
     if (-not $configuration.ServerExec) {
         throw 'Missing ServerExec property in configuration file.'
     }
-    $sshInvoker = [SshInvoker]::new($configuration.HostName, $configuration.IdentityFile)
+    $sshInvoker = [SshInvoker]::new($configuration.HostName, $configuration.IdentityFile, $configuration.SshPort)
     # $str = "Get-ChildItem -Recurse $RemoteDirectory | Where-Object {`$_ -is [System.IO.FileInfo]} | ForEach-Object {`$_ | Get-FileHash | Add-Member @{Length=`$_.Length} -PassThru} | ConvertTo-Json"
     # $bytes = [System.Text.Encoding]::Unicode.GetBytes($str)
     # $encodedCommand = [Convert]::ToBase64String($bytes)
@@ -360,7 +360,7 @@ function Copy-FilesFromServer {
     if (-not $configuration) {
         $configuration = $Global:configuration
     }
-    $sshInvoker = [SshInvoker]::new($configuration.HostName, $configuration.IdentityFile)
+    $sshInvoker = [SshInvoker]::new($configuration.HostName, $configuration.IdentityFile, $configuration.SshPort)
     # discard return value.
     $r = $sshInvoker.ScpFrom($RemotePathes, $LocalDirectory)
     $r = $RemotePathes | ForEach-Object {

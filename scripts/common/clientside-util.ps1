@@ -135,7 +135,7 @@ function Send-SoftwarePackages {
 
 function  Get-SshInvoker {
     $c = $Global:configuration
-    $sshInvoker = [SshInvoker]::new($c.HostName, $c.IdentityFile)
+    $sshInvoker = [SshInvoker]::new($c.HostName, $c.IdentityFile, $c.SshPort)
     $sshInvoker
 }
 

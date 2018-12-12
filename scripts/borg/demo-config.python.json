@@ -11,6 +11,7 @@
     "OPENSSL_CONF": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.cfg"
   },
   "HostName": "192.168.33.110",
+  "SshPort": 22,
   "ServerName": "测试机",
   "coreNumber": 8,
   "mem": "8G",

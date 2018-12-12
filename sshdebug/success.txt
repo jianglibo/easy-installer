@@ -1,0 +1,93 @@
+PS C:\Users\admin> ssh -vv -i C:\Users\admin\.ssh\id_rsa admin@localhost
+OpenSSH_for_Windows_7.7p1, LibreSSL 2.6.4
+debug2: resolving "localhost" port 22
+debug2: ssh_connect_direct: needpriv 0
+debug1: Connecting to localhost [::1] port 22.
+debug1: Connection established.
+debug1: identity file C:\\Users\\admin\\.ssh\\id_rsa type 0
+debug1: key_load_public: No such file or directory
+debug1: identity file C:\\Users\\admin\\.ssh\\id_rsa-cert type -1
+debug1: Local version string SSH-2.0-OpenSSH_for_Windows_7.7
+debug1: Remote protocol version 2.0, remote software version OpenSSH_for_Windows_7.7
+debug1: match: OpenSSH_for_Windows_7.7 pat OpenSSH* compat 0x04000000
+debug2: fd 3 setting O_NONBLOCK
+debug1: Authenticating to localhost:22 as 'admin'
+debug1: SSH2_MSG_KEXINIT sent
+debug1: SSH2_MSG_KEXINIT received
+debug2: local client KEXINIT proposal
+debug2: KEX algorithms: curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diff
+fie-hellman-group14-sha256,diffie-hellman-group14-sha1,ext-info-c
+debug2: host key algorithms: ecdsa-sha2-nistp256-cert-v01@openssh.com,ecdsa-sha2-nistp384-cert-v01@openssh.com,ecdsa-sha2-nistp521-c
+penssh.com,ssh-ed25519,rsa-sha2-512,rsa-sha2-256,ssh-rsa
+debug2: ciphers ctos: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
+debug2: ciphers stoc: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
+debug2: MACs ctos: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac
+debug2: MACs stoc: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac
+debug2: compression ctos: none
+debug2: compression stoc: none
+debug2: languages ctos:
+debug2: languages stoc:
+debug2: first_kex_follows 0
+debug2: reserved 0
+debug2: peer server KEXINIT proposal
+debug2: KEX algorithms: curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diff
+ellman-group14-sha1
+debug2: host key algorithms: ssh-rsa,rsa-sha2-512,rsa-sha2-256,ecdsa-sha2-nistp256,ssh-ed25519
+debug2: ciphers ctos: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
+debug2: ciphers stoc: chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com
+debug2: MACs ctos: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac
+debug2: MACs stoc: umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac
+debug2: compression ctos: none
+debug2: compression stoc: none
+debug2: languages ctos:
+debug2: languages stoc:
+debug2: first_kex_follows 0
+debug2: reserved 0
+debug1: kex: algorithm: curve25519-sha256
+debug1: kex: host key algorithm: ecdsa-sha2-nistp256
+debug1: kex: server->client cipher: chacha20-poly1305@openssh.com MAC: <implicit> compression: none
+debug1: kex: client->server cipher: chacha20-poly1305@openssh.com MAC: <implicit> compression: none
+debug1: expecting SSH2_MSG_KEX_ECDH_REPLY
+debug1: Server host key: ecdsa-sha2-nistp256 SHA256:RBSdTDzNutRtIF2lX7C7a4jwmL505I1EYwTd0dokggE
+debug1: Host 'localhost' is known and matches the ECDSA host key.
+debug1: Found key in C:\\Users\\admin/.ssh/known_hosts:12
+debug2: set_newkeys: mode 1
+debug1: rekey after 134217728 blocks
+debug1: SSH2_MSG_NEWKEYS sent
+debug1: expecting SSH2_MSG_NEWKEYS
+debug1: SSH2_MSG_NEWKEYS received
+debug2: set_newkeys: mode 0
+debug1: rekey after 134217728 blocks
+debug2: key: C:\\Users\\admin\\.ssh\\id_rsa (000001B038668200), explicit, agent
+debug1: SSH2_MSG_EXT_INFO received
+debug1: kex_input_ext_info: server-sig-algs=<ssh-ed25519,ssh-rsa,rsa-sha2-256,rsa-sha2-512,ssh-dss,ecdsa-sha2-nistp256,ecdsa-sha2-ni
+debug2: service_accept: ssh-userauth
+debug1: SSH2_MSG_SERVICE_ACCEPT received
+debug1: Authentications that can continue: publickey,password,keyboard-interactive
+debug1: Next authentication method: publickey
+debug1: Offering public key: RSA SHA256:pvA6WiJX3I3pFgkXdVfshLryMWRkM4RSk4WY3RnLz5U C:\\Users\\admin\\.ssh\\id_rsa
+debug2: we sent a publickey packet, wait for reply
+debug1: Server accepts key: pkalg rsa-sha2-512 blen 279
+debug2: input_userauth_pk_ok: fp SHA256:pvA6WiJX3I3pFgkXdVfshLryMWRkM4RSk4WY3RnLz5U
+warning: agent returned different signature type ssh-rsa (expected rsa-sha2-512)
+debug1: Authentication succeeded (publickey).
+Authenticated to localhost ([::1]:22).
+debug1: channel 0: new [client-session]
+debug2: channel 0: send open
+debug1: Requesting no-more-sessions@openssh.com
+debug1: Entering interactive session.
+debug1: pledge: network
+debug1: console supports the ansi parsing
+debug1: client_input_global_request: rtype hostkeys-00@openssh.com want_reply 0
+debug2: channel_input_open_confirmation: channel 0: callback start
+debug2: fd 3 setting TCP_NODELAY
+debug2: client_session2_setup: id 0
+debug2: channel 0: request pty-req confirm 1
+debug2: channel 0: request shell confirm 1
+debug2: channel_input_open_confirmation: channel 0: callback done
+debug2: channel 0: open confirm rwindow 0 rmax 32768
+debug2: channel_input_status_confirm: type 99 id 0
+debug2: PTY allocation request accepted on channel 0
+debug2: channel 0: rcvd adjust 2097152
+debug2: channel_input_status_confirm: type 99 id 0
+debug2: shell request accepted on channel 0
