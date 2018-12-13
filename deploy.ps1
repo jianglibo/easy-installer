@@ -3,24 +3,43 @@ param (
     [ValidatePattern(".+@.+:.+")]
     [ValidateSet("Administrator@172.19.253.244:d:\\easy-installers")]
     [String]$RemoteDst,
-    [Parameter(Mandatory = $false)][switch]$IncludeDownloads
+    [Parameter(Mandatory = $false)][switch]$IncludeDownloads,
+    [switch]$NotCleanUp
 )
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-. (Join-Path -Path $here -ChildPath 'scripts' | Join-Path -ChildPath 'common' | Join-Path -ChildPath 'common-util.ps1')
 
-$TmpDir = New-TemporaryDirectory
+$t = New-TemporaryFile
+Remove-Item $t
+$TmpDir = New-Item -Path $t -ItemType Directory
 
-$exclude = '.vagrant', '.vscode', '.git', '.gitignore', 'downloads', "myconfigs", ".working", "sshdebug"
+$eiDir = New-Item -Path ($TmpDir.FullName | Join-Path -ChildPath 'easy-installer') -ItemType Directory
 
-if ($IncludeDownloads) {
-    $exclude = $exclude | Where-Object {$_ -ne 'downloads'}
+try {
+    $exclude = '.vagrant', '.vscode', '.git', '.gitignore', 'downloads', "myconfigs", ".working", "sshdebug"
+
+    if ($IncludeDownloads) {
+        $exclude = $exclude | Where-Object {$_ -ne 'downloads'}
+    }
+
+    Get-ChildItem -Path $here | Where-Object {$_.Name -notin $exclude} | Copy-Item -Destination $eiDir -Recurse
+
+    $finalzip = "${TmpDir}\easy-installer.zip"
+
+    $cmd = "Compress-Archive -Path ${eiDir}\* -DestinationPath $finalzip"
+
+    $cmd | Write-Verbose
+
+    Invoke-Expression -Command $cmd
+
+    $cmd = "scp $finalzip $RemoteDst"
+    $cmd | Write-Verbose
+    Invoke-Expression -Command $cmd
 }
-
-Get-ChildItem -Path $here | Where-Object {$_.Name -notin $exclude} | Copy-Item -Destination $TmpDir -Recurse
-$cmd = "scp -r $($TmpDir.FullName) $RemoteDst"
-$cmd | Write-Verbose
-Invoke-Expression -Command $cmd
-Remove-Item -Path $TmpDir -Recurse -Force
+finally {
+    if (-not $NotCleanUp) {
+        Remove-Item -Recurse -Force $TmpDir
+    }
+}
 
