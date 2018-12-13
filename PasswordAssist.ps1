@@ -1,7 +1,7 @@
 param (
     [Parameter(Mandatory = $false)][string]$ConfigFile,
     [Parameter(Mandatory = $false)][string]$ServerPublicKeyFile,
-    [ValidateSet("EncryptPassword", "SetMysqlPassword", "DownloadPublicKey", "CopyDemoConfigFile")]
+    [ValidateSet("EncryptPassword", "SetMysqlPassword", "DownloadPublicKey")]
     [string]$Action
 )
 
@@ -14,21 +14,6 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 "importing $($Global:ClientUtil)" | Write-Verbose
 "importing $($Global:CommonUtil)" | Write-Verbose
-
-if ($Action -eq "CopyDemoConfigFile") {
-    $appname = ""
-    while ($appname -notin 'borg', 'mysql') {
-        $appname = Read-Host -Prompt "Please enter: borg|mysql"
-    }
-    $serverlang = ""
-    while ($serverlang -notin 'python', 'powershell') {
-        $serverlang = Read-Host -Prompt "Please enter server side language: python|powershell"
-    }
-
-    $appfolder = $Global:ScriptDir | Join-Path -ChildPath $appname
-    Copy-DemoConfigFile -MyDir $appfolder -ToFileName "${appname}-config.json" -ServerLang $serverlang
-    return
-}
 
 while ((-not $ConfigFile) -or (-not (Test-Path -Path $ConfigFile))) {
     $ConfigFile = Read-Host -Prompt "Please enter the path of configuration file:"

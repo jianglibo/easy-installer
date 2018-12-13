@@ -21,22 +21,14 @@ function Copy-DemoConfigFile {
         ][string]$ServerLang,
         [Parameter(Mandatory = $true, Position = 3)][string]$ToFileName
     )
-    $demofolder = $PWD | Join-Path -ChildPath "myconfigs" | Join-Path -ChildPath $HostName
-    "MyDir is: $MyDir" | Write-Verbose
-    "Checking existance of $demofolder ...." | Write-Verbose
-    if (-not (Test-Path -Path $demofolder)) {
-        New-Item -Path $demofolder -ItemType "directory" | Out-Null
-    }
-    $tofile = $demofolder | Join-Path -ChildPath $ToFileName
-    "destination file is: $tofile" | Write-Verbose
+    "destination file is: $ToFileName" | Write-Verbose
     $srcfile = Join-Path -Path $MyDir -ChildPath "demo-config.${ServerLang}.json"
     "source file is: $srcfile" | Write-Verbose
 
     $h = Get-Content -Path $srcfile -Encoding UTF8 | ConvertFrom-Json
     $h.HostName = $HostName
-    # Copy-Item -Path $srcfile -Destination $tofile
-    $h | ConvertTo-Json -Depth 10 | Out-File $tofile -Encoding utf8
-    "The demo config file created at ${tofile}`n"
+    $h | ConvertTo-Json -Depth 10 | Out-File $ToFileName -Encoding utf8
+    "The demo config file created at ${ToFileName}`n"
 }
 function Get-ServerPublicKeyFile {
     param (
