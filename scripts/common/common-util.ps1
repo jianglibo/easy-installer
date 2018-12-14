@@ -161,6 +161,7 @@ function Get-Configuration {
         }
         $c | Add-Member -MemberType ScriptMethod -Name "DownloadPackages" -Value {
             $dl = Join-Path -Path $ProjectRoot -ChildPath "downloads" | Join-Path -ChildPath $this.AppName
+            "download to folder: $dl" | Write-Verbose
             $osConfig = $this.SwitchByOs.($this.OsType)
             Get-SoftwarePackages -TargetDir $dl -Softwares $osConfig.Softwares
         }

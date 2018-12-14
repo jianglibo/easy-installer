@@ -1,14 +1,16 @@
 param (
-    [Parameter(Mandatory = $true)]
-    [ValidatePattern(".+@.+:.+")]
-    [ValidateSet("Administrator@172.19.253.244:d:\\easy-installers")]
-    [String]$RemoteDst,
+    [Parameter(Mandatory = $false)][String]$RemoteUser="Administrator",
+    [Parameter(Mandatory = $false)][String]$RemotePath="d:\\easy-installers",
+    [Parameter(Mandatory = $false)][String]$RemoteHost = "172.19.253.244",
     [Parameter(Mandatory = $false)][switch]$IncludeDownloads,
     [switch]$NotCleanUp
 )
 
+$RemoteDst = "${RemoteUser}@${RemoteHost}:$RemotePath"
+$RemoteDst | Write-Verbose
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+$zipname = "easy-installer.zip"
 
 $t = New-TemporaryFile
 Remove-Item $t
@@ -23,9 +25,9 @@ try {
         $exclude = $exclude | Where-Object {$_ -ne 'downloads'}
     }
 
-    Get-ChildItem -Path $here | Where-Object {$_.Name -notin $exclude} | Copy-Item -Destination $eiDir -Recurse
+    Get-ChildItem -Path $here | Where-Object {$_.Name -notin $exclude} | Copy-Item -Destination $eiDir -Recurse -Exclude '*.pyc'
 
-    $finalzip = "${TmpDir}\easy-installer.zip"
+    $finalzip = "${TmpDir}\$zipname"
 
     $cmd = "Compress-Archive -Path ${eiDir}\* -DestinationPath $finalzip"
 
@@ -35,6 +37,18 @@ try {
 
     $cmd = "scp $finalzip $RemoteDst"
     $cmd | Write-Verbose
+    Invoke-Expression -Command $cmd
+
+    $RemoteZip = "$RemotePath\$zipname"
+
+    $fn = $zipname -split '\.' | Select-Object -First 1
+
+    $RemoteUnzipDir = "$RemotePath\$fn"
+
+    $cmd = "ssh ${RemoteUser}@$RemoteHost `"powershell -Command {Expand-Archive -Path $RemoteZip  -DestinationPath $RemoteUnzipDir -Force}`""
+
+    $cmd | Write-Verbose
+
     Invoke-Expression -Command $cmd
 }
 finally {

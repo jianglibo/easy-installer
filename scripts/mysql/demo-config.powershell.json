@@ -5,6 +5,7 @@
   "ClientScp": "scp",
   "ClientSsh": "ssh",
   "ServerExec": "pwsh",
+  "ServerLang": "powershell",
   "openssl": "openssl",
   "ClientOpenssl": "E:\\Program Files\\OpenSSL-Win64\\v1.0.2p\\bin\\openssl.exe",
   "ClientEnv": {

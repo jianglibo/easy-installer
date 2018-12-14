@@ -138,8 +138,12 @@ def invoke_mysql_sql_command(sql, plain_password, combine_error=False):
 
 def get_mysql_variables(variable_names=None, plain_password=None):
     result = invoke_mysql_sql_command('show variables', None, combine_error=True)
+    # result may start with some warning words.
+    angle_idx = result.index('<')
+    if angle_idx > 0:
+        result = result[angle_idx:]
     rows = [(x[0].text, x[1].text) for x in ET.fromstring(result)] # tuple (auto_increment_increment, 1)
-    if variable_names is None:
+    if (variable_names is None) or (len(variable_names) == 0):
         return rows
     elif isinstance(variable_names, str):
         result = filter(lambda x: x[0] == variable_names, rows)

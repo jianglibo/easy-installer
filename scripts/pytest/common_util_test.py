@@ -2,11 +2,12 @@ import unittest
 import common_util
 from global_static import PyGlobal, BorgConfiguration
 import shared_fort
-import os
+import os, io
 import hashlib
 import subprocess
 from functools import partial
 import tempfile
+import xml.etree.ElementTree as ET
 
 def two_add(a, b, c=6):
     return a + int(b) + c
@@ -77,6 +78,14 @@ class Test_TestIncrementDecrement(unittest.TestCase):
     def test_memoryfree(self):
         mf = common_util.get_memoryfree()
         print mf
+
+    def test_xml(self):
+        f = os.path.join(__file__, '..', '..', 'mysql', 'fixtures', 'abc.xml')
+        s = common_util.get_filecontent_str(f)
+        rows = [(x[0].text, x[1].text) for x in ET.fromstring(s)]
+        print rows
+        self.assertTrue(len(rows) > 0)
+        
 
 
         

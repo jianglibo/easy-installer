@@ -6,10 +6,13 @@ param (
         "Restart",
         "CopyDemoConfigFile",
         "Status", 
+        "GetVariables",
         "DownloadPackages",
         "SendPackages", 
         "Uninstall", 
         "FlushLogs",
+        "Echo",
+        "GetMycnf",
         "Dump",
         "BackupLocal",
         "DownloadPublicKey")]
@@ -137,7 +140,7 @@ else {
             break
         }
         Default {
-            Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action $Version
+            Invoke-ServerRunningPs1 -action $Action $Version
             # $configuration = Get-Configuration -ConfigFile $ConfigFile
             # $configuration | ConvertTo-Json -Depth 10
         }

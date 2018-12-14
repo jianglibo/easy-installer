@@ -40,7 +40,7 @@ switch ($Action) {
         $s = Protect-PasswordByOpenSSLPublicKey -ServerPublicKeyFile $ServerPublicKeyFile
         $Global:configuration.MysqlPassword = $s
         $Global:configuration.PSObject.Properties.Remove('OsConfig')
-        $Global:configuration | ConvertTo-Json -Depth 10 | Out-File $ConfigFile
+        $Global:configuration | ConvertTo-Json -Depth 10 | Out-File $ConfigFile -Encoding utf8
         break
     }
     "DownloadPublicKey" {
