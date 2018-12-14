@@ -23,9 +23,10 @@
   "OsType": "centos",
   "LogDir": "e:/backups/logs",
   "BorgBin": "/usr/local/bin/borg",
-  "BorgCreate": "%s create --stats --json %s::%s /etc /usr/local/bin",
+  "BorgCreate": "%s create --stats --json %s::%s /etc /usr/local/bin --exclude '/etc/yum.repos.d' --exclude '/etc/X11'",
   "BorgPrune": "%s prune -v --list --keep-daily=7 --keep-weekly=4 %s",
   "BorgList": "%s list --json %s",
+  "BorgInit": "%s init --encryption=none|repokey|keyfile|repokey-blake2|keyfile-blake2 %s",
   "BorgRepoPath": "/opt/repo",
   "LocalDir": "e:/backups/borg",
   "ServerSideFileList": [

@@ -17,7 +17,7 @@ $TmpDir = New-Item -Path $t -ItemType Directory
 $eiDir = New-Item -Path ($TmpDir.FullName | Join-Path -ChildPath 'easy-installer') -ItemType Directory
 
 try {
-    $exclude = '.vagrant', '.vscode', '.git', '.gitignore', 'downloads', "myconfigs", ".working", "sshdebug"
+    $exclude = '.vagrant', '.vscode', '.git', '.gitignore', 'downloads', "myconfigs", ".working", "sshdebug", "*.pyc"
 
     if ($IncludeDownloads) {
         $exclude = $exclude | Where-Object {$_ -ne 'downloads'}

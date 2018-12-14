@@ -196,7 +196,9 @@ function Get-Configuration {
         }
     }
     $Global:configuration = $c
-    $Global:sshinvoker = Get-SshInvoker
+    if (-not $ServerSide) {
+        $Global:sshinvoker = Get-SshInvoker
+    }
     $c
 }
 function Join-UniversalPath {

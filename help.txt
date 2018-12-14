@@ -1,3 +1,5 @@
 ./easy-installer.tcl --host=192.168.33.50 java install
 
 add mocklist=mocklist-local to use mocklist.
+
+https://tecadmin.net/install-python-2-7-on-centos-rhel/

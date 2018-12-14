@@ -113,7 +113,9 @@ class SshInvoker {
 
         $roption = if ($hasDir) {'-r'} else {''}
 
-        $scpStr = "scp -i {0} {1} {2} {3}@{4}:{5} 2>&1" -f $this.ifile, $roption, $localPathes, $this.UserName, $this.HostName, $remotePath
+        $scpStr = "scp -P {0} -i {1} {2} {3} {4}@{5}:{6} 2>&1" -f $this.SshPort, $this.ifile, $roption, $localPathes, $this.UserName, $this.HostName, $remotePath
+
+        $scpStr | Write-Verbose
 
         $this.commandName = $scpStr
 

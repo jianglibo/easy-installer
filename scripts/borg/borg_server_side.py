@@ -86,7 +86,11 @@ def invoke_prune():
     return subprocess.check_output(list_cmd, shell=True)
 
 def init_borg_repo():
-    init_cmd = [borg_bin, 'init', '--encryption=none', repo_path]
+    # init_cmd = [borg_bin, 'init', '--encryption=none', repo_path]
+    j = PyGlobal.configuration.json
+    borg_init = j['BorgInit']
+    init_cmd = borg_init % (borg_bin, repo_path)
+    init_cmd = init_cmd.split()
     try:
         subprocess.check_output(init_cmd)
         return 'SUCCESS'

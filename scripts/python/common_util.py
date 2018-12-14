@@ -4,7 +4,7 @@
 # https://www.tutorialspoint.com/python/python_lists.htm
 # https://www.python-course.eu/lambda.php
 
-import os, urllib2, io, json
+import os, urllib2, io, json, codecs
 from global_static import PyGlobal, BorgConfiguration
 import hashlib
 from functools import partial
@@ -55,6 +55,9 @@ def get_software_packages(target_dir, softwares):
                 output.write(downloading_file.read())
     
 def get_filecontent_str(config_file, encoding="utf-8"):
+    with io.open(config_file, 'rb') as opened_file:
+        if opened_file.read(3) == codecs.BOM_UTF8:
+            encoding = 'utf-8-sig'
     try:
         f = io.open(config_file,mode="r",encoding=encoding)
         return f.read()
@@ -65,6 +68,9 @@ def get_filecontent_str(config_file, encoding="utf-8"):
         f.close()
 
 def get_filecontent_lines(config_file, encoding="utf-8"):
+    with io.open(config_file, 'rb') as opened_file:
+        if opened_file.read(3) == codecs.BOM_UTF8:
+            encoding = 'utf-8-sig'
     try:
         f = io.open(config_file,mode="r",encoding=encoding)
         return f.readlines()
@@ -76,7 +82,8 @@ def get_filecontent_lines(config_file, encoding="utf-8"):
 
 def get_configration(config_file, encoding="utf-8", server_side=False):
     if (os.path.isfile(config_file) and os.path.exists(config_file)):
-        j = json.loads(get_filecontent_str(config_file, encoding=encoding))
+        content = get_filecontent_str(config_file, encoding=encoding)
+        j = json.loads(content)
         os_type = j['OsType']
         os_config = j['SwitchByOs'][os_type]
         softwares = os_config['Softwares']
@@ -84,7 +91,7 @@ def get_configration(config_file, encoding="utf-8", server_side=False):
             dl = os_config['ServerSide']['PackageDir']
         else:
             dl = os.path.join(PyGlobal.project_dir, 'downloads', j['AppName'])
-        get_software_packages(dl, softwares)
+        # get_software_packages(dl, softwares)
         PyGlobal.configuration = BorgConfiguration(j)
         return j
     else:

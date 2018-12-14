@@ -35,12 +35,34 @@ function UnInstall-Borg {
     }
 }
 
+# function Initialize-BorgRepo {
+#     param (
+#         [parameter(Mandatory = $false)][string]$RepoPath,
+#         [parameter(Mandatory = $false)]
+#         [ValidateSet("repokey", "keyfile", "repokey-blake2", "keyfile-blake2", "none")]
+#         [string]$encryption = 'none'
+#     )
+#     if (-not $RepoPath) {
+#         $RepoPath = $Global:configuration.BorgRepoPath
+#     }
+
+#     if (-not (Test-Path $RepoPath -PathType Container)) {
+#         New-Item -Path $RepoPath -ItemType Directory | Out-Null
+#     }
+#     $cmd = "{0} init --encryption={1} {2}" -f $Global:configuration.BorgBin, $encryption, $RepoPath
+#     $cmd | Write-Verbose
+#     Invoke-Expression -Command $cmd
+#     if ($LASTEXITCODE -ne 0) {
+#         "FAIL" | Send-LinesToClient
+#     }
+#     else {
+#         "SUCCESS" | Send-LinesToClient
+#     }
+# }
+
 function Initialize-BorgRepo {
     param (
-        [parameter(Mandatory = $false)][string]$RepoPath,
-        [parameter(Mandatory = $false)]
-        [ValidateSet("repokey", "keyfile", "repokey-blake2", "keyfile-blake2", "none")]
-        [string]$encryption = 'none'
+        [parameter(Mandatory = $false)][string]$RepoPath
     )
     if (-not $RepoPath) {
         $RepoPath = $Global:configuration.BorgRepoPath
@@ -49,7 +71,7 @@ function Initialize-BorgRepo {
     if (-not (Test-Path $RepoPath -PathType Container)) {
         New-Item -Path $RepoPath -ItemType Directory | Out-Null
     }
-    $cmd = "{0} init --encryption={1} {2}" -f $Global:configuration.BorgBin, $encryption, $RepoPath
+    $cmd = $Global:configuration.BorgInit -f $Global:configuration.BorgBin, $RepoPath
     $cmd | Write-Verbose
     Invoke-Expression -Command $cmd
     if ($LASTEXITCODE -ne 0) {
