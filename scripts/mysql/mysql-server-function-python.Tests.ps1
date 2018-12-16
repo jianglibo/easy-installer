@@ -258,7 +258,7 @@ Describe "flush mysql" {
         
         $r = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht
 
-        $r.files.Count + 1 | Should -Be $ht.Count
+        $r.Count | Should -Be 1
         $r.files | Select-Object -Property Path | Write-Verbose
         $maxb = Get-MaxLocalDir
 

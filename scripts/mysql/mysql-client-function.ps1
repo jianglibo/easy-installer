@@ -71,8 +71,9 @@ function Copy-MysqlLogFiles {
     $idxfile = Join-Path -Path $maxb -ChildPath 'logbin.index'
 
     $RemoteLogFilesWithHashValue | ForEach-Object {$_.LocalPath} | Out-File -Encoding ascii -FilePath $idxfile
-        
-    $rpathes = $RemoteLogFilesWithHashValue |
+
+
+    $NeedDownload = $RemoteLogFilesWithHashValue |
         Where-Object {
         $exists = Test-Path -Path $_.LocalPath
         if ($exists) {
@@ -83,7 +84,9 @@ function Copy-MysqlLogFiles {
         else {
             $true
         }
-    } | ForEach-Object {$_.Path} | Sort-Object
+    }
+        
+    $rpathes = $NeedDownload | ForEach-Object {$_.Path} | Sort-Object
 
     if (-not $rpathes) {
         return
@@ -91,7 +94,7 @@ function Copy-MysqlLogFiles {
 
     $r = Copy-FilesFromServer -RemotePathes $rpathes -LocalDirectory $maxb
     # verify all downloaded file.
-    $files = $RemoteLogFilesWithHashValue | ForEach-Object {
+    $files = $NeedDownload | ForEach-Object {
         $fh = Get-FileHash -Path $_.LocalPath
         if ($fh.Hash -ne $_.Hash) {
             throw "file $($fh.Path) with length $($fh.Length)  with hash $($fh.Hash) Hash value doesn't match the server side file's."
