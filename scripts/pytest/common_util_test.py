@@ -66,7 +66,7 @@ class Test_TestIncrementDecrement(unittest.TestCase):
         self.assertEqual(v, 4)
 
     def test_filehashes(self):
-        print common_util.get_filehashes(PyGlobal.python_dir)
+        print common_util.get_dir_filehashes(PyGlobal.python_dir)
 
     def test_diskfree(self):
         dfs = common_util.get_diskfree()

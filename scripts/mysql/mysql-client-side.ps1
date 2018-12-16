@@ -11,9 +11,11 @@ param (
         "SendPackages", 
         "Uninstall", 
         "FlushLogs",
+        "FlushLogFileHash",
         "Echo",
         "GetMycnf",
         "Dump",
+        "DownloadDump",
         "BackupLocal",
         "DownloadPublicKey")]
     [string]$Action,
@@ -101,20 +103,49 @@ else {
         }
         "Dump" {
             $dumpraw = Invoke-ServerRunningPs1 -action $Action
-            $dumpraw | Write-Verbose
-            $dumpr = $dumpraw | Receive-LinesFromServer | ConvertFrom-Json
+            if (-not $dumpr) {
+                "Dump action return nothing." | Write-Error
+                $dumpr = Invoke-ServerRunningPs1 -Action FileHash $configuration.DumpFilename | Receive-LinesFromServer | ConvertFrom-Json
+            } else {
+                $dumpraw | Write-Verbose
+                $dumpr = $dumpraw | Receive-LinesFromServer | ConvertFrom-Json
+            }
             $copyr = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $dumpr
-
             $success = $dumpr.Length -and $dumpr.Path -and $copyr.Length
             $v = @{result = $dumpr; download = $copyr; success=$success; timespan=(Get-Date) - $scriptstarttime}
             $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
             $v | Out-JsonOrOrigin -Json:$Json
             break
         }
+        "DownloadDump" {
+            $dumpr = Invoke-ServerRunningPs1 -Action FileHash $configuration.DumpFilename | Receive-LinesFromServer | ConvertFrom-Json
+            $copyr = Copy-MysqlDumpFile -RemoteDumpFileWithHashValue $dumpr
+            $success = $dumpr.Length -and $dumpr.Path -and $copyr.Length
+            $v = @{result = $dumpr; download = $copyr; success=$success; timespan=(Get-Date) - $scriptstarttime}
+            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
+            $v | Out-JsonOrOrigin -Json:$Json
+            break
+        }
+        "FlushLogFileHash" {
+            $flushraw = Invoke-ServerRunningPs1 -Action FlushLogFileHash
+            $flushraw | Write-Verbose
+            [array]$flushr = $flushraw | Receive-LinesFromServer | ConvertFrom-Json
+            $flushr | Write-Verbose
+            break
+        }
         "FlushLogs" {
             $flushraw = Invoke-ServerRunningPs1 -action $Action
             $flushraw | Write-Verbose
             [array]$flushr = $flushraw | Receive-LinesFromServer | ConvertFrom-Json
+
+            # 'getting log file hash......' | Write-Verbose
+            # Start-Sleep -Seconds 10
+            # $flushraw = Invoke-ServerRunningPs1 -Action FlushLogFileHash
+            # $flushraw | Write-Verbose
+            # [array]$flushr1 = $flushraw | Receive-LinesFromServer | ConvertFrom-Json
+
+            # Zip-List  -Aarray $flushr -Barray $flushr1 | ForEach-Object {if ($_.item1.Length -ne $_.item2.Length) { $_.item1.Path + "wrong." }}
+
             $copyr = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $flushr
 
             $success = $flushr[0].Length -and $flushr[0].Path -and $copyr.Length

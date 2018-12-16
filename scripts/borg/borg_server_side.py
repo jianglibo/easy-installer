@@ -39,8 +39,8 @@ def main(action, args):
         common_util.send_lines_to_client(get_openssl_publickey())
     elif action == 'Install':
         common_util.send_lines_to_client(install_borg())
-    elif action == 'FileHashes':
-        common_util.send_lines_to_client(common_util.get_filehashes(args[0]))
+    elif action == 'DirFileHashes':
+        common_util.send_lines_to_client(common_util.get_dir_filehashes(args[0]))
     elif action == 'Echo':
         common_util.send_lines_to_client(' '.join(args))
 

@@ -4,6 +4,7 @@ class PyGlobal:
     configuration = None
     config_file = None
     mysql_extrafile= None
+    verbose = False
     line_start = "for-easyinstaller-client-use-start"
     line_end = "for-easyinstaller-client-use-end"
     gc_file = os.path.realpath(__file__)

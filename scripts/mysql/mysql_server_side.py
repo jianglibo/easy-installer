@@ -1,17 +1,11 @@
 #!/usr/bin/python
 
-import sys
 import getopt
-import os
 from global_static import PyGlobal
 import common_util
-import subprocess
-import json
 import shutil
-import tempfile
 import StringIO
-import re
-import io
+import sys, os, io, time, re, tempfile, json, subprocess
 import itertools
 import xml.etree.ElementTree as ET
 
@@ -42,8 +36,14 @@ def main(action, args):
         common_util.send_lines_to_client(get_mycnf_file())
     elif action == 'DownloadPublicKey':
         common_util.send_lines_to_client(get_openssl_publickey())
+    elif action == 'DirFileHashes':
+        common_util.send_lines_to_client(common_util.get_dir_filehashes(args[0]))
     elif action == 'FileHashes':
-        common_util.send_lines_to_client(common_util.get_filehashes(args[0]))
+        common_util.send_lines_to_client(common_util.get_filehashes(args))
+    elif action == 'FileHash':
+        common_util.send_lines_to_client(common_util.get_one_filehash(args[0]))
+    elif action == 'FlushLogFileHash':
+        common_util.send_lines_to_client(flushlogs_filehash())
     elif action == 'GetVariables':
         common_util.send_lines_to_client(get_mysql_variables(args))
     elif action == 'Echo':
@@ -154,14 +154,7 @@ def get_mysql_variables(variable_names=None, plain_password=None):
         result = map(lambda t: {'name': t[0], 'value': t[1]}, result)
         return result
 
-def invoke_mysql_flushlogs(plain_password=None):
-    extra_file = new_mysql_extrafile(plain_password)
-    flush_cmd = [
-        j['MysqlAdminBin'],
-        "--defaults-extra-file=%s" % extra_file,
-        "flush-logs"
-    ]
-    subprocess.call(flush_cmd)
+def flushlogs_filehash(plain_password=None):
     idx_file = get_mysql_variables('log_bin_index', plain_password)['value']
     parent = os.path.split(idx_file)[0]
     with io.open(idx_file, 'rb') as opened_file:
@@ -171,6 +164,19 @@ def invoke_mysql_flushlogs(plain_password=None):
             ff = os.path.join(parent, relative_file)
             return common_util.get_one_filehash(ff)
         return map(to_file_desc, lines)
+
+def invoke_mysql_flushlogs(plain_password=None):
+    extra_file = new_mysql_extrafile(plain_password)
+    flush_cmd = [
+        j['MysqlAdminBin'],
+        "--defaults-extra-file=%s" % extra_file,
+        "flush-logs"
+    ]
+    return_code = subprocess.call(flush_cmd)
+    # time.sleep(5)
+    if (PyGlobal.verbose):
+        print "invoke_mysql_flushlogs subprocess call return %s" % return_code
+    return flushlogs_filehash(plain_password)
 
 
 def invoke_mysqldump(plain_password=None):
@@ -222,7 +228,7 @@ def get_mycnf_file():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hv:a:", ["help", "action=", "notclean"])
+        opts, args = getopt.getopt(sys.argv[1:], "hv:a:", ["help", "action=", "notclean", "verbose"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
@@ -235,6 +241,8 @@ if __name__ == "__main__":
             verbose = True
         elif o == '--notclean':
             clean = False
+        elif o == '--verbose':
+            PyGlobal.verbose = True
         elif o in ("-h", "--help"):
             usage()
             sys.exit()

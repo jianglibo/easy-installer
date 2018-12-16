@@ -97,6 +97,9 @@ def get_configration(config_file, encoding="utf-8", server_side=False):
     else:
         raise ValueError("config file %s doesn't exists." % config_file)
 
+def get_filehashes(files, mode="SHA256"):
+    return [get_one_filehash(h, mode) for h in files]
+
 def get_one_filehash(file_to_hash, mode="SHA256"):
     h = hashlib.new(mode)
     o = {}
@@ -111,7 +114,7 @@ def get_one_filehash(file_to_hash, mode="SHA256"):
     o['Length'] = os.path.getsize(file_to_hash)
     return o
 
-def get_filehashes(dir_to_hash, mode="SHA256"):
+def get_dir_filehashes(dir_to_hash, mode="SHA256"):
     l = []
     for dirName, sub_dirs, fileList in os.walk(dir_to_hash, topdown=False):
         pf = partial(os.path.join, dirName)

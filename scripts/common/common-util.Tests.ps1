@@ -255,6 +255,17 @@ Describe "base64" {
     }
 }
 
+Describe "zip function" {
+    it "should zip." {
+        $a = @(1,2,3)
+        $b = @(4,5,6)
+        $tp = Zip-List -Aarray $a -Barray $b | Select-Object -First 1
+
+        $tp.item1 | Should -Be 1
+        $tp.item2 | Should -Be 4
+    }
+}
+
 Describe "protect password" {
     it "should convert." {
         $ss = ConvertTo-SecureString -String "123456" -AsPlainText -Force  # | ConvertFrom-SecureString

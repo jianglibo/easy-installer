@@ -207,6 +207,22 @@ Describe "mysql extra file" {
     }
 }
 
+
+Describe "get file hash" {
+    it "should get file hash" {
+        Get-ConfigurationForT -Verbose
+        $Global:configuration.DumpFilename | Should -Be "/tmp/mysqldump.sql"
+        $r = Invoke-ServerRunningPs1 -action FileHashes $Global:configuration.DumpFilename
+        $r | Write-Verbose
+        $r =  $r | Receive-LinesFromServer | ConvertFrom-Json
+        $r[0].Path | Should -Be $Global:configuration.DumpFilename
+        $r = Invoke-ServerRunningPs1 -action FileHash $Global:configuration.DumpFilename
+        $r | Write-Verbose
+        $r = $r | Receive-LinesFromServer | ConvertFrom-Json
+        $r.Path | Should -Be $Global:configuration.DumpFilename
+    }
+}
+
 Describe "dump mysql" {
     $df = Join-Path $TestDrive "dump.sql"
     it "should dump" {
@@ -239,8 +255,11 @@ Describe "flush mysql" {
 
         $r | Write-Verbose
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json
+        
         $r = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $ht
-        $r | Write-Verbose
+
+        $r.files.Count + 1 | Should -Be $ht.Count
+        $r.files | Select-Object -Property Path | Write-Verbose
         $maxb = Get-MaxLocalDir
 
         $idxfile = Join-Path -Path $maxb -ChildPath 'logbin.index'

@@ -1622,12 +1622,16 @@ function Invoke-ServerRunningPs1 {
         $ncp = ""
     }
 
+    $vb = Get-Verbose
+
     switch ($c.ServerLang) {
         'powershell' { 
-            $rcmd = "{0} -f {1} -action {2} {3} {4} {5}" -f $c.ServerExec, $entryPoint, $action, $ncp, (Get-Verbose), ($hints -join ' ')
+            $rcmd = "{0} -f {1} -action {2} {3} {4} {5}" -f $c.ServerExec, $entryPoint, $action, $ncp, $vb, ($hints -join ' ')
          }
          'python' {
-            $rcmd = "{0} {1} --action={2} {3} {4}" -f $c.ServerExec, $entryPoint, $action, "$(if($NotCleanUp) {'--notclean'} else {''})" , ($hints -join ' ')
+            $ncp = if($NotCleanUp) {'--notclean'} else {''}
+            $vb = if ($vb) {'--verbose'} else {''}
+            $rcmd = "{0} {1} --action={2} {3} {4} {5}" -f $c.ServerExec, $entryPoint, $action, $ncp , $vb, ($hints -join ' ')
          }
         Default {
             throw "unknown ServerLang property in configration file: $($c.ServerLang)"
@@ -1635,6 +1639,19 @@ function Invoke-ServerRunningPs1 {
     }
     $rcmd | Out-String | Write-Verbose
     $sshInvoker.Invoke($rcmd, (-not $notCombineError))
+}
+
+function Zip-List {
+    param (
+        [Parameter(Mandatory=$true)]
+        $Aarray,
+        [Parameter(Mandatory=$true)]$Barray
+    )
+    while ($Aarray) {
+        $x, $Aarray = $Aarray
+        $y, $Barray = $Barray
+        [tuple]::Create($x, $y)
+    }
 }
 
 

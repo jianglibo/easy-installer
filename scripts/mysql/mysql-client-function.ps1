@@ -61,7 +61,7 @@ function Copy-MysqlLogFiles {
     $RemoteLogFilesWithHashValue | Write-Verbose
 
     # filter out already exist files.
-    $RemoteLogFilesWithHashValue = $RemoteLogFilesWithHashValue |
+    $RemoteLogFilesWithHashValue = $RemoteLogFilesWithHashValue | Select-Object -SkipLast 1 |
         ForEach-Object {
         $fn = Split-UniversalPath -Path $_.Path -Leaf
         $tf = Join-UniversalPath $maxb $fn
@@ -94,7 +94,7 @@ function Copy-MysqlLogFiles {
     $files = $RemoteLogFilesWithHashValue | ForEach-Object {
         $fh = Get-FileHash -Path $_.LocalPath
         if ($fh.Hash -ne $_.Hash) {
-            throw "$($fh.Hash) Hash value doesn't match the server side file's."
+            throw "file $($fh.Path) with length $($fh.Length)  with hash $($fh.Hash) Hash value doesn't match the server side file's."
         }
         $_
     }
