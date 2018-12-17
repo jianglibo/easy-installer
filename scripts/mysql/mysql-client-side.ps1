@@ -103,7 +103,7 @@ else {
         }
         "Dump" {
             $dumpraw = Invoke-ServerRunningPs1 -action $Action
-            if (-not $dumpr) {
+            if (-not $dumpraw) {
                 "Dump action return nothing." | Write-Error
                 $dumpr = Invoke-ServerRunningPs1 -Action FileHash $configuration.DumpFilename | Receive-LinesFromServer | ConvertFrom-Json
             } else {
