@@ -210,7 +210,7 @@ Describe "mysql extra file" {
 Describe "dump mysql" {
     $df = Join-Path $TestDrive "dump.sql"
     it "should dump" {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -Verbose
         $r = Invoke-ServerRunningPs1 -action Dump
         $r | Write-Verbose
         $ht = $r | Receive-LinesFromServer | ConvertFrom-Json

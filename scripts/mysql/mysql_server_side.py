@@ -36,18 +36,12 @@ def main(action, args):
         common_util.send_lines_to_client(get_mycnf_file())
     elif action == 'DownloadPublicKey':
         common_util.send_lines_to_client(get_openssl_publickey())
-    elif action == 'DirFileHashes':
-        common_util.send_lines_to_client(common_util.get_dir_filehashes(args[0]))
-    elif action == 'FileHashes':
-        common_util.send_lines_to_client(common_util.get_filehashes(args))
-    elif action == 'FileHash':
-        common_util.send_lines_to_client(common_util.get_one_filehash(args[0]))
     elif action == 'FlushLogFileHash':
         common_util.send_lines_to_client(flushlogs_filehash())
     elif action == 'GetVariables':
         common_util.send_lines_to_client(get_mysql_variables(args))
-    elif action == 'Echo':
-        common_util.send_lines_to_client(' '.join(args))
+    else:
+        common_util.common_action_handler(action, args)
 
 def get_openssl_publickey():
     openssl_exec = j["openssl"]

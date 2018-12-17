@@ -8,6 +8,7 @@ param (
         "DiskFree",
         "MemoryFree",
         "FileHashes",
+        "DirFileHashes",
         "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)][switch]$NotCleanUp,
@@ -66,24 +67,8 @@ try {
             Invoke-BorgPrune
             break
         }
-        "DownloadPublicKey" {
-            Get-OpenSSLPublicKey
-            break
-        }
-        "DiskFree" {
-            Get-DiskFree
-            break
-        }
-        "MemoryFree" {
-            Get-MemoryFree
-            break
-        }
-        "FileHashes" {
-            Get-FileHashsInDirectory -Directory "$hints"
-            break
-        }
         Default {
-            $configuration | ConvertTo-Json -Depth 10
+            Invoke-CommonActions -Action $Action -NotCleanUp:$NotCleanUp -hints $hints
         }
     }
 }

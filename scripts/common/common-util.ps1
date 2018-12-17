@@ -261,7 +261,7 @@ function Copy-ChangedFiles {
     # $encodedCommand = [Convert]::ToBase64String($bytes)
     # $cmd = "$($configuration.ServerExec) -e '${encodedCommand}'"
     # [array]$filelist = $sshInvoker.invoke($cmd) | ConvertFrom-Json
-    $rawResult = Invoke-ServerRunningPs1 -Action FileHashes $RemoteDirectory
+    $rawResult = Invoke-ServerRunningPs1 -Action DirFileHashes $RemoteDirectory
     $rawResult | Write-Verbose
     [array]$filelist = $rawResult | Receive-LinesFromServer | ConvertFrom-Json
 
@@ -1651,6 +1651,42 @@ function Zip-List {
         $x, $Aarray = $Aarray
         $y, $Barray = $Barray
         [tuple]::Create($x, $y)
+    }
+}
+
+function Invoke-CommonActions {
+    param (
+    [parameter(Mandatory = $true, Position = 0)]
+    [ValidateSet(
+        "DiskFree",
+        "MemoryFree",
+        "FileHashes",
+        "DirFileHashes",
+        "DownloadPublicKey")]
+    [string]$Action,
+    [parameter(Mandatory = $false)][switch]$NotCleanUp,
+    [String[]]$hints
+    )
+    switch ($Action) {
+        "DownloadPublicKey" {
+            Get-OpenSSLPublicKey
+            break
+        }
+        "DiskFree" {
+            Get-DiskFree
+            break
+        }
+        "MemoryFree" {
+            Get-MemoryFree
+            break
+        }
+        "DirFileHashes" {
+            Get-FileHashsInDirectory -Directory "$hints"
+            break
+        }
+        Default {
+           $Global:configuration | ConvertTo-Json -Depth 10
+        }
     }
 }
 

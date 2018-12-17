@@ -113,7 +113,7 @@ try {
             break
         }
         Default {
-            $configuration | ConvertTo-Json -Depth 10
+            Invoke-CommonActions -Action $Action -NotCleanUp:$NotCleanUp -hints $hints
         }
     }
 }

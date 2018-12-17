@@ -306,3 +306,17 @@ def subprocess_checkout_print_error(cmd_list, redirect_err=True, shell=False):
     except subprocess.CalledProcessError as cpe:
         print cpe
         return cpe.output
+
+def common_action_handler(action, args):
+    if action == 'DirFileHashes':
+        send_lines_to_client(get_dir_filehashes(args[0]))
+    elif action == 'FileHashes':
+        send_lines_to_client(get_filehashes(args))
+    elif action == 'FileHash':
+        send_lines_to_client(get_one_filehash(args[0]))
+    elif action == 'Echo':
+        send_lines_to_client(' '.join(args))
+    elif action == 'DiskFree':
+        send_lines_to_client(get_diskfree())
+    elif action == 'MemoryFree':
+        send_lines_to_client(get_memoryfree())

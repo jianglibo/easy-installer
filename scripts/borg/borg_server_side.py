@@ -29,20 +29,14 @@ def main(action, args):
         common_util.send_lines_to_client(new_borg_archive())
     elif action == 'Prune':
         common_util.send_lines_to_client(invoke_prune())
-    elif action == 'DiskFree':
-        common_util.send_lines_to_client(common_util.get_diskfree())
-    elif action == 'MemoryFree':
-        common_util.send_lines_to_client(common_util.get_memoryfree())
     elif action == 'InitializeRepo':
         common_util.send_lines_to_client(init_borg_repo())
     elif action == 'DownloadPublicKey':
         common_util.send_lines_to_client(get_openssl_publickey())
     elif action == 'Install':
         common_util.send_lines_to_client(install_borg())
-    elif action == 'DirFileHashes':
-        common_util.send_lines_to_client(common_util.get_dir_filehashes(args[0]))
-    elif action == 'Echo':
-        common_util.send_lines_to_client(' '.join(args))
+    else:
+        common_util.common_action_handler(action, args)
 
 def get_openssl_publickey():
     openssl_exec = j["openssl"]
@@ -100,7 +94,7 @@ def init_borg_repo():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hv:a:", ["help", "action=", "notclean"])
+        opts, args = getopt.getopt(sys.argv[1:], "hv:a:", ["help", "action=", "notclean", "verbose"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
@@ -113,6 +107,8 @@ if __name__ == "__main__":
             verbose = True
         elif o == '--notclean':
             clean = False
+        elif o == '--verbose':
+            PyGlobal.verbose = True
         elif o in ("-h", "--help"):
             usage()
             sys.exit()

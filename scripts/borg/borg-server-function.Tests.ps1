@@ -49,7 +49,7 @@ Describe "init borg repo successly." {
 
 Describe "new borg archive successly." {
     it "should create new borg archive." {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -Verbose
         $r = Invoke-ServerRunningPs1 -Action Archive
         $r | Write-Verbose
         $r = $r | Receive-LinesFromServer | ConvertFrom-Json
@@ -59,7 +59,7 @@ Describe "new borg archive successly." {
 
 Describe "new borg prune successly." {
     it "should prune borg archive." {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -Verbose
         $r = Invoke-ServerRunningPs1 -Action Prune
         $r | Write-Verbose
         [array]$r = $r | Receive-LinesFromServer
@@ -69,7 +69,7 @@ Describe "new borg prune successly." {
 
 Describe "download borg repo." {
     it "should download borg repo." {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -Verbose
         $r = Copy-BorgRepoFiles
         $r | Out-Host
         $r.total | Out-Host
@@ -79,8 +79,8 @@ Describe "download borg repo." {
 
 Describe "file hashes in a directory." {
     it "should get file hashes." {
-        Get-ConfigurationForT
-        $r = Invoke-ServerRunningPs1 -Action FileHashes '/etc/NetworkManager' | Receive-LinesFromServer | ConvertFrom-Json
+        Get-ConfigurationForT -Verbose
+        $r = Invoke-ServerRunningPs1 -Action DirFileHashes '/etc/NetworkManager' | Receive-LinesFromServer | ConvertFrom-Json
         $r.Count | Should -BeGreaterThan 0
         $r[0].Algorithm | Should -BeTrue
         $r | Write-Verbose
@@ -89,7 +89,7 @@ Describe "file hashes in a directory." {
 
 Describe "copy changed files." {
     it "should copy changed files." {
-        Get-ConfigurationForT
+        Get-ConfigurationForT -Verbose
         $Error.Clear()
         $repo = Get-MaxLocalDir
         if (Test-Path -Path $repo) {
