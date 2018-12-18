@@ -143,7 +143,6 @@ else {
             # $flushraw = Invoke-ServerRunningPs1 -Action FlushLogFileHash
             # $flushraw | Write-Verbose
             # [array]$flushr1 = $flushraw | Receive-LinesFromServer | ConvertFrom-Json
-
             # Zip-List  -Aarray $flushr -Barray $flushr1 | ForEach-Object {if ($_.item1.Length -ne $_.item2.Length) { $_.item1.Path + "wrong." }}
 
             $copyr = Copy-MysqlLogFiles -RemoteLogFilesWithHashValue $flushr

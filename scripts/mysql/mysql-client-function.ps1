@@ -94,7 +94,7 @@ function Copy-MysqlLogFiles {
 
     $r = Copy-FilesFromServer -RemotePathes $rpathes -LocalDirectory $maxb
     # verify all downloaded file.
-    $files = $NeedDownload | ForEach-Object {
+    [array]$files = $NeedDownload | ForEach-Object {
         $fh = Get-FileHash -Path $_.LocalPath
         if ($fh.Hash -ne $_.Hash) {
             throw "file $($fh.Path) with length $($fh.Length)  with hash $($fh.Hash) Hash value doesn't match the server side file's."
