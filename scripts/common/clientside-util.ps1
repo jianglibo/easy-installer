@@ -143,7 +143,9 @@ function Copy-PsScriptToServer {
             ForEach-Object {Resolve-Path -Path $_} |
             Select-Object -ExpandProperty Path
         
-        $filehashfile = Join-Path -Path $Global:ProjectTmpDir -ChildPath 'copingfiles.json'
+        $ConfigFileStringHash = Get-StringHash -String $ConfigFile
+        
+        $filehashfile = Join-Path -Path $Global:ProjectTmpDir -ChildPath "${ConfigFileStringHash}.json"
 
         if (Test-Path $filehashfile) {
             $mp = Get-Content -Path $filehashfile | ConvertFrom-Json

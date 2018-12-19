@@ -1100,8 +1100,22 @@ function Invoke-Executable {
 
 function New-TemporaryDirectory {
     $t = New-TemporaryFile
-    Remove-Item $t
+    Remove-Item -Path $t -Force
     New-Item -Path $t -ItemType Container
+}
+
+#http://jongurgul.com/blog/get-stringhash-get-filehash/ 
+Function Get-StringHash { 
+        param (
+            [string] $String,
+            [ValidateSet("MD5", "RIPEMD160", "SHA1", "SHA256", "SHA384", "SHA512")]
+            [string]$HashName = "SHA256")
+
+    $StringBuilder = New-Object System.Text.StringBuilder
+    [System.Security.Cryptography.HashAlgorithm]::Create($HashName).ComputeHash([System.Text.Encoding]::UTF8.GetBytes($String)) | ForEach-Object { 
+        [Void]$StringBuilder.Append($_.ToString("x2")) 
+    } 
+    $StringBuilder.ToString() 
 }
 
 function Split-Files {

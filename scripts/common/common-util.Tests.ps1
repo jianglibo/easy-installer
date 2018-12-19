@@ -266,6 +266,15 @@ Describe "zip function" {
     }
 }
 
+Describe "hash string value." {
+    it "should hash." {
+        $h = Get-StringHash -String 'hello hash'
+        $h1 = Get-StringHash -String 'hello hash'
+
+        $h | Should -Be $h1
+    }
+}
+
 Describe "protect password" {
     it "should convert." {
         $ss = ConvertTo-SecureString -String "123456" -AsPlainText -Force  # | ConvertFrom-SecureString
