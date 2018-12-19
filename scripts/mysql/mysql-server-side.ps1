@@ -14,6 +14,8 @@ param (
         "Uninstall", 
         "Echo", 
         "DownloadPublicKey", 
+        "DiskFree",
+        "MemoryFree",
         "RunSQL", 
         "UpdateMysqlPassword")]
     [string]$Action,

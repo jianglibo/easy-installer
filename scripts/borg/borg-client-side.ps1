@@ -158,30 +158,8 @@ else {
             $v | Out-JsonOrOrigin -Json:$Json
             break
         }
-        "DiskFree" {
-            $r = Invoke-ServerRunningPs1 -action $Action
-            $r | Write-Verbose
-            [array]$jr = $r | Receive-LinesFromServer | ConvertFrom-Json
-            $success = ($jr -is [array]) -and $jr[0].Name
-            $v = @{result=$jr;success=$success; timespan=(Get-Date) - $scriptstarttime}
-            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
-            $v | Out-JsonOrOrigin -Json:$Json
-            break
-        }
-        "MemoryFree" {
-            $r = Invoke-ServerRunningPs1 -action $Action
-            $r | Write-Verbose
-            [array]$jr = $r | Receive-LinesFromServer | ConvertFrom-Json
-            $success = $jr.Total -and $jr.Free
-            $v = @{result=$jr;success=$success; timespan=(Get-Date) - $scriptstarttime}
-            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
-            $v | Out-JsonOrOrigin -Json:$Json
-            break
-        }
         Default {
-            $r = Invoke-ServerRunningPs1 -ConfigFile -$ConfigFile -action $Action
-            $r | Write-Verbose
-            $r
+            Invoke-ClientCommonActions -Action $Action -ConfigFile $ConfigFile -scriptstarttime $scriptstarttime -LogResult:$LogResult -Json:$Json
         }
     }
 }

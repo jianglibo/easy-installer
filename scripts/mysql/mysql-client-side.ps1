@@ -17,6 +17,8 @@ param (
         "Dump",
         "DownloadDump",
         "BackupLocal",
+        "DiskFree",
+        "MemoryFree",
         "DownloadPublicKey")]
     [string]$Action,
     [parameter(Mandatory = $false)]
@@ -170,9 +172,7 @@ else {
             break
         }
         Default {
-            Invoke-ServerRunningPs1 -action $Action $Version
-            # $configuration = Get-Configuration -ConfigFile $ConfigFile
-            # $configuration | ConvertTo-Json -Depth 10
+            Invoke-ClientCommonActions -Action $Action -ConfigFile $ConfigFile -scriptstarttime $scriptstarttime -LogResult:$LogResult -Json:$Json
         }
     }
 }
