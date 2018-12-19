@@ -5,9 +5,12 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 $scriptDir = $here | Split-Path -Parent
 
-. "${scriptDir}\common\ssh-invoker.ps1"
-. "${scriptDir}\common\clientside-util.ps1"
+. ($here | Split-Path -Parent | Join-Path -ChildPath 'global-variables.ps1')
+. $Global:SshInvoker
+. $Global:CommonUtil
+. $Global:ClientUtil
 . "${scriptDir}\common\common-for-t.ps1"
+
 
 $cfgfile = $scriptDir | Join-Path -ChildPath "mysql" |Join-Path -ChildPath "demo-config.1.json"
 
@@ -62,7 +65,7 @@ Describe "copy scripts to server." {
         # $ht | Out-Host
         [SshInvoker]$sshInvoker = Get-SshInvoker -configuration $ht.configuration
         $sshInvoker.isFileExists($ht.configuration.ServerSide.ScriptDir) | Should -BeTrue
-        $result = Invoke-ServerRunningPs1 -ConfigFile $ht.ConfigFile -action Echo a b c | Receive-LinesFromServer
+        $result = Invoke-ServerRunningPs1 -action Echo a b c | Receive-LinesFromServer
         $result | Should -Be 'a b c'
     }
 }

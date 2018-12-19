@@ -7,9 +7,10 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 $fixture = "${here}\fixtures\mysql-community.repo"
 
-".\ssh-invoker.ps1", ".\common-util.ps1", ".\clientside-util.ps1", "common-for-t.ps1" | ForEach-Object {
-    . "${ScriptDir}\common\$_"
-}
+. ($here | Split-Path -Parent | Join-Path -ChildPath 'global-variables.ps1')
+. $Global:SshInvoker
+. $Global:CommonUtil
+. $Global:ClientUtil
 
 
 $ddd = @"
@@ -81,18 +82,18 @@ function get-demo {
     $kyonen = Join-Path $TestDrive 'kyonen'
     $ototosi = Join-Path $TestDrive 'ototosi'
 
-    $kyou = New-Item -Path $kyou -ItemType Directory | Out-Null
-    $kyouSecond5 = New-Item -Path $kyouSecond5 -ItemType Directory | Out-Null
-    $kyouMinute5 = New-Item -Path $kyouMinute5 -ItemType Directory | Out-Null
-    $kyouHour2 = New-Item -Path $kyouHour2 -ItemType Directory | Out-Null
-    $kino = New-Item -Path $kino -ItemType Directory | Out-Null
-    $ototoi = New-Item -Path $ototoi -ItemType Directory | Out-Null
-    $sennsyuu = New-Item -Path $sennsyuu -ItemType Directory | Out-Null
-    $sennsennsyuu = New-Item -Path $sennsennsyuu -ItemType Directory | Out-Null
-    $senngetu = New-Item -Path $senngetu -ItemType Directory | Out-Null
-    $sennsenngetu = New-Item -Path $sennsenngetu -ItemType Directory | Out-Null
-    $kyonen = New-Item -Path $kyonen -ItemType Directory | Out-Null
-    $ototosi = New-Item -Path $ototosi -ItemType Directory | Out-Null
+    $kyou = New-Item -Path $kyou -ItemType Directory
+    $kyouSecond5 = New-Item -Path $kyouSecond5 -ItemType Directory
+    $kyouMinute5 = New-Item -Path $kyouMinute5 -ItemType Directory
+    $kyouHour2 = New-Item -Path $kyouHour2 -ItemType Directory 
+    $kino = New-Item -Path $kino -ItemType Directory
+    $ototoi = New-Item -Path $ototoi -ItemType Directory
+    $sennsyuu = New-Item -Path $sennsyuu -ItemType Directory
+    $sennsennsyuu = New-Item -Path $sennsennsyuu -ItemType Directory
+    $senngetu = New-Item -Path $senngetu -ItemType Directory
+    $sennsenngetu = New-Item -Path $sennsenngetu -ItemType Directory
+    $kyonen = New-Item -Path $kyonen -ItemType Directory
+    $ototosi = New-Item -Path $ototosi -ItemType Directory
     
 
     $now = $kyou.CreationTime

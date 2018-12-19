@@ -292,13 +292,17 @@ function Invoke-ClientCommonActions {
     [parameter(Mandatory = $true, Position = 0)]
     [ValidateSet(
         "DiskFree",
-        "MemoryFree")]
+        "MemoryFree",
+        "BackupLocal")]
     [string]$Action,
     [string]$ConfigFile,
     $scriptstarttime,
     [switch]$LogResult,
-    [switch]$Json
-    )
+    [switch]$Json,
+    [parameter(Mandatory = $false,
+        ValueFromRemainingArguments = $true)]
+    [String[]]
+    $hints)
 
     switch ($Action) {
         "DiskFree" {
@@ -317,6 +321,22 @@ function Invoke-ClientCommonActions {
             [array]$jr = $r | Receive-LinesFromServer | ConvertFrom-Json
             $success = $jr.Total -and $jr.Free
             $v = @{result=$jr;success=$success; timespan=(Get-Date) - $scriptstarttime}
+            $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
+            $v | Out-JsonOrOrigin -Json:$Json
+            break
+        }
+        "BackupLocal" {
+            $d = Get-MaxLocalDir
+            $newd = Backup-LocalDirectory -Path $d -keepOrigin
+            $pruned = Resize-BackupFiles -BasePath $d -Pattern "$hints"
+            $success = [bool]$d -and [bool]$newd
+            $result = @()
+            if ($pruned) {
+                $pruned | Select-Object -Property FullName | ForEach-Object {
+                    $result += $_
+                }
+            }
+            $v = @{result=$result;success=$success; timespan=(Get-Date) - $scriptstarttime}
             $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
             $v | Out-JsonOrOrigin -Json:$Json
             break
