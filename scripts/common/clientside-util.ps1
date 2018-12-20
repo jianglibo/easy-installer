@@ -254,6 +254,29 @@ function Get-MaxLocalDir {
     $maxb
 }
 
+<#
+.SYNOPSIS
+Short description
+
+.DESCRIPTION
+Long description
+
+.PARAMETER configuration
+Parameter description
+
+.PARAMETER group
+Usually use action name as group name. For example, Dump, FlushLogs etc.
+
+.PARAMETER name
+Usually use formated datetime as name.
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
+
 function Get-LogFile {
     param (
         [Parameter(Mandatory = $false)]$configuration,
