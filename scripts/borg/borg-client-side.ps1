@@ -105,7 +105,10 @@ else {
             break
         }
         "ArchiveAndDownload" {
-            $ar = Invoke-ServerRunningPs1 -Action Archive | Receive-LinesFromServer | ConvertFrom-Json
+            $rar = Invoke-ServerRunningPs1 -Action Archive 
+            "$Action raw output from server:" | Write-Verbose
+            $rar | Write-Verbose
+            $ar = $rar | Receive-LinesFromServer | ConvertFrom-Json
             $dr = Copy-BorgRepoFiles
             $success = $ar.archive -and $dr.copied
             [array]$files = $dr.total.files # change from stream to array.

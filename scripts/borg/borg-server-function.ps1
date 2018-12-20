@@ -97,6 +97,7 @@ function New-BorgArchive {
         "got new archive name: $ArchiveName" | Write-Verbose
     }
     $createcmd = $Global:configuration.BorgCreate -f $Global:configuration.BorgBin, $RepoPath, $ArchiveName
+    $createcmd | Write-Verbose
     Invoke-Expression -Command $createcmd | Send-LinesToClient
 }
 
