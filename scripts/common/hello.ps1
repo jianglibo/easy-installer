@@ -1,0 +1,1 @@
+"hello service" | Out-Host
