@@ -4,9 +4,13 @@ import time
 import logging
 from watchdog.observers import Observer
 from watchdog.events import RegexMatchingEventHandler
-import win32service
-import win32serviceutil
-import win32event
+islinux = 'nux' in sys.platform
+if islinux:
+    pass
+else:
+    import win32service
+    import win32serviceutil
+    import win32event
 import getopt
 from vedis import Vedis
 
@@ -102,16 +106,7 @@ class LoggingSelectiveEventHandler(RegexMatchingEventHandler):
 
 # http://www.chrisumbel.com/article/windows_services_in_python
 
-
-class WatchDogSvc(win32serviceutil.ServiceFramework):
-        # you can NET START/STOP the service by the following name
-    _svc_name_ = "WatchDogSvc"
-    # this text shows up as the service name in the Service
-    # Control Manager (SCM)
-    _svc_display_name_ = "Python watchdog Service"
-    # this text shows up as the description in the SCM
-    _svc_description_ = "This service watch file changes, and save the result the vedis db."
-
+class DirWatchDog():
     db = None
     case_sensitive = None
     watch_path = None
@@ -123,29 +118,23 @@ class WatchDogSvc(win32serviceutil.ServiceFramework):
     
     save_me = True
 
-    def __init__(self, args):
-        win32serviceutil.ServiceFramework.__init__(self, args)
-        # create an event to listen for stop requests on
-        # self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
-
-
     @staticmethod
     def watch():
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s - %(message)s',
                             datefmt='%Y-%m-%d %H:%M:%S')
-        print WatchDogSvc.ignore_regexes
+        print DirWatchDog.ignore_regexes
         event_handler = LoggingSelectiveEventHandler(
-            WatchDogSvc.db,
-            regexes=WatchDogSvc.regexes,
-            ignore_regexes=WatchDogSvc.ignore_regexes,
-            ignore_directories=WatchDogSvc.ignore_directories,
-            case_sensitive=WatchDogSvc.case_sensitive)
+            DirWatchDog.db,
+            regexes=DirWatchDog.regexes,
+            ignore_regexes=DirWatchDog.ignore_regexes,
+            ignore_directories=DirWatchDog.ignore_directories,
+            case_sensitive=DirWatchDog.case_sensitive)
         observer = Observer()
-        observer.schedule(event_handler, WatchDogSvc.watch_path, recursive=True)
+        observer.schedule(event_handler, DirWatchDog.watch_path, recursive=True)
         observer.start()
         try:
-            while WatchDogSvc.save_me:
+            while DirWatchDog.save_me:
                 time.sleep(1)
             else:
                 observer.stop
@@ -154,24 +143,40 @@ class WatchDogSvc(win32serviceutil.ServiceFramework):
         observer.join()
 
 
-    # core logic of the service
-    def SvcDoRun(self):
-        WatchDogSvc.watch()
-        # import servicemanager
-        # rc = None
-        # if the stop event hasn't been fired keep looping
-        # while rc != win32event.WAIT_OBJECT_0:
-            # block for 5 seconds and listen for a stop event
-            # rc = win32event.WaitForSingleObject(self.hWaitStop, 5000)
-        # Gns.stop = True
 
-    # called when we're being shut down
-    def SvcStop(self):
-        # tell the SCM we're shutting down
-        self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
-        # fire the stop event
-        WatchDogSvc.save_me = False
-        # win32event.SetEvent(self.hWaitStop)
+if not islinux:
+    class WatchDogSvc(win32serviceutil.ServiceFramework):
+            # you can NET START/STOP the service by the following name
+        _svc_name_ = "WatchDogSvc"
+        # this text shows up as the service name in the Service
+        # Control Manager (SCM)
+        _svc_display_name_ = "Python watchdog Service"
+        # this text shows up as the description in the SCM
+        _svc_description_ = "This service watch file changes, and save the result the vedis db."
+
+        def __init__(self, args):
+            win32serviceutil.ServiceFramework.__init__(self, args)
+            # create an event to listen for stop requests on
+            # self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
+
+        # core logic of the service
+        def SvcDoRun(self):
+            DirWatchDog.watch()
+            # import servicemanager
+            # rc = None
+            # if the stop event hasn't been fired keep looping
+            # while rc != win32event.WAIT_OBJECT_0:
+                # block for 5 seconds and listen for a stop event
+                # rc = win32event.WaitForSingleObject(self.hWaitStop, 5000)
+            # Gns.stop = True
+
+        # called when we're being shut down
+        def SvcStop(self):
+            # tell the SCM we're shutting down
+            self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
+            # fire the stop event
+            DirWatchDog.save_me = False
+            # win32event.SetEvent(self.hWaitStop)
 
 
 def usage(msg):
@@ -196,7 +201,7 @@ if __name__ == "__main__":
         if o == "-v":
             verbose = True
         elif o == '--path':
-            WatchDogSvc.watch_path = a
+            DirWatchDog.watch_path = a
         elif o in ("-h", "--help"):
             usage(None)
             sys.exit()
@@ -209,23 +214,26 @@ if __name__ == "__main__":
         else:
             assert False, "unhandled option"
 
-    if (WatchDogSvc.watch_path is None) or (not os.path.exists(WatchDogSvc.watch_path)):
-        if WatchDogSvc.watch_path:
-            usage("path %s doesn't exists." % WatchDogSvc.watch_path)
+    if (DirWatchDog.watch_path is None) or (not os.path.exists(DirWatchDog.watch_path)):
+        if DirWatchDog.watch_path:
+            usage("path %s doesn't exists." % DirWatchDog.watch_path)
         else:
             usage(None)
         sys.exit(0)
     try:
         if vedisdb is None:
-            WatchDogSvc.db = Vedis()
+            DirWatchDog.db = Vedis()
         else:
-            WatchDogSvc.db = Vedis(vedisdb)
+            DirWatchDog.db = Vedis(vedisdb)
 
         if serviceaction:
-            win32serviceutil.HandleCommandLine(WatchDogSvc, argv=["install"])
+            if islinux:
+                pass
+            else:
+                win32serviceutil.HandleCommandLine(WatchDogSvc, argv=["install"])
         else:
             print 'starting inactive.'
-            WatchDogSvc.watch()
+            DirWatchDog.watch()
     except Exception as e:
         print type(e)
         print e
