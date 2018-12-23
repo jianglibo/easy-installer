@@ -5,36 +5,29 @@ from watchdog.observers import Observer
 from watchdog.events import RegexMatchingEventHandler
 islinux = 'nux' in sys.platform
 if islinux:
-    pass
+    import daemon
 else:
-    import win32service
-    import win32serviceutil
-    import win32event
+    import win32service # pylint: disable=E0401
+    import win32serviceutil # pylint: disable=E0401
+    import win32event # pylint: disable=E0401
 import getopt
 from vedis import Vedis # pylint: disable=E0611
 from collections import namedtuple
 
-WatchPath = namedtuple('WatchPath', ['regexes', 'ignore_regexes', 'ignore_directories', 'case_sensitive', 'path'])
+WatchPath = namedtuple('WatchPath', ['regexes', 'ignore_regexes', 'ignore_directories', 'case_sensitive', 'path', 'recursive'])
 
 class WatchConfig():
     def __init__(self, jdict):
-        self.vedisdb = jdict['vedisdb']
-        self.watch_paths = [WatchPath(**p) for p in jdict['watch_paths']]
+        self.vedisdb = os.path.expanduser(jdict['vedisdb'])
+        self.logfile = os.path.expanduser(jdict['logfile']) if jdict['logfile'] else None
+        wps = jdict['watch_paths']
+        for wp in wps:
+            wp['path'] = os.path.expanduser(wp['path'])
+        self.watch_paths = [WatchPath(**p) for p in wps]
+        self.pidfile = os.path.expanduser(jdict['pidfile']) if jdict['pidfile'] else None
 
-
-
-# class Gns():
-#     path = None
-#     excludes = []
-#     stop = False
-#     logfile = None
-#     regexes = [r".*"]
-#     ignore_regexes = [r".*\.txt", r"c:\\Users\\admin\\AppData\\Roaming\\.*",
-#      r"c:\\Users\\admin\\AppData\\Local\\.*",
-#      r".*vedisdb.*"]
-#     ignore_directories = False
-#     case_sensitive = False
-#     db = None
+    def get_unexists_paths(self):
+        return [p for p in self.watch_paths if not os.path.exists(p.path)]
 
 # nt.stat_result(st_mode=33206, st_ino=0L, st_dev=0L, st_nlink=0, st_uid=0, 
 # st_gid=0, st_size=1907L, st_atime=1545382009L, st_mtime=1545369026L, st_ctime=1348715808L)
@@ -65,6 +58,7 @@ class LoggingSelectiveEventHandler(RegexMatchingEventHandler):
                                                            ignore_directories=ignore_directories,
                                                            case_sensitive=case_sensitive)
         self.db = db
+        logging.info("create regexes: %s, ignore_regexes: %s", regexes, ignore_regexes)
     
     def stat_tostring(self, a_path):
         try:
@@ -74,7 +68,7 @@ class LoggingSelectiveEventHandler(RegexMatchingEventHandler):
             return None
 
     def on_moved(self, event):
-        super(LoggingSelectiveEventHandler, self).on_moved(event)
+        # super(LoggingSelectiveEventHandler, self).on_moved(event)
         what = 'directory' if event.is_directory else 'file'
         logging.info("Moved %s: from %s to %s", what, event.src_path,
                      event.dest_path)
@@ -82,57 +76,44 @@ class LoggingSelectiveEventHandler(RegexMatchingEventHandler):
         self.db.commit()
 
     def on_created(self, event):
-        super(LoggingSelectiveEventHandler, self).on_created(event)
+        # super(LoggingSelectiveEventHandler, self).on_created(event)
         what = 'directory' if event.is_directory else 'file'
         logging.info("Created %s: %s", what, event.src_path)
         self.db.sadd('created', event.src_path)
         self.db.commit()
 
     def on_deleted(self, event):
-        super(LoggingSelectiveEventHandler, self).on_deleted(event)
+        # super(LoggingSelectiveEventHandler, self).on_deleted(event)
         self.db.sadd('deleted', event.src_path)
         self.db.commit()
         what = 'directory' if event.is_directory else 'file'
         logging.info("Deleted %s: %s", what, event.src_path)
 
     def on_modified(self, event):
-        super(LoggingSelectiveEventHandler, self).on_modified(event)
-        print os.stat(event.src_path)
+        # super(LoggingSelectiveEventHandler, self).on_modified(event)
+        src_path = event.src_path
         what = 'directory' if event.is_directory else 'file'
-        logging.info("Modified %s: %s", what, event.src_path)
-
-        size_mtime = self.db.hget("modified", event.src_path)
+        size_mtime = self.db.hget("modified", src_path)
         if size_mtime is None:
-            size_mtime = self.stat_tostring(event.src_path)
+            size_mtime = self.stat_tostring(src_path)
             if size_mtime is None:
-                logging.error("stat error %s: %s", what, event.src_path)
+                logging.error("stat error %s: %s", what, src_path)
             else:
-                self.db.hset("modified", event.src_path, size_mtime)
+                self.db.hset("modified", src_path, size_mtime)
+            logging.info("Modified Not in db %s: %s", what, src_path)
         else:
-            i = self.db.incr(event.src_path)
-            n_size_time = self.stat_tostring(event.src_path)
+            i = self.db.incr(src_path)
+            n_size_time = self.stat_tostring(src_path)
             if size_mtime == n_size_time:
-                pass
+                logging.info("Modified size_time not changed. %s: %s", what, src_path)
             else:
-                self.db.sadd('true-modified', event.src_path)
+                logging.info("Modified Truely %s: %s", what, src_path)
+                self.db.sadd('true-modified', src_path)
                 self.db.commit()
 
 # http://www.chrisumbel.com/article/windows_services_in_python
 
 class DirWatchDog():
-    # db = None
-    # case_sensitive = None
-    # watch_paths = None
-    # ignore_directories = True
-    # regexes = [r".*"]
-    # ignore_regexes = [r".*\.txt", r"c:\\Users\\admin\\AppData\\Roaming\\.*",
-    #     r"c:\\Users\\admin\\AppData\\Local\\.*",
-    #     r".*vedisdb.*"]
-    
-    # save_me = True
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
 
     def __init__(self, wc):
         self.wc = wc
@@ -149,7 +130,7 @@ class DirWatchDog():
                 ignore_directories=ps.ignore_directories,
                 case_sensitive=ps.case_sensitive)
             observer = Observer()
-            observer.schedule(event_handler, ps.path, recursive=True)
+            observer.schedule(event_handler, ps.path, recursive=ps.recursive)
             observer.start()
             observers.append(observer)
         try:
@@ -163,8 +144,6 @@ class DirWatchDog():
             for obs in observers:
                 obs.stop()
             self.db.close()
-
-
 
 if not islinux:
     class WatchDogSvc(win32serviceutil.ServiceFramework):
@@ -212,12 +191,12 @@ def usage(msg):
 if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "", [
-                                   "help", "action=", "config=", "serviceaction="])
+                                   "help", "action=", "config=", "asservice"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
         sys.exit(2)
-    serviceaction = None
+    asservice = None
     action = None
     vedisdb = None
     config = None
@@ -227,8 +206,8 @@ if __name__ == "__main__":
         elif o in ("-h", "--help"):
             usage(None)
             sys.exit()
-        elif o == '--serviceaction':
-            serviceaction = a
+        elif o == '--asservice':
+            asservice = True
         elif o == '--action':
             action = a
         elif o == '--config':
@@ -242,24 +221,30 @@ if __name__ == "__main__":
     with io.open(config, 'rb') as openedfile:
         content = openedfile.read()
     j = json.loads(content)
-    watch_paths = j.get('watch_paths')
+    wc = WatchConfig(j)
+    unexist_watch_paths = wc.get_unexists_paths()
 
-    if len([p for p in watch_paths if os.path.exists(p['path'])]) == 0:
-        usage("watch_paths %s doesn't exists." % watch_paths)
+    if len(unexist_watch_paths) > 0:
+        usage("these watch_paths %s doesn't exists." % unexist_watch_paths)
         sys.exit(0)
-    try:
-        wd = DirWatchDog(WatchConfig(j))
-        if serviceaction:
-            if islinux:
-                pass
-            else:
-                win32serviceutil.HandleCommandLine(WatchDogSvc, argv=["install"])
+    
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+    wd = DirWatchDog(wc)
+    if asservice:
+        if islinux:
+            print "start daemonize pidfile is %s" % wc.pidfile
+            with daemon.DaemonContext(pidfile='/home/osboxes/wd.pid'):
+                print "start daemonize logfile is %s" % wc.logfile
+                logging.basicConfig(level=logging.INFO,
+                                    filename=wc.logfile,
+                                    format='%(asctime)s - %(message)s',
+                                    datefmt='%Y-%m-%d %H:%M:%S')
+                print "starting....."
+                wd.watch()
         else:
-            print 'starting inactive.'
-            wd.watch()
-    except Exception as e:
-        print type(e)
-        print e
-        print e.message
-    finally:
-        pass
+            win32serviceutil.HandleCommandLine(WatchDogSvc, argv=["install"])
+    else:
+        print 'starting inactive.'
+        wd.watch()

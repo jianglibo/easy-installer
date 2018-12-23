@@ -1,21 +1,22 @@
 {
-    "vedisdb": "e:\\vedisdb",
-    "logfile": "",
-    "pidfile": "",
+    "vedisdb": "~/vedisdb",
+    "logfile": "~/wd.log",
+    "pidfile": "~/wd.pid",
     "watch_paths": [
         {
             "regexes": [
                 ".*"
             ],
             "ignore_regexes": [
-                ".*\\.txt",
-                "c:\\Users\\admin\\AppData\\Roaming\\.*",
-                "c:\\Users\\admin\\AppData\\Local\\.*",
+                ".*\\.swp$",
+                ".*\\.swx$",
+                ".*~$",
+                ".*/\\..*",
                 ".*vedisdb.*"
             ],
             "ignore_directories": true,
             "case_sensitive": false,
-            "path": "e:",
+            "path": "~",
             "recursive": true
         },
         {
@@ -23,14 +24,15 @@
                 ".*"
             ],
             "ignore_regexes": [
-                ".*\\.txt",
-                "c:\\Users\\admin\\AppData\\Roaming\\.*",
-                "c:\\Users\\admin\\AppData\\Local\\.*",
+                ".*\\.swp$",
+                ".*\\.swx$",
+                ".*~$",
+                ".*/\\..*",
                 ".*vedisdb.*"
             ],
             "ignore_directories": true,
             "case_sensitive": false,
-            "path": "c:",
+            "path": "/etc",
             "recursive": true
         }
     ]
