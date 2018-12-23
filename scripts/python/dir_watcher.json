@@ -1,0 +1,33 @@
+{
+    "vedisdb": "e:\\vedisdb",
+    "watch_paths": [
+        {
+            "regexes": [
+                ".*"
+            ],
+            "ignore_regexes": [
+                ".*\\.txt",
+                "c:\\Users\\admin\\AppData\\Roaming\\.*",
+                "c:\\Users\\admin\\AppData\\Local\\.*",
+                ".*vedisdb.*"
+            ],
+            "ignore_directories": true,
+            "case_sensitive": false,
+            "path": "e:"
+        },
+        {
+            "regexes": [
+                ".*"
+            ],
+            "ignore_regexes": [
+                ".*\\.txt",
+                "c:\\Users\\admin\\AppData\\Roaming\\.*",
+                "c:\\Users\\admin\\AppData\\Local\\.*",
+                ".*vedisdb.*"
+            ],
+            "ignore_directories": true,
+            "case_sensitive": false,
+            "path": "c:"
+        }
+    ]
+}

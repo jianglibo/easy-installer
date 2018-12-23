@@ -1,0 +1,17 @@
+{
+    "vedisdb": ":mem:",
+    "watch_paths": [
+        {
+            "regexes": [
+                ".*"
+            ],
+            "ignore_regexes": [
+                ".*\\.txt",
+                "c:\\\\Users\\admin"
+            ],
+            "ignore_directories": true,
+            "case_sensitive": false,
+            "path": ""
+        }
+    ]
+}
