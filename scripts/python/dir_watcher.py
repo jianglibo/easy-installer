@@ -5,7 +5,7 @@ from watchdog.observers import Observer
 from watchdog.events import RegexMatchingEventHandler
 islinux = 'nux' in sys.platform
 if islinux:
-    import daemon
+    import daemon # pylint: disable=E0401
 else:
     import win32service # pylint: disable=E0401
     import win32serviceutil # pylint: disable=E0401
