@@ -9,3 +9,6 @@
 app.1.json
 *.pyc
 /.working
+.mypy_cache/
+dist/
+dir_watcher.zip

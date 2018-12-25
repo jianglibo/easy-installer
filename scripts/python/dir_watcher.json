@@ -9,8 +9,8 @@
             ],
             "ignore_regexes": [
                 ".*\\.txt",
-                "c:\\Users\\admin\\AppData\\Roaming\\.*",
-                "c:\\Users\\admin\\AppData\\Local\\.*",
+                "c:\\\\Users\\\\admin\\\\AppData\\\\Roaming\\.*",
+                "c:\\\\Users\\\\admin\\\\AppData\\\\Local\\.*",
                 ".*vedisdb.*"
             ],
             "ignore_directories": true,
@@ -24,8 +24,8 @@
             ],
             "ignore_regexes": [
                 ".*\\.txt",
-                "c:\\Users\\admin\\AppData\\Roaming\\.*",
-                "c:\\Users\\admin\\AppData\\Local\\.*",
+                "c:\\\\Users\\\\admin\\\\AppData\\\\Roaming\\.*",
+                "c:\\\\Users\\\\admin\\\\AppData\\\\Local\\.*",
                 ".*vedisdb.*"
             ],
             "ignore_directories": true,

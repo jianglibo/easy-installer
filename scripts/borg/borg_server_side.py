@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import sys
 import getopt
 import os
@@ -20,7 +18,7 @@ if os.path.exists(PyGlobal.config_file):
     server_side = os_config["ServerSide"]
 
 def usage():
-    print "usage message printed."
+    print("usage message printed.")
 
 # "ho:" mean -h doesn't need a argument, but -o needs.
 
@@ -97,7 +95,7 @@ if __name__ == "__main__":
         opts, args = getopt.getopt(sys.argv[1:], "hv:a:", ["help", "action=", "notclean", "verbose"])
     except getopt.GetoptError as err:
         # print help information and exit:
-        print str(err)  # will print something like "option -a not recognized"
+        print(str(err))  # will print something like "option -a not recognized"
         sys.exit(2)
     verbose = False
     clean = True
@@ -119,8 +117,8 @@ if __name__ == "__main__":
     try:
         main(action, args)
     except Exception as e:
-        print type(e)
-        print e
-        print e.message
+        print(type(e))
+        print(e)
+        # print(e.message)
     finally:
         pass

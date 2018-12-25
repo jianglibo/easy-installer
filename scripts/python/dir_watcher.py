@@ -1,33 +1,41 @@
-import os, io, json, sys
+import os, json, sys
 import time
+from pathlib import Path
 import logging
 from watchdog.observers import Observer
 from watchdog.events import RegexMatchingEventHandler
-islinux = 'nux' in sys.platform
-if islinux:
-    import daemon # pylint: disable=E0401
-else:
-    import win32service # pylint: disable=E0401
-    import win32serviceutil # pylint: disable=E0401
-    import win32event # pylint: disable=E0401
+from typing import NamedTuple, List, Optional, Dict, Any, Iterator
+islinux: bool = 'nux' in sys.platform
+# if islinux:
+#     import daemon # pylint: disable=E0401
+# else:
+#     import win32service # pylint: disable=E0401
+#     import win32serviceutil # pylint: disable=E0401
+#     import win32event # pylint: disable=E0401
 import getopt
 from vedis import Vedis # pylint: disable=E0611
 from collections import namedtuple
 
-WatchPath = namedtuple('WatchPath', ['regexes', 'ignore_regexes', 'ignore_directories', 'case_sensitive', 'path', 'recursive'])
+WatchPath: NamedTuple = NamedTuple('WatchPath', [
+    ('regexes', List[str]),
+    ('ignore_regexes', List[str]),
+    ('ignore_directories', bool),
+    ('case_sensitive', bool),
+    ('path', Path),
+    ('recursive', bool)])
 
 class WatchConfig():
-    def __init__(self, jdict):
-        self.vedisdb = os.path.expanduser(jdict['vedisdb'])
-        self.logfile = os.path.expanduser(jdict['logfile']) if jdict['logfile'] else None
-        wps = jdict['watch_paths']
+    def __init__(self, jdict) -> None:
+        self.vedisdb: Path = Path(jdict['vedisdb']).expanduser()
+        self.logfile: Optional[Path] = Path(jdict['logfile']).expanduser() if jdict['logfile'] else None
+        wps: List[Dict[str, Any]] = jdict['watch_paths']
         for wp in wps:
-            wp['path'] = os.path.expanduser(wp['path'])
-        self.watch_paths = [WatchPath(**p) for p in wps]
-        self.pidfile = os.path.expanduser(jdict['pidfile']) if jdict['pidfile'] else None
+            wp['path'] = Path(wp['path']).expanduser()
+        self.watch_paths: List[WatchPath] = [WatchPath(**p) for p in wps]
+        self.pidfile = Path(jdict['pidfile']).expanduser() if jdict['pidfile'] else None
 
-    def get_unexists_paths(self):
-        return [p for p in self.watch_paths if not os.path.exists(p.path)]
+    def get_un_exists_paths(self) -> List[WatchPath]:
+        return [wp for wp in self.watch_paths if not wp.path.exists()]
 
 # nt.stat_result(st_mode=33206, st_ino=0L, st_dev=0L, st_nlink=0, st_uid=0, 
 # st_gid=0, st_size=1907L, st_atime=1545382009L, st_mtime=1545369026L, st_ctime=1348715808L)
@@ -51,8 +59,8 @@ class LoggingSelectiveEventHandler(RegexMatchingEventHandler):
     """
     Logs all the events captured.
     """
-    def __init__(self,db, regexes=[r".*"], ignore_regexes=[],
-                 ignore_directories=False, case_sensitive=False):
+    def __init__(self,db: Vedis, regexes: List[str]=[r".*"], ignore_regexes: List[str]=[],
+                 ignore_directories: bool =False, case_sensitive: bool=False):
         super(LoggingSelectiveEventHandler, self).__init__(regexes=regexes,
                                                            ignore_regexes=ignore_regexes,
                                                            ignore_directories=ignore_directories,
@@ -102,7 +110,7 @@ class LoggingSelectiveEventHandler(RegexMatchingEventHandler):
                 self.db.hset("modified", src_path, size_mtime)
             logging.info("Modified Not in db %s: %s", what, src_path)
         else:
-            i = self.db.incr(src_path)
+            self.db.incr(src_path)
             n_size_time = self.stat_tostring(src_path)
             if size_mtime == n_size_time:
                 logging.info("Modified size_time not changed. %s: %s", what, src_path)
@@ -115,12 +123,12 @@ class LoggingSelectiveEventHandler(RegexMatchingEventHandler):
 
 class DirWatchDog():
 
-    def __init__(self, wc):
+    def __init__(self, wc: WatchConfig) -> None:
         self.wc = wc
         self.db = Vedis(wc.vedisdb)
         self.save_me = True
 
-    def watch(self):
+    def watch(self) -> None:
         observers = []
         for ps in self.wc.watch_paths:
             event_handler = LoggingSelectiveEventHandler(
@@ -129,8 +137,9 @@ class DirWatchDog():
                 ignore_regexes=ps.ignore_regexes,
                 ignore_directories=ps.ignore_directories,
                 case_sensitive=ps.case_sensitive)
+            path_to_observe: str = str(ps.path)
             observer = Observer()
-            observer.schedule(event_handler, ps.path, recursive=ps.recursive)
+            observer.schedule(event_handler, path_to_observe, recursive=ps.recursive)
             observer.start()
             observers.append(observer)
         try:
@@ -145,47 +154,47 @@ class DirWatchDog():
                 obs.stop()
             self.db.close()
 
-if not islinux:
-    class WatchDogSvc(win32serviceutil.ServiceFramework):
-            # you can NET START/STOP the service by the following name
-        _svc_name_ = "WatchDogSvc"
-        # this text shows up as the service name in the Service
-        # Control Manager (SCM)
-        _svc_display_name_ = "Python watchdog Service"
-        # this text shows up as the description in the SCM
-        _svc_description_ = "This service watch file changes, and save the result the vedis db."
+# if not islinux:
+#     class WatchDogSvc(win32serviceutil.ServiceFramework):
+#             # you can NET START/STOP the service by the following name
+#         _svc_name_ = "WatchDogSvc"
+#         # this text shows up as the service name in the Service
+#         # Control Manager (SCM)
+#         _svc_display_name_ = "Python watchdog Service"
+#         # this text shows up as the description in the SCM
+#         _svc_description_ = "This service watch file changes, and save the result the vedis db."
 
-        def __init__(self, args):
-            win32serviceutil.ServiceFramework.__init__(self, args)
-            # create an event to listen for stop requests on
-            # self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
+#         def __init__(self, args):
+#             win32serviceutil.ServiceFramework.__init__(self, args)
+#             # create an event to listen for stop requests on
+#             # self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
 
-        # core logic of the service
-        def SvcDoRun(self):
-            pass
-            # DirWatchDog.watch()
-            # import servicemanager
-            # rc = None
-            # if the stop event hasn't been fired keep looping
-            # while rc != win32event.WAIT_OBJECT_0:
-                # block for 5 seconds and listen for a stop event
-                # rc = win32event.WaitForSingleObject(self.hWaitStop, 5000)
-            # Gns.stop = True
+#         # core logic of the service
+#         def SvcDoRun(self):
+#             pass
+#             # DirWatchDog.watch()
+#             # import servicemanager
+#             # rc = None
+#             # if the stop event hasn't been fired keep looping
+#             # while rc != win32event.WAIT_OBJECT_0:
+#                 # block for 5 seconds and listen for a stop event
+#                 # rc = win32event.WaitForSingleObject(self.hWaitStop, 5000)
+#             # Gns.stop = True
 
-        # called when we're being shut down
-        def SvcStop(self):
-            # tell the SCM we're shutting down
-            self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
-            # fire the stop event
-            DirWatchDog.save_me = False
-            # win32event.SetEvent(self.hWaitStop)
+#         # called when we're being shut down
+#         def SvcStop(self):
+#             # tell the SCM we're shutting down
+#             self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
+#             # fire the stop event
+#             DirWatchDog.save_me = False
+#             # win32event.SetEvent(self.hWaitStop)
 
 
 def usage(msg):
     if msg:
-        print msg
+        print(msg)
     else:
-        print "usage: dir_watcher.py --config /path-which-exists"
+        print("usage: dir_watcher.py --config /path-which-exists")
 
 
 if __name__ == "__main__":
@@ -194,12 +203,11 @@ if __name__ == "__main__":
                                    "help", "action=", "config=", "asservice"])
     except getopt.GetoptError as err:
         # print help information and exit:
-        print str(err)  # will print something like "option -a not recognized"
+        print(str(err))  # will print something like "option -a not recognized"
         sys.exit(2)
     asservice = None
     action = None
-    vedisdb = None
-    config = None
+    config: Optional[str] = None
     for o, a in opts:
         if o == "-v":
             verbose = True
@@ -215,17 +223,31 @@ if __name__ == "__main__":
         else:
             assert False, "unhandled option"
 
-    if not os.path.exists(config):
+    cp: Path
+    if not config:
+        if getattr(sys, 'frozen', False):
+            # frozen
+            f_ = Path(sys.executable)
+        else:
+            # unfrozen
+            f_ = Path(__file__)
+        cp = f_.parent / "dir_watcher.json"
+    else:
+        cp = Path(config)
+
+    if not cp.exists():
         usage("config file %s doesn't exists." % config)
         sys.exit(0)
-    with io.open(config, 'rb') as openedfile:
-        content = openedfile.read()
-    j = json.loads(content)
-    wc = WatchConfig(j)
-    unexist_watch_paths = wc.get_unexists_paths()
 
-    if len(unexist_watch_paths) > 0:
-        usage("these watch_paths %s doesn't exists." % unexist_watch_paths)
+    with cp.open() as f:
+        content = f.read()
+
+    j: Dict[str, Any] = json.loads(content)
+    wc = WatchConfig(j)
+    un_exist_watch_paths = wc.get_un_exists_paths()
+    
+    if len(un_exist_watch_paths) > 0:
+        usage("these watch_paths %s doesn't exists." % un_exist_watch_paths)
         sys.exit(0)
     
     logging.basicConfig(level=logging.INFO,
@@ -233,18 +255,19 @@ if __name__ == "__main__":
                         datefmt='%Y-%m-%d %H:%M:%S')
     wd = DirWatchDog(wc)
     if asservice:
-        if islinux:
-            print "start daemonize pidfile is %s" % wc.pidfile
-            with daemon.DaemonContext(pidfile='/home/osboxes/wd.pid'):
-                print "start daemonize logfile is %s" % wc.logfile
-                logging.basicConfig(level=logging.INFO,
-                                    filename=wc.logfile,
-                                    format='%(asctime)s - %(message)s',
-                                    datefmt='%Y-%m-%d %H:%M:%S')
-                print "starting....."
-                wd.watch()
-        else:
-            win32serviceutil.HandleCommandLine(WatchDogSvc, argv=["install"])
+        pass
+        # if islinux:
+        #     print("start daemonize pidfile is %s" % wc.pidfile)
+        #     with daemon.DaemonContext(pidfile='/home/osboxes/wd.pid'):
+        #         print("start daemonize logfile is %s" % wc.logfile)
+        #         logging.basicConfig(level=logging.INFO,
+        #                             filename=wc.logfile,
+        #                             format='%(asctime)s - %(message)s',
+        #                             datefmt='%Y-%m-%d %H:%M:%S')
+        #         print("starting.....")
+        #         wd.watch()
+        # else:
+        #     win32serviceutil.HandleCommandLine(WatchDogSvc, argv=["install"])
     else:
-        print 'starting inactive.'
+        print('starting inactive.')
         wd.watch()

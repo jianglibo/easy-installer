@@ -4,7 +4,7 @@
 # https://www.tutorialspoint.com/python/python_lists.htm
 # https://www.python-course.eu/lambda.php
 
-import os, urllib2, io, json, codecs
+import os, io, json, codecs, urllib.request
 from global_static import PyGlobal, BorgConfiguration
 import hashlib
 from functools import partial
@@ -49,8 +49,8 @@ def get_software_packages(target_dir, softwares):
             ln = split_url(url, False)
         lf = os.path.join(target_dir, ln)
         if (not(os.path.exists(lf))):
-            print "start downloading..."
-            downloading_file = urllib2.urlopen(url)
+            print("start downloading...")
+            downloading_file = urllib.request.urlopen(url)
             with open(lf,'wb') as output:
                 output.write(downloading_file.read())
     
@@ -124,12 +124,12 @@ def get_dir_filehashes(dir_to_hash, mode="SHA256"):
     return l
 
 def send_lines_to_client(content):
-    print PyGlobal.line_start
+    print(PyGlobal.line_start)
     if isinstance(content, dict):
-        print json.dumps(content)
+        print(json.dumps(content))
     else:
-        print content
-    print PyGlobal.line_end
+        print(content)
+    print(PyGlobal.line_end)
 
 
 def get_diskfree():
@@ -209,7 +209,7 @@ def get_file_frombase64(base64_str, out_file=None):
         opened_file.write(decoded_str)
     return out_file
 
-def unprotect_password_by_openssl_publickey(base64_str, private_key=None, openssl=None):
+def un_protect_password_by_openssl_publickey(base64_str, private_key=None, openssl=None):
     in_file = get_file_frombase64(base64_str)
     out_file = tempfile.mktemp()
     if openssl is None:
@@ -304,7 +304,7 @@ def subprocess_checkout_print_error(cmd_list, redirect_err=True, shell=False):
     try:
         return subprocess.check_output(cmd_list, stderr=subprocess.STDOUT, shell=shell)
     except subprocess.CalledProcessError as cpe:
-        print cpe
+        print(cpe)
         return cpe.output
 
 def common_action_handler(action, args):

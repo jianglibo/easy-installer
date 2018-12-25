@@ -4,7 +4,6 @@ import getopt
 from global_static import PyGlobal
 import common_util
 import shutil
-import StringIO
 import sys, os, io, time, re, tempfile, json, subprocess
 import itertools
 import xml.etree.ElementTree as ET
@@ -21,7 +20,7 @@ if os.path.exists(PyGlobal.config_file):
 
 
 def usage():
-    print "usage message printed."
+    print("usage message printed.")
 
 # "ho:" mean -h doesn't need a argument, but -o needs.
 
@@ -106,7 +105,7 @@ def new_mysql_extrafile(plain_password=None):
         return tf
     else:
         if PyGlobal.mysql_extrafile is None:
-            plain_password = common_util.unprotect_password_by_openssl_publickey(j['MysqlPassword'])
+            plain_password = common_util.un_protect_password_by_openssl_publickey(j['MysqlPassword'])
             tf = tempfile.mktemp()
             with io.open(tf, mode='wb') as opened_file:
                 opened_file.writelines(["%s%s" % (line, "\n") for line in ["[client]", "user=%s" % mysql_user, 'password="%s"' % plain_password]])
@@ -169,7 +168,7 @@ def invoke_mysql_flushlogs(plain_password=None):
     return_code = subprocess.call(flush_cmd)
     # time.sleep(5)
     if (PyGlobal.verbose):
-        print "invoke_mysql_flushlogs subprocess call return %s" % return_code
+        print("invoke_mysql_flushlogs subprocess call return %s" % return_code)
     return flushlogs_filehash(plain_password)
 
 
@@ -202,7 +201,7 @@ def enable_logbin(mycnf_file, logbin_base_name='hm-log-bin', server_id='1'):
 
 def get_mycnf_file():
     out = subprocess.check_output([client_bin, '--help'])
-    sio = StringIO.StringIO(out)
+    sio = io.StringIO(out)
     line = sio.readline()
     found = False
     result = None
@@ -225,7 +224,7 @@ if __name__ == "__main__":
         opts, args = getopt.getopt(sys.argv[1:], "hv:a:", ["help", "action=", "notclean", "verbose"])
     except getopt.GetoptError as err:
         # print help information and exit:
-        print str(err)  # will print something like "option -a not recognized"
+        print(str(err))  # will print something like "option -a not recognized"
         sys.exit(2)
     verbose = False
     clean = True
@@ -247,9 +246,8 @@ if __name__ == "__main__":
     try:
         main(action, args)
     except Exception as e:
-        print type(e)
-        print e
-        print e.message
+        print(type(e))
+        print(e)
     finally:
         if PyGlobal.mysql_extrafile and clean:
             if os.path.exists(PyGlobal.mysql_extrafile):
