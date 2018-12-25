@@ -238,6 +238,7 @@ if __name__ == "__main__":
     if not cp.exists():
         usage("config file %s doesn't exists." % config)
         sys.exit(0)
+    print("with config file %s" % cp.absolute())
 
     with cp.open() as f:
         content = f.read()
