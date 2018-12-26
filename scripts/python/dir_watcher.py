@@ -224,6 +224,11 @@ if __name__ == "__main__":
             assert False, "unhandled option"
 
     cp: Path
+    if islinux:
+        cf = "dir_watcher_nux.json"
+    else:
+        cf = "dir_watcher.json"
+
     if not config:
         if getattr(sys, 'frozen', False):
             # frozen
@@ -231,7 +236,9 @@ if __name__ == "__main__":
         else:
             # unfrozen
             f_ = Path(__file__)
-        cp = f_.parent / "dir_watcher.json"
+        cp = f_.parent.parent / cf
+        if not cp.exists():
+            cp = f_.parent / cf
     else:
         cp = Path(config)
 

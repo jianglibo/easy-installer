@@ -55,7 +55,7 @@ class Test_TestIncrementDecrement(unittest.TestCase):
         try:
             subprocess.check_output('exit 1')
         except WindowsError as we:
-            print we
+            print(we)
 
     def test_partial(self):
         v = partial(two_add, 1)('2')
@@ -66,7 +66,7 @@ class Test_TestIncrementDecrement(unittest.TestCase):
         self.assertEqual(v, 4)
 
     def test_filehashes(self):
-        print common_util.get_dir_filehashes(PyGlobal.python_dir)
+        print(common_util.get_dir_filehashes(PyGlobal.python_dir))
 
     def test_diskfree(self):
         dfs = common_util.get_diskfree()
@@ -77,13 +77,13 @@ class Test_TestIncrementDecrement(unittest.TestCase):
     
     def test_memoryfree(self):
         mf = common_util.get_memoryfree()
-        print mf
+        print(mf)
 
     def test_xml(self):
         f = os.path.join(__file__, '..', '..', 'mysql', 'fixtures', 'abc.xml')
         s = common_util.get_filecontent_str(f)
         rows = [(x[0].text, x[1].text) for x in ET.fromstring(s)]
-        print rows
+        print(rows)
         self.assertTrue(len(rows) > 0)
         
 
