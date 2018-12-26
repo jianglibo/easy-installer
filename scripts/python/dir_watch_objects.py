@@ -88,6 +88,7 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
         self._ignore_directories = ignore_directories
         self._case_sensitive = case_sensitive
         self.db = db
+        self._has_regexes = len(self._regexes) > 0
         logging.info("create regexes: %s, ignore_regexes: %s", regexes, ignore_regexes)
 
     def dispatch(self, event: FileSystemEvent):
@@ -101,7 +102,7 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
         src_path: str = event.src_path
         if any([r.match(src_path) for r in self._ignore_regexes]):
             return
-        if not any([r.match(src_path) for r in self._regexes]):
+        if self._has_regexes and (not any([r.match(src_path) for r in self._regexes])):
             return
 
         logging.info(event.event_type)
@@ -191,7 +192,7 @@ def load_watch_config(pathname: Optional[str]) -> Dict[str, Any]:
     return j
 
 def get_watch_config(pathname: Union[Optional[str], Dict]) -> WatchConfig:
-    if isinstance(pathname, str):
+    if (pathname is None) or (isinstance(pathname, str)):
         wc = WatchConfig(load_watch_config(pathname))
     else:
         wc = WatchConfig(pathname)

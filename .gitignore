@@ -12,3 +12,4 @@ app.1.json
 .mypy_cache/
 dist/
 dir_watcher.zip
+.pytest_cache/
