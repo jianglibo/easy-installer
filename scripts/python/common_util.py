@@ -5,12 +5,14 @@
 # https://www.python-course.eu/lambda.php
 
 import os, io, json, codecs, urllib.request
-from global_static import PyGlobal, BorgConfiguration
+from global_static import PyGlobal, BorgConfiguration, Configuration
 import hashlib
 from functools import partial
+from pathlib import Path
 import psutil, re, shutil, base64, tempfile, subprocess
+from typing import Iterable, NamedTuple, Text, Union, List, AnyStr
 
-def split_url(url, parent=False):
+def split_url(url: str, parent: bool=False) -> str:
     parts = url.split('://', 1)
     if (len(parts) == 2):
         has_protocol = True
@@ -29,14 +31,14 @@ def split_url(url, parent=False):
         else:
             return after_protocol[idx+1:]
 
-def get_software_package_path(software_name=None):
-    pd = PyGlobal.configuration.get_packagedir()
-    if not(software_name):
-        software = PyGlobal.configuration.get_os_config()["Softwares"][0]
-        if not(software['LocalName']):
-            software_name = split_url(software['PackageUrl'])
+def get_software_package_path(software_name=None) -> Path:
+    pd = PyGlobal.configuration.package_dir
+    if not software_name:
+        software = PyGlobal.configuration.softwares[0]
+        if not software.LocalName:
+            software_name = split_url(software.PackageUrl)
         else:
-            software_name = software['LocalName']
+            software_name = software.LocalName
     return os.path.join(pd, software_name)
         
 def get_software_packages(target_dir, softwares):
@@ -54,18 +56,20 @@ def get_software_packages(target_dir, softwares):
             with open(lf,'wb') as output:
                 output.write(downloading_file.read())
     
-def get_filecontent_str(config_file, encoding="utf-8"):
-    with io.open(config_file, 'rb') as opened_file:
-        if opened_file.read(3) == codecs.BOM_UTF8:
-            encoding = 'utf-8-sig'
-    try:
-        f = io.open(config_file,mode="r",encoding=encoding)
+def get_filecontent_str(config_file: Path, encoding="utf-8") -> Text:
+    with config_file.open(encoding=encoding) as f:
         return f.read()
-    except UnicodeDecodeError:
-        f = io.open(config_file,mode="r",encoding='utf-16')
-        return f.read()
-    finally:
-        f.close()
+    # with io.open(config_file, 'rb') as opened_file:
+    #     if opened_file.read(3) == codecs.BOM_UTF8:
+    #         encoding = 'utf-8-sig'
+    # try:
+    #     f = io.open(config_file,mode="r",encoding=encoding)
+    #     return f.read()
+    # except UnicodeDecodeError:
+    #     f = io.open(config_file,mode="r",encoding='utf-16')
+    #     return f.read()
+    # finally:
+    #     f.close()
 
 def get_filecontent_lines(config_file, encoding="utf-8"):
     with io.open(config_file, 'rb') as opened_file:
@@ -80,17 +84,18 @@ def get_filecontent_lines(config_file, encoding="utf-8"):
     finally:
         f.close()
 
-def get_configration(config_file, encoding="utf-8", server_side=False):
-    if (os.path.isfile(config_file) and os.path.exists(config_file)):
-        content = get_filecontent_str(config_file, encoding=encoding)
+def get_configration(config_file: str, encoding="utf-8", server_side: bool=False) -> Configuration:
+    cfp = Path(config_file)
+    if cfp.is_file() and cfp.exists():
+        content = get_filecontent_str(cfp, encoding=encoding)
         j = json.loads(content)
-        os_type = j['OsType']
-        os_config = j['SwitchByOs'][os_type]
-        softwares = os_config['Softwares']
-        if (server_side):
-            dl = os_config['ServerSide']['PackageDir']
-        else:
-            dl = os.path.join(PyGlobal.project_dir, 'downloads', j['AppName'])
+        # os_type = j['OsType']
+        # os_config = j['SwitchByOs'][os_type]
+        # softwares = os_config['Softwares']
+        # if (server_side):
+        #     dl = os_config['ServerSide']['PackageDir']
+        # else:
+        #     dl = os.path.join(PyGlobal.project_dir, 'downloads', j['AppName'])
         # get_software_packages(dl, softwares)
         PyGlobal.configuration = BorgConfiguration(j)
         return j
@@ -100,27 +105,34 @@ def get_configration(config_file, encoding="utf-8", server_side=False):
 def get_filehashes(files, mode="SHA256"):
     return [get_one_filehash(h, mode) for h in files]
 
-def get_one_filehash(file_to_hash, mode="SHA256"):
-    h = hashlib.new(mode)
-    o = {}
-    with open(file_to_hash, 'rb') as file:
-            block = file.read(512)
-            while block:
-                h.update(block)
-                block = file.read(512)
-    o['Algorithm'] = mode
-    o['Hash'] = str.upper(h.hexdigest())
-    o['Path'] = os.path.abspath(file_to_hash)
-    o['Length'] = os.path.getsize(file_to_hash)
-    return o
+FileHash = NamedTuple('FileHash', [('Algorithm', str),('Hash', str),('Path', str),('Length', int)])
 
-def get_dir_filehashes(dir_to_hash, mode="SHA256"):
-    l = []
-    for dirName, sub_dirs, fileList in os.walk(dir_to_hash, topdown=False):
-        pf = partial(os.path.join, dirName)
+def get_one_filehash(file_to_hash: Union[Path, str], mode="SHA256") -> FileHash:
+    h = hashlib.new(mode)
+    fp: Path
+    if isinstance(file_to_hash, str):
+        fp = Path(file_to_hash)
+    else:
+        fp = file_to_hash
+
+    with fp.open('rb') as f:
+        block = f.read(512)
+        while block:
+            h.update(block)
+            block = f.read(512)
+    return FileHash(mode, str.upper(h.hexdigest()), str(fp.absolute()), fp.stat().st_size)
+
+def get_dir_filehashes(dir_to_hash: Union[Path, str], mode="SHA256") -> List[FileHash]:
+    dir: Path
+    if isinstance(dir_to_hash, str):
+        dir = Path(dir_to_hash)
+    else:
+        dir = dir_to_hash
+    l: List[FileHash] = []
+    for current_dir_name, _, files_in_current_dir in os.walk(dir, topdown=False):
+        pf: List[Path] = [Path(current_dir_name, fn) for fn in files_in_current_dir]
         pf1 = partial(get_one_filehash, mode=mode)
-        result =  map(pf, fileList)
-        l.extend(map(pf1, result))
+        l.extend(map(pf1, pf))
     return l
 
 def send_lines_to_client(content):
@@ -131,15 +143,22 @@ def send_lines_to_client(content):
         print(content)
     print(PyGlobal.line_end)
 
+DiskFree = NamedTuple('DiskFree', [
+    ('Name', str),
+    ('Used', int),
+    ('Free', int),
+    ('Percent', str),
+    ('FreeMegabyte', str),
+    ('UsedMegabyte', str)])
 
-def get_diskfree():
+def get_diskfree() -> Iterable[DiskFree]:
     """
     "Used":  0,
     "Free":  256335872,
     "Percent":  "0.0%",
-    "Freem":  "244.5",
+    "FreeMegabyte":  "244.5",
     "Name":  "/dev/shm",
-    "Usedm":  "0.0"
+    "UsedMegabyte":  "0.0"
     """
     mps = filter(lambda dv: dv.fstype, psutil.disk_partitions())
     mps = map(lambda dv: dv.mountpoint, mps)
@@ -148,48 +167,65 @@ def get_diskfree():
         used = du.used
         free = du.total - used
         percent = str(du.percent) + '%'
-        freem = str(free / 1024)
-        usedm = str(used / 1024)
-        return {"Name": name, "Used": used, "Percent": percent, "Free": free, "Freem": freem, "Usedm": usedm}
+        free_megabyte = str(free / 1024)
+        used_megabyte = str(used / 1024)
+        return DiskFree(name, used, free, percent,  free_megabyte, used_megabyte)
     return map(format_result, mps)
 
-def get_memoryfree():
+MemoryFree = NamedTuple('MemoryFree', [
+    ('Name', str),
+    ('Used', int),
+    ('Free', int),
+    ('Percent', str),
+    ('FreeMegabyte', str),
+    ('UsedMegabyte', str),
+    ('Total', int)])
+
+def get_memoryfree() -> MemoryFree:
     """
         format: total=8268038144L, available=1243422720L, percent=85.0, used=7024615424L, free=1243422720L
     """
     r = psutil.virtual_memory()
     percent = str(r.percent) + '%'
-    freem = str(r.free / 1024)
-    usedm = str(r.used / 1024)
-    return [{"Name": '', "Used": r.used, "Percent": percent, "Free": r.free, "Freem": freem, "Usedm": usedm, "Total": r.total}]
+    free_megabyte = str(r.free / 1024)
+    used_megabyte = str(r.used / 1024)
+    return MemoryFree('', r.used, r.free, percent, free_megabyte, used_megabyte, r.total)
+    # return [{"Name": '', "Used": r.used, "Percent": percent, "Free": r.free, "Freem": freem, "Usedm": usedm, "Total": r.total}]
 
-def get_maxbackupnumber(path):
-    p_tuple = os.path.split(path)
-    if not os.path.exists(p_tuple[0]):
-        os.makedirs(p_tuple[0])
-    re_str = p_tuple[1] + r'\.(\d+)$'
+def get_maxbackupnumber(path: Path) -> int:
+
+    if not path.parent.exists():
+        path.mkdir(parents=True)
+
+    re_str = path.name + r'\.(\d+)$'
     def sl(fn):
         m = re.match(re_str, fn)
         return int(m.group(1)) if m else 0
-    nums = [sl(x) for x in os.listdir(p_tuple[0])]
-    nums.sort()
-    nums.reverse()
-    return nums[0]
+    numbers = [sl(x) for x in os.listdir(path.parent)]
+    numbers.sort()
+    numbers.reverse()
+    return numbers[0]
 
-def get_next_backup(path):
+def get_next_backup(path: Path) -> Path:
     mn = 1 + get_maxbackupnumber(path)
-    return "%s.%s" % (path, mn)
+    return Path(path.parent, "%s.%s" % (path.name, mn))
 
-def get_maxbackup(path):
+def get_maxbackup(path: Path) -> Path:
     mn = get_maxbackupnumber(path)
-    return "%s.%s" % (path, mn) if mn else path
+    if mn:
+        return Path(path.parent, "%s.%s" % (path.name, mn))
+    return path
 
-def backup_localdirectory(path, keep_origin=True):
-    if not os.path.exists(path):
+def backup_localdirectory(path: Path, keep_origin=True) -> Path:
+    if not path.exists():
         raise ValueError("%s doesn't exists." % path)
-    m = re.match(r'^(.*?)\.\d+$', path)
-    nx = get_next_backup(m.group(1)) if m else get_next_backup(path)
-    if os.path.isfile(path):
+    m = re.match(r'^(.*?)\.\d+$', str(path))
+    if m:
+        nx = get_next_backup(Path(m.group(1)))
+    else:
+        nx = get_next_backup(path)
+
+    if path.is_file():
         if keep_origin:
             shutil.copy(path, nx)
         else:
@@ -201,29 +237,37 @@ def backup_localdirectory(path, keep_origin=True):
             shutil.move(path, nx)
     return nx
 
-def get_file_frombase64(base64_str, out_file=None):
+def get_file_frombase64(base64_str, out_file: str=None) -> Path:
     decoded_str = base64.b64decode(base64_str)
     if out_file is None:
-        out_file = tempfile.mktemp()
-    with io.open(out_file, 'wb') as opened_file:
-        opened_file.write(decoded_str)
-    return out_file
+        tf = tempfile.TemporaryFile()
+        with tf:
+            tf.write(decoded_str)
+        return Path(tf.name)
+    else:
+        tp = Path(out_file)
+        with tp.open('w') as fd:
+            fd.write(decoded_str)
+        return tp
 
-def un_protect_password_by_openssl_publickey(base64_str, private_key=None, openssl=None):
+def un_protect_password_by_openssl_publickey(base64_str, private_key=None, openssl=None) -> AnyStr:
     in_file = get_file_frombase64(base64_str)
-    out_file = tempfile.mktemp()
+    tf = tempfile.TemporaryFile()
+    tf.close()
+
     if openssl is None:
         openssl = PyGlobal.configuration.json['openssl']
     if private_key is None:
         private_key = PyGlobal.configuration.json['ServerPrivateKeyFile']
-    subprocess.call([openssl, 'pkeyutl', '-decrypt', '-inkey', private_key, '-in', in_file, '-out', out_file])
-    with io.open(out_file, 'rb') as opened_file:
-        return opened_file.read()
+    subprocess.call([openssl, 'pkeyutl', '-decrypt', '-inkey', private_key, '-in', in_file, '-out', tf.name])
+    tp = Path(tf.name)
+    with tp.open() as fd:
+        return fd.read()
 
-def get_lines(path_or_lines):
-    if isinstance(path_or_lines, str):
-        with io.open(path_or_lines, 'r') as opened_file:
-            lines = [line.strip() for line in opened_file.readlines()]
+def get_lines(path_or_lines: Union[Path, List[str]]) -> List[str]:
+    if isinstance(path_or_lines, Path):
+        with path_or_lines.open() as fd:
+            lines = [line.strip() for line in fd.readlines()]
     else:
         lines = [line.strip() for line in path_or_lines]
     return lines

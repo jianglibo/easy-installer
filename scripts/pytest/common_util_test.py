@@ -70,10 +70,10 @@ class Test_TestIncrementDecrement(unittest.TestCase):
 
     def test_diskfree(self):
         dfs = common_util.get_diskfree()
-        df = dfs[0]
-        self.assertTrue(df['Used'])
-        self.assertTrue(df['Free'])
-        self.assertTrue(df['Usedm'])
+        df = dfs.__next__()
+        self.assertTrue(df.Used)
+        self.assertTrue(df.Free)
+        self.assertTrue(df.UsedMegabyte)
     
     def test_memoryfree(self):
         mf = common_util.get_memoryfree()
