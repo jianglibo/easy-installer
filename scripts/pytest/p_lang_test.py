@@ -8,12 +8,19 @@ import subprocess
 import pytest
 from collections import namedtuple
 
-def test_varargs():
+def test_var_args():
     def f(*args):
         return args
     r = f(1,2,3)
     assert isinstance(r, tuple)
     assert functools.reduce(lambda x,y: x+y, r) == 6
+
+def test_kw_var_args():
+    def f(**kwargs):
+        return kwargs
+    r = f(a=1,b=2,c=3)
+    assert isinstance(r, dict)
+    assert r['a'] == 1
 
 def test_call():
     with pytest.raises(subprocess.CalledProcessError) as ae:
@@ -42,3 +49,10 @@ def test_nt():
         di.x = 10
     e: AttributeError = ae.value
     assert "can't set attribute" in str(e)
+
+    assert di.count(1) == 1
+    assert di._fields == ('x', 'y')
+    dd = di._asdict()
+    dd['y'] = 20
+    di1 = Di(**dd)
+    assert di1.y == 20

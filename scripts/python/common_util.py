@@ -351,6 +351,12 @@ def subprocess_checkout_print_error(cmd_list, redirect_err=True, shell=False):
         print(cpe)
         return cpe.output
 
+def clone_namedtuple(nt: NamedTuple, **kwargs) -> NamedTuple:
+    di: dict =  nt._asdict()
+    di.update(kwargs)
+    return NamedTuple(**di)
+    
+
 def common_action_handler(action, args):
     if action == 'DirFileHashes':
         send_lines_to_client(get_dir_filehashes(args[0]))

@@ -1,5 +1,6 @@
 import os
 from typing import List, Dict, Any, NamedTuple, Optional
+from pathlib import Path
 
 class MysqlVariableNames:
     data_dir = "datadir"
@@ -38,8 +39,7 @@ class Configuration:
 class BorgConfiguration(Configuration):
     'Borg configuration'
     def __init__(self, json):
-        super(BorgConfiguration, self, json)
-
+        super().__init__(json)
         # if not(type(json) is dict):
         #     raise ValueError('json is not a dict.')
         # self.json = json
@@ -55,9 +55,15 @@ class PyGlobal:
     verbose = False
     line_start = "for-easyinstaller-client-use-start"
     line_end = "for-easyinstaller-client-use-end"
-    gc_file = os.path.realpath(__file__)
-    python_dir = os.path.dirname(gc_file)
-    script_dir = os.path.dirname(python_dir)
-    project_dir = os.path.dirname(script_dir)
-    common_dir = os.path.join(script_dir, "common")
+    this_file: Path
+    python_dir: Path
+    script_dir: Path
+    project_dir: Path
+    common_dir: Path
     empty_password = "USE-EMPTY-PASSWORD"
+
+PyGlobal.this_file = Path(__file__)
+PyGlobal.python_dir = PyGlobal.this_file.parent
+PyGlobal.script_dir = PyGlobal.python_dir.parent
+PyGlobal.project_dir = PyGlobal.script_dir.parent
+PyGlobal.common_dir = PyGlobal.script_dir.joinpath('common')

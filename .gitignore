@@ -13,3 +13,4 @@ app.1.json
 dist/
 dir_watcher.zip
 .pytest_cache/
+.env
