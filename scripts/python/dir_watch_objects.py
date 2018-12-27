@@ -35,6 +35,8 @@ class WatchConfig():
 
     def get_un_exists_paths(self) -> List[WatchPath]:
         return [wp for wp in self.watch_paths if not wp.path.exists()]
+    
+
 
 
 class DirWatchDog():

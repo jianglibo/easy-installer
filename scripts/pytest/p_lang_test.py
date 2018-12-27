@@ -2,45 +2,43 @@ import unittest
 import common_util
 from global_static import PyGlobal
 import tempfile
-import os
+import os, sys, locale
 import shutil, functools
 import subprocess
+import pytest
+from collections import namedtuple
 
-class Test_TestLang(unittest.TestCase):
-    def setUp(self):
-        self.dd = tempfile.mkdtemp()
+def test_varargs():
+    def f(*args):
+        return args
+    r = f(1,2,3)
+    assert isinstance(r, tuple)
+    assert functools.reduce(lambda x,y: x+y, r) == 6
 
-    def tearDown(self):
-        shutil.rmtree(self.dd)
+def test_call():
+    with pytest.raises(subprocess.CalledProcessError) as ae:
+        _ = subprocess.check_output(['ls', '/404'], stderr=subprocess.STDOUT, shell=True)
+    e: subprocess.CalledProcessError = ae.value
+    assert isinstance(e.output, bytes)
+    assert sys.getdefaultencoding() == 'utf-8'
+    assert "'ls'" in e.output.decode(locale.getdefaultlocale()[1])
 
-    def test_varargs(self):
-        def f(*args):
-            return args
-        r = f(1,2,3)
-        self.assertEqual(type(r), tuple)
-        self.assertEqual(functools.reduce(lambda x,y: x+y, r), 6)
-    
-    def test_call(self):
-        v = None
-        try:
-            v = subprocess.check_output(['ls', '/404'], stderr=subprocess.STDOUT, shell=True)
-            self.assertTrue(v)
-        except subprocess.CalledProcessError as cpe:
-            self.assertTrue(cpe.output)
-            self.assertEqual(cpe.returncode, 1)
-            # self.assertEqual(cpe.message, '')
+    try:
+        subprocess.check_output(['ls', '/404'], shell=True)
+    except subprocess.CalledProcessError as cpe:
+        assert not cpe.output # doesn't redirect output.
+        assert cpe.returncode == 1
 
-        try:
-            v = subprocess.check_output(['ls', '/404'], shell=True)
-            self.assertTrue(v)
-        except subprocess.CalledProcessError as cpe:
-            self.assertTrue(not cpe.output) # doesn't redirect output.
-            self.assertEqual(cpe.returncode, 1)
-            # self.assertEqual(cpe.message, '')
-    
-    def test_checkout_stderr(self):
-        v = common_util.subprocess_checkout_print_error(['ls', '/404'], shell=True)
-        self.assertFalse(v)
+def test_checkout_stderr():
+    v = common_util.subprocess_checkout_print_error(['ls', '/404'], shell=True)
+    assert v
 
-if __name__ == '__main__':
-    unittest.main()
+def test_nt():
+    Di = namedtuple('Di', ['x', 'y'])
+    di = Di(1, 2)
+    assert di.x == 1
+    assert di.y == 2
+    with pytest.raises(AttributeError) as ae:
+        di.x = 10
+    e: AttributeError = ae.value
+    assert "can't set attribute" in str(e)

@@ -10,6 +10,7 @@ import threading, time
 
 from dir_watch_objects import get_watch_config, WatchConfig, WatchPath, DirWatchDog, load_watch_config
 import threading
+import pytest
 
 def func(x):
     return x + 1
@@ -35,48 +36,39 @@ def test_create_file_1(tmpdir):
     assert len(tmpdir.listdir()) == 1
     assert 0
 
-# class Test_TestDirWatcher(unittest.TestCase):
-#     def setUp(self):
-#         self.dd: Path = Path(tempfile.mkdtemp())
 
-#     def tearDown(self):
-#         shutil.rmtree(str(self.dd))
-    
-#     def test_configfile(self):
-#         config_file = os.path.join(__file__, '..', 'dir_watcher_t.json')
-#         wc = get_watch_config(config_file)
-        
-#         wp0: WatchPath  = wc.watch_paths[0]
-#         self.assertEqual(wp0.regexes[0], '.*')
-#         ign: List[str] = wc.watch_paths[0].ignore_regexes
-#         self.assertEqual(ign[0], r'.*\.txt')
-#         self.assertEqual(ign[1], r'c:\\Users\admin')
+def test_configfile():
+    config_file = os.path.join(__file__, '..', 'dir_watcher_t.json')
+    wc = get_watch_config(config_file)
+    wp0: WatchPath  = wc.watch_paths[0]
+    assert wp0.regexes[0] == '.*'
 
-#         self.assertIsNotNone(wc.watch_paths[0].regexes)
-#         with self.assertRaises(AttributeError):
-#             self.assertIsNone(wc.watch_paths[0].regexes1)
+    ign: List[str] = wc.watch_paths[0].ignore_regexes
+    assert ign[0] == r'.*\.txt'
+    assert ign[1] == r'c:\\Users\admin'
 
-#     def test_watcher(self):
-#         import math
-#         config_file = os.path.join(__file__, '..', 'dir_watcher_t.json')
-#         dt: Dict = load_watch_config(config_file)
-#         wc = get_watch_config(dt)
-#         wc.watch_paths[0].regexes = []
-#         wc.watch_paths[0].path = str(self.dd)
-#         wd = DirWatchDog(wc)
-#         def to_run(number):
-#             wd.watch()
-#             # for i in range(number):
-#             #     print(math.pow(i, 3))
-#         t = threading.Thread(target=to_run, args=(10000,))
-#         t.start()
-#         # time.sleep(1)
-#         self.assertTrue(t.is_alive())
-#         p: Path = self.dd.joinpath('abc.txt')
-#         p.write_text('Hello.')
-#         time.sleep(5)
-#         wd.save_me = False
+    assert not (wc.watch_paths[0].regexes is None)
 
+    with pytest.raises(AttributeError):
+        _ = wc.watch_paths[0].regexes1
 
-# if __name__ == '__main__':
-#     unittest.main()
+def test_watcher(tmpdir):
+    import math
+    config_file = os.path.join(__file__, '..', 'dir_watcher_t.json')
+    dt: Dict = load_watch_config(config_file)
+    wc = get_watch_config(dt)
+    wc.watch_paths[0].regexes = []
+    wc.watch_paths[0].path = str(tmpdir)
+    wd = DirWatchDog(wc)
+    def to_run(number):
+        wd.watch()
+        # for i in range(number):
+        #     print(math.pow(i, 3))
+    t = threading.Thread(target=to_run, args=(10000,))
+    t.start()
+    # time.sleep(1)
+    assert t.is_alive()
+    p: Path = tmpdir.joinpath('abc.txt')
+    p.write_text('Hello.')
+    time.sleep(5)
+    wd.save_me = False
