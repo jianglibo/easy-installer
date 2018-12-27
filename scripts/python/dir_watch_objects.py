@@ -48,6 +48,7 @@ class DirWatchDog():
         self.wc = wc
         self.db = Vedis(wc.vedisdb)
         self.save_me = True
+        self.observers : List[Observer] = []
 
     def get_modified_number(self):
         return self.db.scard(DirWatchDog.MODIFIED_REALLY_SET_TABLE)
@@ -57,9 +58,15 @@ class DirWatchDog():
 
     def get_deleted_number(self):
         return self.db.scard(DirWatchDog.DELETED_SET_TABLE)
+    
+    def get_moved_number(self):
+        return self.db.scard(DirWatchDog.MOVED_SET_TABLE)
+    
+    def wait_seconds(self, seconds: int) -> None:
+        for obs in self.observers:
+            obs.join(seconds)
 
     def watch(self) -> None:
-        observers = []
         for ps in self.wc.watch_paths:
             event_handler = LoggingSelectiveEventHandler(
                 self.db,
@@ -71,16 +78,16 @@ class DirWatchDog():
             observer = Observer()
             observer.schedule(event_handler, path_to_observe, recursive=ps.recursive)
             observer.start()
-            observers.append(observer)
+            self.observers.append(observer)
         try:
             while self.save_me:
                 time.sleep(1)
             else:
-                for obs in observers:
+                for obs in self.observers:
                     obs.stop()
                 self.db.close()
         except KeyboardInterrupt:
-            for obs in observers:
+            for obs in self.observers:
                 obs.stop()
             self.db.close()
 
@@ -118,13 +125,13 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
             :class:`FileSystemEvent`
         """
         src_path: str = event.src_path
-        if any([r.match(src_path) for r in self._ignore_regexes]):
-            return
+        for r in self._ignore_regexes:
+            if r.match(src_path):
+                logging.info("%s hit ignore_regexes %s, skipping...", src_path, r.pattern)
+                return
         if self._has_regexes and (not any([r.match(src_path) for r in self._regexes])):
+            logging.info("%s not in regexes, skipping...", src_path)
             return
-
-        logging.info(event.event_type)
-        logging.info("%s, %s" % (event.src_path, type(event.src_path)))
         super().dispatch(event)
     
     def stat_tostring(self, a_path):
@@ -135,7 +142,6 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
             return None
 
     def on_moved(self, event):
-        # super(LoggingSelectiveEventHandler, self).on_moved(event)
         what = 'directory' if event.is_directory else 'file'
         logging.info("Moved %s: from %s to %s", what, event.src_path,
                      event.dest_path)
@@ -143,21 +149,18 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
         self.db.commit()
 
     def on_created(self, event):
-        # super(LoggingSelectiveEventHandler, self).on_created(event)
         what = 'directory' if event.is_directory else 'file'
         logging.info("Created %s: %s", what, event.src_path)
         self.db.sadd(DirWatchDog.CREATED_SET_TABLE, event.src_path)
         self.db.commit()
 
     def on_deleted(self, event):
-        # super(LoggingSelectiveEventHandler, self).on_deleted(event)
         self.db.sadd(DirWatchDog.DELETED_SET_TABLE, event.src_path)
         self.db.commit()
         what = 'directory' if event.is_directory else 'file'
         logging.info("Deleted %s: %s", what, event.src_path)
 
     def on_modified(self, event):
-        # super(LoggingSelectiveEventHandler, self).on_modified(event)
         src_path = event.src_path
         what = 'directory' if event.is_directory else 'file'
         size_mtime = self.db.hget(DirWatchDog.MODIFIED_HASH_TABLE, src_path)
@@ -178,7 +181,7 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
                 self.db.sadd(DirWatchDog.MODIFIED_REALLY_SET_TABLE, src_path)
                 self.db.commit()
 
-def load_watch_config(pathname: Optional[str]) -> Dict[str, Any]:
+def load_watch_config(pathname: Union[None, str, Path]) -> Dict[str, Any]:
     cp: Path
     islinux: bool = 'nux' in sys.platform
 
@@ -197,6 +200,8 @@ def load_watch_config(pathname: Optional[str]) -> Dict[str, Any]:
         cp = f_.parent.parent / cf
         if not cp.exists():
             cp = f_.parent / cf
+    elif isinstance(pathname, Path):
+        cp = pathname
     else:
         cp = Path(pathname)
 
@@ -209,8 +214,8 @@ def load_watch_config(pathname: Optional[str]) -> Dict[str, Any]:
     j: Dict[str, Any] = json.loads(content)
     return j
 
-def get_watch_config(pathname: Union[Optional[str], Dict]) -> WatchConfig:
-    if (pathname is None) or (isinstance(pathname, str)):
+def get_watch_config(pathname: Union[Optional[str], Optional[Path], Dict]) -> WatchConfig:
+    if (pathname is None) or (isinstance(pathname, str)) or (isinstance(pathname, Path)):
         wc = WatchConfig(load_watch_config(pathname))
     else:
         wc = WatchConfig(pathname)

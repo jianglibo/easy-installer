@@ -31,7 +31,7 @@
             ],
             "ignore_directories": true,
             "case_sensitive": false,
-            "path": "c:",
+            "path": "e:",
             "recursive": true
         }
     ]

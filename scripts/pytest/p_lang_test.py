@@ -2,12 +2,12 @@ import unittest
 import common_util
 from global_static import PyGlobal
 import tempfile
-import os, sys, locale
+import os, sys, locale, re
 import shutil, functools
 import subprocess
 import pytest
 from collections import namedtuple
-from typing import NamedTuple
+from typing import NamedTuple, Pattern
 
 def test_var_args():
     def f(*args):
@@ -68,3 +68,37 @@ def test_namedtuple_inheritance():
     assert type(dic) == Dic
     assert not isinstance(dic, NamedTuple)
     assert isinstance(dic, tuple)
+
+def test_ptn():
+    r: Pattern = re.compile('ab\\.*')
+    assert r.match('abcd') # match at begin
+    assert r.match('ab.............')
+    assert r.match('ab')
+
+    r = re.compile('ab\\\\.*')
+    assert r.match('ab\\cd') # match at begin 1
+    assert r.match('ab\\\\\\\\')
+
+
+def test_ptn_1():
+    string_with_newlines = """something
+someotherthing"""
+
+    assert re.match('some', string_with_newlines) # matches
+    assert not re.match('someother', 
+                string_with_newlines) # won't match
+    assert not re.match('^someother', string_with_newlines, 
+                re.MULTILINE) # also won't match
+    assert re.search('someother', 
+                    string_with_newlines) # finds something
+    assert re.search('^someother', string_with_newlines, 
+                    re.MULTILINE) # also finds something
+
+    m = re.compile('thing$', re.MULTILINE)
+
+    assert not m.match(string_with_newlines) # no match
+    assert m.match(string_with_newlines, pos=4) # matches
+    assert m.search(string_with_newlines, 
+                re.MULTILINE) # also matches
+    
+    
