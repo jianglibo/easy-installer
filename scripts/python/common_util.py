@@ -10,7 +10,16 @@ import hashlib
 from functools import partial
 from pathlib import Path
 import psutil, re, shutil, base64, tempfile, subprocess
-from typing import Iterable, NamedTuple, Text, Union, List, AnyStr
+from typing import Iterable, NamedTuple, Text, Union, List, AnyStr, TypeVar
+from typing_extensions import Protocol
+from collections import namedtuple
+
+# class SupportsAsDict(Protocol):
+#     def __init__(self, **kwages) -> None:
+#        ...  # Empty method body (explicit '...')
+
+#     def _asdict(self) -> dict:
+#        ...  # Empty method body (explicit '...')
 
 def split_url(url: str, parent: bool=False) -> str:
     parts = url.split('://', 1)
@@ -105,7 +114,11 @@ def get_configration(config_file: str, encoding="utf-8", server_side: bool=False
 def get_filehashes(files, mode="SHA256"):
     return [get_one_filehash(h, mode) for h in files]
 
-FileHash = NamedTuple('FileHash', [('Algorithm', str),('Hash', str),('Path', str),('Length', int)])
+class FileHash(NamedTuple):
+    Algorithm: str
+    Hash: str
+    Path: str
+    Length: int
 
 def get_one_filehash(file_to_hash: Union[Path, str], mode="SHA256") -> FileHash:
     h = hashlib.new(mode)
@@ -143,13 +156,13 @@ def send_lines_to_client(content):
         print(content)
     print(PyGlobal.line_end)
 
-DiskFree = NamedTuple('DiskFree', [
-    ('Name', str),
-    ('Used', int),
-    ('Free', int),
-    ('Percent', str),
-    ('FreeMegabyte', str),
-    ('UsedMegabyte', str)])
+class DiskFree(NamedTuple):
+    Name: str
+    Used: int
+    Free: int
+    Percent: str
+    FreeMegabyte: str
+    UsedMegabyte: str
 
 def get_diskfree() -> Iterable[DiskFree]:
     """
@@ -172,14 +185,14 @@ def get_diskfree() -> Iterable[DiskFree]:
         return DiskFree(name, used, free, percent,  free_megabyte, used_megabyte)
     return map(format_result, mps)
 
-MemoryFree = NamedTuple('MemoryFree', [
-    ('Name', str),
-    ('Used', int),
-    ('Free', int),
-    ('Percent', str),
-    ('FreeMegabyte', str),
-    ('UsedMegabyte', str),
-    ('Total', int)])
+class MemoryFree(NamedTuple):
+    Name: str
+    Used: int
+    Free: int
+    Percent: str
+    FreeMegabyte: str
+    UsedMegabyte: str
+    Total: int
 
 def get_memoryfree() -> MemoryFree:
     """
@@ -354,8 +367,7 @@ def subprocess_checkout_print_error(cmd_list, redirect_err=True, shell=False):
 def clone_namedtuple(nt: NamedTuple, **kwargs) -> NamedTuple:
     di: dict =  nt._asdict()
     di.update(kwargs)
-    return NamedTuple(**di)
-    
+    return type(nt)(**di)
 
 def common_action_handler(action, args):
     if action == 'DirFileHashes':

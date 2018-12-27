@@ -4,7 +4,7 @@ from pathlib import Path
 import logging
 from watchdog.observers import Observer
 from watchdog.events import RegexMatchingEventHandler, FileSystemEventHandler, FileSystemEvent
-from typing import NamedTuple, List, Optional, Dict, Any, Iterator, Pattern, Match, Union
+from typing import NamedTuple, List, Optional, Dict, Any, Iterator, Pattern, Match, Union, ClassVar
 import getopt
 from vedis import Vedis # pylint: disable=E0611
 from collections import namedtuple
@@ -35,15 +35,28 @@ class WatchConfig():
 
     def get_un_exists_paths(self) -> List[WatchPath]:
         return [wp for wp in self.watch_paths if not wp.path.exists()]
-    
-
 
 
 class DirWatchDog():
+    MODIFIED_HASH_TABLE: ClassVar[str] = "modified"
+    MODIFIED_REALLY_SET_TABLE: ClassVar[str] = "modified-really"
+    MOVED_SET_TABLE: ClassVar[str] = "moved"
+    DELETED_SET_TABLE: ClassVar[str] = "deleted"
+    CREATED_SET_TABLE: ClassVar[str] = "created"
+
     def __init__(self, wc: WatchConfig) -> None:
         self.wc = wc
         self.db = Vedis(wc.vedisdb)
         self.save_me = True
+
+    def get_modified_number(self):
+        return self.db.scard(DirWatchDog.MODIFIED_REALLY_SET_TABLE)
+
+    def get_created_number(self):
+        return self.db.scard(DirWatchDog.CREATED_SET_TABLE)
+
+    def get_deleted_number(self):
+        return self.db.scard(DirWatchDog.DELETED_SET_TABLE)
 
     def watch(self) -> None:
         observers = []
@@ -71,10 +84,12 @@ class DirWatchDog():
                 obs.stop()
             self.db.close()
 
+
 class LoggingSelectiveEventHandler(FileSystemEventHandler):
     """
     Logs all the events captured.
     """
+
     def __init__(self,db: Vedis, regexes: List[str]=[r".*"], ignore_regexes: List[str]=[],
                  ignore_directories: bool =False, case_sensitive: bool=False):
         super(LoggingSelectiveEventHandler, self).__init__()
@@ -93,6 +108,7 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
         self._has_regexes = len(self._regexes) > 0
         logging.info("create regexes: %s, ignore_regexes: %s", regexes, ignore_regexes)
 
+
     def dispatch(self, event: FileSystemEvent):
         """Dispatches events to the appropriate methods.
 
@@ -109,7 +125,7 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
 
         logging.info(event.event_type)
         logging.info("%s, %s" % (event.src_path, type(event.src_path)))
-        # super().dispatch(event)
+        super().dispatch(event)
     
     def stat_tostring(self, a_path):
         try:
@@ -123,19 +139,19 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
         what = 'directory' if event.is_directory else 'file'
         logging.info("Moved %s: from %s to %s", what, event.src_path,
                      event.dest_path)
-        self.db.sadd('moved', "%s|%s" % (event.src_path, event.dest_path))
+        self.db.sadd(DirWatchDog.MOVED_SET_TABLE, "%s|%s" % (event.src_path, event.dest_path))
         self.db.commit()
 
     def on_created(self, event):
         # super(LoggingSelectiveEventHandler, self).on_created(event)
         what = 'directory' if event.is_directory else 'file'
         logging.info("Created %s: %s", what, event.src_path)
-        self.db.sadd('created', event.src_path)
+        self.db.sadd(DirWatchDog.CREATED_SET_TABLE, event.src_path)
         self.db.commit()
 
     def on_deleted(self, event):
         # super(LoggingSelectiveEventHandler, self).on_deleted(event)
-        self.db.sadd('deleted', event.src_path)
+        self.db.sadd(DirWatchDog.DELETED_SET_TABLE, event.src_path)
         self.db.commit()
         what = 'directory' if event.is_directory else 'file'
         logging.info("Deleted %s: %s", what, event.src_path)
@@ -144,13 +160,13 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
         # super(LoggingSelectiveEventHandler, self).on_modified(event)
         src_path = event.src_path
         what = 'directory' if event.is_directory else 'file'
-        size_mtime = self.db.hget("modified", src_path)
+        size_mtime = self.db.hget(DirWatchDog.MODIFIED_HASH_TABLE, src_path)
         if size_mtime is None:
             size_mtime = self.stat_tostring(src_path)
             if size_mtime is None:
                 logging.error("stat error %s: %s", what, src_path)
             else:
-                self.db.hset("modified", src_path, size_mtime)
+                self.db.hset(DirWatchDog.MODIFIED_HASH_TABLE, src_path, size_mtime)
             logging.info("Modified Not in db %s: %s", what, src_path)
         else:
             self.db.incr(src_path)
@@ -158,8 +174,8 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
             if size_mtime == n_size_time:
                 logging.info("Modified size_time not changed. %s: %s", what, src_path)
             else:
-                logging.info("Modified Truely %s: %s", what, src_path)
-                self.db.sadd('true-modified', src_path)
+                logging.info("Modified really %s: %s", what, src_path)
+                self.db.sadd(DirWatchDog.MODIFIED_REALLY_SET_TABLE, src_path)
                 self.db.commit()
 
 def load_watch_config(pathname: Optional[str]) -> Dict[str, Any]:

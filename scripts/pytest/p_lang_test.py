@@ -7,6 +7,7 @@ import shutil, functools
 import subprocess
 import pytest
 from collections import namedtuple
+from typing import NamedTuple
 
 def test_var_args():
     def f(*args):
@@ -56,3 +57,14 @@ def test_nt():
     dd['y'] = 20
     di1 = Di(**dd)
     assert di1.y == 20
+
+def test_namedtuple_inheritance():
+    class Dic(NamedTuple):
+        a: int
+        b: str
+    dic = Dic(1, 's')
+    assert dic.a == 1
+    assert dic.b == 's'
+    assert type(dic) == Dic
+    assert not isinstance(dic, NamedTuple)
+    assert isinstance(dic, tuple)
