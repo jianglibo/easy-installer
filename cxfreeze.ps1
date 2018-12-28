@@ -1,11 +1,11 @@
 param (
-    [Parameter(Mandatory = $true)][ValidateSet("home", "office")][string]$InvokeFromWhere,
+    [Parameter(Mandatory = $true)][ValidateSet("home", "office", "office_linux")][string]$InvokeFromWhere,
     [Parameter(Mandatory = $false)][string]$ServerPublicKeyFile,
     [ValidateSet("EncryptPassword", "SetMysqlPassword", "DownloadPublicKey")]
     [string]$Action
 )
 
-$Cxmap = @{home="";office="E:\pyvenvs\3.6.7\Scripts\"}
+$Cxmap = @{home="";office="E:\pyvenvs\3.6.7\Scripts\";office_linux="/home/osboxes/pyvenvs/3.6.7/bin/"}
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
@@ -19,7 +19,12 @@ $cxfreeze = $Cxmap.$InvokeFromWhere
 
 $democonfig = $pyscriptdir | Join-Path -ChildPath "dir_watcher.json"
 
-$cmd = "{0}python.exe {1}cxfreeze {2}" -f $cxfreeze, $cxfreeze, $pyscript
+if($InvokeFromWhere -like '*linux') {
+    $PythonExec = 'python'
+} else {
+    $PythonExec = 'python.exe'
+}
+$cmd = "{0}{1} {2}cxfreeze {3}" -f $cxfreeze, $PythonExec,  $cxfreeze, $pyscript
 
 "start invoking command: $cmd" | Write-Verbose
 Invoke-Expression -Command $cmd

@@ -1,6 +1,6 @@
 import common_util
 from global_static import PyGlobal
-import tempfile, os, json, io, shutil, subprocess, re
+import tempfile, os, json, io, shutil, subprocess, re, sys
 import dir_watcher
 from pathlib import Path
 from typing import List, Dict, NamedTuple, Tuple
@@ -16,7 +16,7 @@ from vedis import Vedis # pylint: disable=E0611
 from _pytest.logging import LogCaptureFixture
 
 def get_configfile() -> Path:
-    return Path(__file__, '..', '..', 'pytest', 'dir_watcher_t.json')
+    return Path(__file__, '..', '..', 'pytest', 'dir_watcher_t.1.json').resolve()
 
 CONTENT: Final = "content"
 
@@ -57,6 +57,9 @@ class TestDirWatcher(object):
         assert len(tmpdir.listdir()) == 1
 
     def test_configfile(self):
+        # islinux = 'nux' in sys.platform
+        cf = get_configfile()
+        assert cf.exists() and cf.is_file()
         wc: WatchConfig = get_watch_config(get_configfile())
         wp0: WatchPath  = wc.watch_paths[0]
         assert wp0.regexes[0] == '.*'
@@ -75,8 +78,11 @@ class TestDirWatcher(object):
         wd = tp[1]
         tid = tp[2]
         caplog.set_level(logging.DEBUG)
-
-        assert re.match(r"\w:\\.*", tmpdir.strpath)
+        islinux = 'nux' in sys.platform
+        if islinux:
+            assert re.match(r"/", tmpdir.strpath)
+        else:
+            assert re.match(r"\w:\\.*", tmpdir.strpath)
         def to_run(number):
                 wd.watch()
 
@@ -102,8 +108,6 @@ class TestDirWatcher(object):
             assert wd.get_modified_number() == 1
             assert wd.get_moved_number() == 1
 
-            for r in caplog.records:
-                print(r)
         elif tid == 1:
             p = tmpdir.join('abc.txt')
             p.write_text('Hello.', encoding="utf-8")
@@ -113,7 +117,7 @@ class TestDirWatcher(object):
             assert wd.get_created_number() == 0
             assert wd.get_deleted_number() == 0
             assert wd.get_modified_number() == 0
-        elif tid == 2:
+        elif tid == 2 and (not islinux):
             p = tmpdir.join('abc.txt')
             p.write_text('Hello.', encoding="utf-8")
 

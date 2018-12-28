@@ -1,7 +1,7 @@
 {
     "vedisdb": ":mem:",
-     "logfile": null,
-     "pidfile": null,
+    "logfile": null,
+    "pidfile": null,
     "watch_paths": [
         {
             "regexes": [

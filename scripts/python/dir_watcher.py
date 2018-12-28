@@ -50,6 +50,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=log_level,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
+    logger = logging.getLogger(__name__)
+    logger.setLevel(log_level)
     wd = DirWatchDog(wc)
     if asservice:
         pass
