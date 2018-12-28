@@ -113,7 +113,7 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
         self._case_sensitive = case_sensitive
         self.db = db
         self._has_regexes = len(self._regexes) > 0
-        logging.info("create regexes: %s, ignore_regexes: %s", regexes, ignore_regexes)
+        logging.debug("create regexes: %s, ignore_regexes: %s", regexes, ignore_regexes)
 
 
     def dispatch(self, event: FileSystemEvent):
@@ -125,12 +125,15 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
             :class:`FileSystemEvent`
         """
         src_path: str = event.src_path
+        if event.is_directory and self._ignore_directories:
+            logging.debug("directory %s ignored.", src_path)
+            return
         for r in self._ignore_regexes:
             if r.match(src_path):
-                logging.info("%s hit ignore_regexes %s, skipping...", src_path, r.pattern)
+                logging.debug("%s hit ignore_regexes %s, skipping...", src_path, r.pattern)
                 return
         if self._has_regexes and (not any([r.match(src_path) for r in self._regexes])):
-            logging.info("%s not in regexes, skipping...", src_path)
+            logging.debug("%s not in regexes, skipping...", src_path)
             return
         super().dispatch(event)
     
@@ -143,14 +146,14 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
 
     def on_moved(self, event):
         what = 'directory' if event.is_directory else 'file'
-        logging.info("Moved %s: from %s to %s", what, event.src_path,
+        logging.debug("Moved %s: from %s to %s", what, event.src_path,
                      event.dest_path)
         self.db.sadd(DirWatchDog.MOVED_SET_TABLE, "%s|%s" % (event.src_path, event.dest_path))
         self.db.commit()
 
     def on_created(self, event):
         what = 'directory' if event.is_directory else 'file'
-        logging.info("Created %s: %s", what, event.src_path)
+        logging.debug("Created %s: %s", what, event.src_path)
         self.db.sadd(DirWatchDog.CREATED_SET_TABLE, event.src_path)
         self.db.commit()
 
@@ -158,7 +161,7 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
         self.db.sadd(DirWatchDog.DELETED_SET_TABLE, event.src_path)
         self.db.commit()
         what = 'directory' if event.is_directory else 'file'
-        logging.info("Deleted %s: %s", what, event.src_path)
+        logging.debug("Deleted %s: %s", what, event.src_path)
 
     def on_modified(self, event):
         src_path = event.src_path
@@ -170,14 +173,14 @@ class LoggingSelectiveEventHandler(FileSystemEventHandler):
                 logging.error("stat error %s: %s", what, src_path)
             else:
                 self.db.hset(DirWatchDog.MODIFIED_HASH_TABLE, src_path, size_mtime)
-            logging.info("Modified Not in db %s: %s", what, src_path)
+            logging.debug("Modified Not in db %s: %s", what, src_path)
         else:
             self.db.incr(src_path)
             n_size_time = self.stat_tostring(src_path)
             if size_mtime == n_size_time:
-                logging.info("Modified size_time not changed. %s: %s", what, src_path)
+                logging.debug("Modified size_time not changed. %s: %s", what, src_path)
             else:
-                logging.info("Modified really %s: %s", what, src_path)
+                logging.debug("Modified really %s: %s", what, src_path)
                 self.db.sadd(DirWatchDog.MODIFIED_REALLY_SET_TABLE, src_path)
                 self.db.commit()
 

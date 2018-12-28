@@ -21,13 +21,14 @@ def usage(msg):
 if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "", [
-                                   "help", "action=", "config=", "asservice"])
+                                   "help", "action=", "config=", "asservice", "debug"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(str(err))  # will print something like "option -a not recognized"
         sys.exit(2)
     asservice = None
     action = None
+    log_level = logging.WARNING
     config: Optional[str] = None
     for o, a in opts:
         if o == "-v":
@@ -41,10 +42,12 @@ if __name__ == "__main__":
             action = a
         elif o == '--config':
             config = a
+        elif o == '--debug':
+            log_level = logging.DEBUG
         else:
             assert False, "unhandled option"
     wc: WatchConfig = get_watch_config(config)
-    logging.basicConfig(level=logging.INFO,
+    logging.basicConfig(level=log_level,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
     wd = DirWatchDog(wc)

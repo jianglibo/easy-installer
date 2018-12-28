@@ -74,7 +74,7 @@ class TestDirWatcher(object):
         tmpdir = tp[0]
         wd = tp[1]
         tid = tp[2]
-        caplog.set_level(logging.INFO)
+        caplog.set_level(logging.DEBUG)
 
         assert re.match(r"\w:\\.*", tmpdir.strpath)
         def to_run(number):
@@ -92,10 +92,10 @@ class TestDirWatcher(object):
             time.sleep(1)
             p.write_text('1Hello.', encoding="utf-8")
             time.sleep(1)
-            tfile = tmpdir.join('abc1.txt')
-            p.move(tfile)
+            target_file = tmpdir.join('abc1.txt')
+            p.move(target_file)
             time.sleep(1)
-            tfile.remove()
+            target_file.remove()
             time.sleep(1)
             assert wd.get_created_number() == 1
             assert wd.get_deleted_number() == 1
