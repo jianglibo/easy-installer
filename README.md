@@ -8,3 +8,7 @@ Current support Centos only. But for other os, the difference is the package ins
 
 ## openssl
 openssl rsa -in C:\Users\Administrator\192.168.33.110.ifile -pubout -out public_key.pem
+
+## run direct on script.
+
+.\scripts\mysql\mysql-client-side.ps1 -Action FlushLogs -ConfigFile .\myconfigs\192.168.33
