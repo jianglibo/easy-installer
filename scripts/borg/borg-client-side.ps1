@@ -146,19 +146,6 @@ else {
             break
         }
         "BackupLocal" {
-            # $d = Get-MaxLocalDir
-            # $newd = Backup-LocalDirectory -Path $d -keepOrigin
-            # $pruned = Resize-BackupFiles -BasePath $d -Pattern $configuration.BorgPrunePattern
-            # $success = [bool]$d -and [bool]$newd
-            # $result = @()
-            # if ($pruned) {
-            #     $pruned | Select-Object -Property FullName | ForEach-Object {
-            #         $result += $_
-            #     }
-            # }
-            # $v = @{result=$result;success=$success; timespan=(Get-Date) - $scriptstarttime}
-            # $v | Write-ActionResultToLogFile -Action $Action -LogResult:$LogResult
-            # $v | Out-JsonOrOrigin -Json:$Json
             Invoke-ClientCommonActions -Action $Action -ConfigFile $ConfigFile -scriptstarttime $scriptstarttime -LogResult:$LogResult -Json:$Json $configuration.BorgPrunePattern
             break
         }
